@@ -291,7 +291,8 @@ export default {
 
     function promiseWait(p) {
       const w = { kind: 'promise', p, done: false, t: 0, timeout: TIMEOUTS.op };
-      p.then(() => { w.done = true; }, () => { w.done = true; });
+      const ctx = run.ctx;
+      p.then((v) => { if (v !== undefined) ctx.chosen = v; w.done = true; }, () => { w.done = true; });
       return w;
     }
 
@@ -385,7 +386,7 @@ export default {
         }
         case 'escort': return pollEscort(w, wdt, skipping);
         case 'promise': {
-          if (w.done || (w.p.isDone && w.p.isDone())) return true;
+          if (w.done) return true;
           w.t += udt;
           if (w.t >= w.timeout) { warn('op still pending after ' + w.timeout + ' s; moving on'); return true; }
           return false;

@@ -129,7 +129,8 @@ test('cutscene: every step type, control with minHp, escort, nested, cleanup', a
   await flush();
   steps(g, 1);
   assert.equal(g.flags.picked, 1, '$chosen from the resolved op');
-  assert.ok(g.ops.warnings.some((w) => /unknown op "setLook"/.test(w)), 'unregistered op skipped with a warning');
+  // integration: Sim registers setLook now; '$chosen' (look index 1) is applied through refreshLook
+  assert.equal(g.flags.look_chosen, true, 'setLook player $chosen (Sim) marks the look as chosen');
   seconds(g, 0.3);
   assert.equal(g.camera.mode, 'follow');
   assert.equal(g.camera.zoom, 1);

@@ -116,7 +116,12 @@ export default {
       ops.register('setLook', (g, a) => {
         const who = a[1], patch = a[2];
         if (who === 'player' || who == null) {
-          if (patch === '$chosen') { if (!game.flags.look_chosen) game.setFlag('look_chosen', true); else api.refreshLook(); }
+          // integration: Story substitutes '$chosen' before the op runs, so the lookPicker result arrives as the
+          // look index (number) here; the literal string is still accepted (ops without substitution).
+          if (patch === '$chosen' || typeof patch === 'number' || patch === undefined) {
+            if (typeof patch === 'number' && game.flags.look_choice !== patch) game.setFlag('look_choice', patch);
+            if (!game.flags.look_chosen) game.setFlag('look_chosen', true); else api.refreshLook();
+          }
           else { p.data.scriptLook = patch ? deepMerge(p.data.scriptLook || {}, patch) : null; api.refreshLook(); }
           return;
         }

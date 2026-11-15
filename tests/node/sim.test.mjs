@@ -52,7 +52,7 @@ test('stick kills three rats and XP is requested; no attacks before the stick', 
     step();
   }
   assert.ok(rats.every((r) => r.removed), 'all three rats poofed');
-  assert.equal(xp, 9, 'xp from def.stats.xp requested through progression.addXp');
+  assert.equal(xp, 3 * game.data.enemies.rat.stats.xp, 'xp from def.stats.xp requested through progression.addXp');
   assert.ok(playerHits >= 9, 'about three stick hits per rat (2 dmg vs 6 hp)');
 });
 

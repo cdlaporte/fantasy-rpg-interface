@@ -48,7 +48,7 @@ test('save round trip: flags, position, progression, inventory, version', () => 
   assert.equal(again.save.exists('Saver'), false);
 });
 
-test('autosave triggers: level-up, zone load, quest step, timer; deferred while a question is open', () => {
+test('autosave triggers: level-up, zone load, quest step, timer; deferred while a question is open', async () => {
   const game = make();
   const saves = [];
   game.bus.on('save', () => saves.push(game.t));
@@ -76,11 +76,15 @@ test('autosave triggers: level-up, zone load, quest step, timer; deferred while 
   game.freeze.delete('question');
   game.step(DT);
   assert.equal(saves.length, 6);
-  game.sys.cutscene.active = { id: 'x' };
+  // the real cutscene system exposes `active` as a getter: run a real (blocking) cutscene instead
+  game.cutscene.play({ id: 'x', steps: [['waitFor', ['flag', 'x_done'], { timeout: 1e9 }]] });
   game.bus.emit('levelup', { level: 4, gained: 1 });
   game.step(DT);
   assert.equal(saves.length, 6);
-  game.sys.cutscene.active = null;
+  game.setFlag('x_done', true);
+  game.step(DT); game.step(DT);
+  await new Promise((r) => setImmediate(r));
+  assert.equal(game.cutscene.active, null);
   game.step(DT);
   assert.equal(saves.length, 7);
   // the save op and the saveNow command

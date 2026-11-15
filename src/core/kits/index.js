@@ -171,7 +171,9 @@ export default {
         for (let i = 0; i < L.layers.length; i++) { const f = L.layers[i].onEquip; if (f) f.call(L.layers[i], game, ent); }
         if (ent === game.player) {
           if (game.sys.player && game.sys.player.refreshLook) game.sys.player.refreshLook();
-          if (game.ready) {
+          // integration: Meta's progression is the single 'ability:unlocked' emitter (richer payload); the Sim
+          // only emits when no progression system provides abilityList (Sim-only tests / tools).
+          if (game.ready && !metaUnlocks()) {
             for (const s of ABILITY_SLOTS) {
               const ab = L.abilities[s];
               if (ab && level(ent) >= (ab.unlock || 0) && prevUnlocked[s] !== ab.id) game.bus.emit('ability:unlocked', { slot: s, id: ab.id });
@@ -333,12 +335,14 @@ export default {
       const cid = p.data.classId || prog().classId || (KITS[specId] && KITS[specId].parent) || null;
       api.set(p, cid, specId);
     });
+    const metaUnlocks = () => !!(game.sys.progression && game.sys.progression.abilityList);
     let lastLevel = null;
     game.bus.on('levelup', ({ level: lv }) => {
       const p = game.player;
       if (!p) return;
       const before = lastLevel != null ? lastLevel : lv - 1;
       lastLevel = lv;
+      if (metaUnlocks()) return;
       const L = api.active(p);
       for (const s of ABILITY_SLOTS) {
         const ab = L.abilities[s];

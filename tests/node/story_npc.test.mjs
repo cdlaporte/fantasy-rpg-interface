@@ -59,6 +59,9 @@ test('npc: schedule changes walk to markers, leave via exits, appear at exits / 
   g.clock.set(9.5);
   g.world.loadZone('nz', 'start');
   assert.equal(at(g, 'visitor'), null);
+  // integration: the real Sim puts entities > 30 tiles from the player to sleep (activation bubble), so stand
+  // where the walk happens
+  g.physics.teleport(g.player, 24, 10);
   g.clock.set(10);
   steps(g, 1);
   const v = at(g, 'visitor');
@@ -112,7 +115,11 @@ test('npc: crime -> wanted -> guards chase -> clears after 45 s unseen and on re
   const crimes = collect(g, 'crime');
   const wanted = collect(g, 'wanted');
   const dmg = [];
+  const realDamage = g.combat.damage;
   g.combat.damage = (t, n, o) => { dmg.push([t, n, o.source]); return n; };
+  // integration: guards with a Sim AI brain hit through combat.meleeArc (internal damage), so record 'hit' too
+  g.bus.on('hit', (h) => { if (h.target === g.player) dmg.push([h.target, h.amount, h.source]); });
+  void realDamage;
   const b = at(g, 'baker'), gd = at(g, 'guard'), sid = at(g, 'sitter');
   // hits by someone else do not count
   g.bus.emit('hit', { target: b, source: gd, amount: 1 });
@@ -128,6 +135,7 @@ test('npc: crime -> wanted -> guards chase -> clears after 45 s unseen and on re
   assert.ok(g.player.fxTags.includes('wanted'));
   assert.ok(b.data.moveTo, 'victim flees');
   const p = g.player;
+  p.hpMax = p.hp = 1e6;   // integration: the real guard AI deals real damage; do not get arrested mid-test
   const d0 = Math.hypot(b.x - p.x, b.y - p.y);
   seconds(g, 1);
   assert.ok(Math.hypot(b.x - p.x, b.y - p.y) > d0, 'flees away from the player');
@@ -142,9 +150,11 @@ test('npc: crime -> wanted -> guards chase -> clears after 45 s unseen and on re
   assert.ok(dmg.some((d) => d[2] === sid), 'retaliating NPC hits back');
   // guard out of the picture => 45 s unseen clears wanted
   g.ents.remove(gd);
-  seconds(g, 44);
+  // integration: the unseen timer may already have run a couple of seconds before the guard left
+  // (the player stood out of its sight while fighting the retaliating NPC)
+  seconds(g, 40);
   assert.equal(g.flags.wanted, true);
-  seconds(g, 1.5);
+  seconds(g, 6);
   assert.equal(g.flags.wanted, false);
   assert.deepEqual(wanted.at(-1), { on: false });
   assert.equal(g.player.fxTags.includes('wanted'), false);

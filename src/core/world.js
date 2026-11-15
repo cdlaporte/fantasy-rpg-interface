@@ -403,7 +403,14 @@ export default {
       }
       for (const p of z.props) {
         if (!p.interact) continue;
-        const ax = p.footless ? p.x + 0.5 : p.x + p.w / 2, ay = p.footless ? p.y + 0.5 : p.y + p.h;
+        // integration (World notes): `interact.at` is the tile the player stands on; buildings default to their
+        // door step (x + def.door, y + h); other props to the south-center of the footprint / the tile center.
+        let ax, ay;
+        const at = p.interact.at;
+        if (Array.isArray(at)) { ax = at[0] + 0.5; ay = at[1] + 0.5; }
+        else if (typeof at === 'string' && z.markers[at]) { ax = z.markers[at][0] + 0.5; ay = z.markers[at][1] + 0.5; }
+        else if (!p.footless && p.def && typeof p.def.door === 'number') { ax = p.x + p.def.door + 0.5; ay = p.y + p.h + 0.5; }
+        else { ax = p.footless ? p.x + 0.5 : p.x + p.w / 2; ay = p.footless ? p.y + 0.5 : p.y + p.h; }
         const e = game.ents.create({
           kind: 'anchor', type: 'effect', team: 'neutral', name: p.interact.name || '', x: ax, y: ay, solid: false,
           look: null, asleep: true, interact: Object.assign({ range: 1.3 }, p.interact),

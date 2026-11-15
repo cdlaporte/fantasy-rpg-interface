@@ -316,7 +316,7 @@ export default {
         n.mode = 'here';
         bubble(e, (e.def && e.def.fleeLine) || 'Help! Guards!', 2);
       } else {
-        n.chase = how === 'guard' ? 1 : RETALIATE_TIME; n.flee = 0;
+        n.chase = how === 'guard' ? 1 : RETALIATE_TIME; n.flee = 0; n.tmr = 0;
         bubble(e, (e.def && e.def.angryLine) || (how === 'guard' ? 'Halt!' : 'Hey! Cut that out!'), 2);
       }
     }
@@ -467,7 +467,7 @@ export default {
           const dx = p.x - e.x, dy = p.y - e.y;
           if (dx * dx + dy * dy <= GUARD_SIGHT * GUARD_SIGHT && (!game.world.los || game.world.los(e.x, e.y, p.x, p.y))) {
             seen = true;
-            if (n.chase <= 0) n.chase = 1;
+            if (n.chase <= 0) { n.chase = 1; n.tmr = 0; }
           }
         }
         if (e.data.talking) {

@@ -36,7 +36,7 @@ export function createUI(rootEl, opts = {}) {
   const ctx = {
     get game() { return game; },
     sfx,
-    blip: () => sfx('talk'),
+    blip: () => { const au = getAudio(); if (au) au.play('talk'); }, // UI-only voice blip, not a bus sfx id
     getHud: () => hud,
     renderer: () => renderer,
     quality: () => quality,

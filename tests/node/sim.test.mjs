@@ -297,6 +297,14 @@ test('melee arc respects arc, range, maxTargets; aoe delay telegraphs; zones tic
   step(20);
   assert.ok(t.hp < hp0, 'resolved after the delay');
   assert.ok(tele.removed);
+  // delayed without a telegraph: no entity, still resolves
+  const t2 = dummy(game, 14, 18);
+  const h2 = t2.hp;
+  const n0 = game.ents.all.length;
+  game.combat.aoe(p, { x: 14, y: 18, r: 1, dmg: 2, delay: 0.3, telegraph: false });
+  assert.equal(game.ents.all.length, n0);
+  step(25);
+  assert.ok(t2.hp < h2);
   // lingering zone
   const z = dummy(game, 12, 18);
   const hz = z.hp;

@@ -24,6 +24,7 @@ export default {
     const rng = game.rng;
     const scratchA = [], scratchB = [], scratchC = [], meleeOut = [], aoeOut = [], chainOut = [];
     const lookCache = new Map();
+    const pendingAoe = [];       // delayed AoEs without a telegraph (no entity)
     const infoPool = [];
     let infoDepth = 0;
     let fSrc = null, fTeam = null, fOwnerIsPlayer = false;
@@ -546,7 +547,7 @@ export default {
       const team = o.hitsTeam ? oppositeOf(o.hitsTeam) : source.team;
       const color = colorOf(o, source);
       const pd = {
-        dmg: o.amount != null ? o.amount : (o.dmg != null ? o.dmg : 1) * powerOf(source),
+        dmg: (o.amount != null ? o.amount : (o.dmg != null ? o.dmg : 1) * powerOf(source)) * (o.mult || 1),
         type: o.type || 'ranged', element: o.element || null, status: o.status || null,
         knockback: o.knockback != null ? o.knockback : 1.5, crit: !!o.crit, critChance: o.critChance || 0, critMult: o.critMult || 0,
         hitStop: o.hitStop || 0, lifesteal: o.lifesteal || 0, tags: o.tags || null, color,
@@ -820,18 +821,21 @@ export default {
         const shape = o.shape || 'circle';
         const tele = o.telegraph === false || o.telegraph === null ? null : (typeof o.telegraph === 'string' ? o.telegraph : shape);
         const col = o.telegraphColor || (source.team === 'enemy' ? '#ff5050' : '#ffd24a');
-        const e = ents.create({
-          kind: tele ? 'telegraph' : 'aoe_pending', type: 'effect', team: source.team, owner: source.id, x, y, solid: false,
-          angle: o.angle || 0, dir: source.dir,
-          look: tele ? { rig: 'effect', model: 'telegraph_' + tele, color: col, r: o.r || 1.5, len: o.len || o.r || 4, w: o.w || 0.8, arc: o.arc || 90 } : null,
-          data: { aoe: { o, src: source, t: o.delay, total: o.delay, amount, x, y }, anchor: !tele },
-          asleep: !tele,
-        });
+        const rec = { o, src: source, t: o.delay, total: o.delay, amount, x, y, meteor: null };
+        let e = null;
+        if (tele) {
+          e = ents.create({
+            kind: 'telegraph', type: 'effect', team: source.team, owner: source.id, x, y, solid: false,
+            angle: o.angle || 0, dir: source.dir,
+            look: { rig: 'effect', model: 'telegraph_' + tele, color: col, r: o.r || 1.5, len: o.len || o.r || 4, w: o.w || 0.8, arc: o.arc || 90 },
+            data: { aoe: rec },
+          });
+        } else pendingAoe.push(rec);
         if (o.meteor) {
-          const m = ents.create({ kind: 'meteor', type: 'effect', team: source.team, x, y, z: 8, solid: false,
-            look: { rig: 'effect', model: 'meteor', color: colorOf(o, source), r: (o.r || 1.5) * 0.5 }, data: { fallT: o.delay, fallZ: 8 } });
-          e.data.aoe.meteor = m;
+          rec.meteor = ents.create({ kind: 'meteor', type: 'effect', team: source.team, x, y, z: 8, solid: false,
+            look: { rig: 'effect', model: 'meteor', color: colorOf(o, source), r: (o.r || 1.5) * 0.5 }, data: { fallZ: 8 } });
         }
+        if (!e) return rec.meteor || rec;
         return e;
       }
       return resolveAoe(source, o, x, y, amount, o.out || aoeOut);
@@ -992,7 +996,17 @@ export default {
       }
       if (changed) syncFx(e);
     }
+    function tickPending(ad, dt) {
+      ad.t -= dt;
+      if (ad.meteor && !ad.meteor.removed) ad.meteor.z = Math.max(0, ad.meteor.data.fallZ * (ad.t / ad.total));
+      if (ad.t > 0) return false;
+      if (ad.meteor) ents.remove(ad.meteor);
+      resolveAoe(ad.src, ad.o, ad.x, ad.y, ad.amount, aoeOut);
+      if (ad.o.meteor) game.camera.shake = Math.max(game.camera.shake, 0.4);
+      return true;
+    }
     function updateAll(dt) {
+      for (let i = pendingAoe.length - 1; i >= 0; i--) if (tickPending(pendingAoe[i], dt)) pendingAoe.splice(i, 1);
       const all = ents.all;
       const p = game.player;
       for (let i = 0; i < all.length; i++) {
@@ -1003,14 +1017,7 @@ export default {
         if (ty === 'effect') {
           const ad = e.data.aoe;
           if (ad) {
-            ad.t -= dt;
-            if (ad.meteor && !ad.meteor.removed) ad.meteor.z = Math.max(0, ad.meteor.data.fallZ * (ad.t / ad.total));
-            if (ad.t <= 0) {
-              if (ad.meteor) ents.remove(ad.meteor);
-              resolveAoe(ad.src, ad.o, ad.x, ad.y, ad.amount, aoeOut);
-              if (ad.o.meteor) game.camera.shake = Math.max(game.camera.shake, 0.4);
-              ents.remove(e);
-            }
+            if (tickPending(ad, dt)) ents.remove(e);
             continue;
           }
           if (e.data.zone) tickZone(e, dt);
@@ -1048,6 +1055,7 @@ export default {
     }
 
     // ---------- bus ----------
+    game.bus.on('zone:unload', () => { pendingAoe.length = 0; });
     game.bus.on('player:revived', () => {
       const pl = game.player;
       if (!pl) return;

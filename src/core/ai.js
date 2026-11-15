@@ -9,6 +9,7 @@ const THINK_EVERY = 6;            // steps (60 Hz / 6 = 10 Hz)
 const MIN_ENEMY_WINDUP = 0.3;
 const DEFAULT_TELEGRAPH = { aoe_ring: 'circle', ground_target: 'circle', dash: 'line', beam: 'line', leap: 'circle', chain: null,
   melee_arc: null, projectile: null, multishot: 'cone', summon: 'circle', zone: 'circle', blink: null, buff_self: null, heal: null, guard: null, stealth: null };
+const GUARD_ATTACK = [{ use: 'melee_arc', range: 0.9, arc: 100, dmg: 1, cd: 1, windup: 0.4, knockback: 4, style: 'sword' }];
 const ALLY = { ally_melee: 1, ally_ranged: 1, ally_tank: 1 };
 
 export default {
@@ -34,7 +35,8 @@ export default {
 
     function attach(e, aiDef, attacksOverride) {
       const cfg = aiDef || {};
-      const list = attacksOverride || (e.def && e.def.attacks) || [];
+      let list = attacksOverride || (e.def && e.def.attacks) || [];
+      if (!list.length && (cfg.brain === 'guard')) list = GUARD_ATTACK;
       const attacks = [];
       for (let i = 0; i < list.length; i++) {
         const a = list[i];
@@ -532,7 +534,6 @@ export default {
         const e = all[i];
         const ai = e.ai;
         if (!ai || e.removed || e.asleep || !e.alive) continue;
-        if (e.data.tele) continue;
         if (ai.tele && !ai.tele.removed && ai.tele.data.follow != null) { ai.tele.x = e.x; ai.tele.y = e.y; }
         if (e.data.scripted || e.data.down || e.data.koT > 0) { if (ai.windT > 0) interrupt(e); if (!e.data.moveTo) { e.vx = 0; e.vy = 0; } continue; }
         if (ai.thresholds) bossStep(e, ai);

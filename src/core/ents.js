@@ -139,15 +139,25 @@ export default {
           }
           const stats = Object.assign({}, s, { hp, power, defense: s.defense || 0, speed: s.speed != null ? s.speed : 2.2, xp });
           const flying = !!def.flying;
+          // integration: Narrative's helper defs in data.npcs may carry their own `type` (stick_pickup and
+          // ambush_barrier are 'effect', pet_fox 'summon') and an `interact`.
+          const type = enemyDef ? 'enemy' : (def.type || 'npc');
+          const isEffect = type === 'effect';
           fields = {
-            kind: kindId, def, type: enemyDef ? 'enemy' : 'npc',
+            kind: kindId, def, type,
             team: def.team || (enemyDef ? 'enemy' : 'town'),
             name: def.name || '', x, y, z: flying ? 0.5 : 0,
             look: clone(def.look || { rig: 'humanoid' }),
-            radius: s.radius || (enemyDef ? 0.35 : 0.32), solid: true, pushable: !def.immovable,
-            hp, hpMax: hp, level: lvl, tags: def.tags ? def.tags.slice() : [], stats,
+            radius: s.radius || (enemyDef ? 0.35 : isEffect ? 0.4 : 0.32), solid: !isEffect,
+            pushable: !def.immovable && !isEffect && !s.anchored,
+            hp: isEffect ? 0 : hp, hpMax: isEffect ? 0 : hp, level: lvl, tags: def.tags ? def.tags.slice() : [], stats,
+            interact: def.interact ? clone(def.interact) : null,
             data: { flying, home: { x, y } },
           };
+          // Enemy-def additions (Narrative): stats.anchored = never moves / knocked back; stats.immortal = never
+          // dies (hp floor 1; ai regen refills it).
+          if (s.anchored) { fields.data.kbResist = 1; fields.data.anchored = true; fields.data.mass = 1e6; fields.stats.speed = 0; }
+          if (s.immortal) fields.data.minHp = 1;
         } else if (EFFECT_SET.has(kindId)) {
           fields = { kind: kindId, type: 'effect', team: 'neutral', x, y, solid: false, pushable: false,
             look: { rig: 'effect', model: kindId }, radius: 0.4, data: {} };
@@ -160,6 +170,7 @@ export default {
           if (v === undefined) continue;
           switch (k) {
             case 'level': case 'n': case 'spread': case 'noAi': case 'ai': case 'poof': break;
+            case 'offset': if (Array.isArray(v)) { fields.x += v[0] || 0; fields.y += v[1] || 0; if (fields.data.home) { fields.data.home.x = fields.x; fields.data.home.y = fields.y; } } break;
             case 'id': case 'sid': fields.data.sid = v; break;
             case 'tag': fields.tags = (fields.tags || []).concat(v); break;
             case 'tags': fields.tags = (fields.tags || []).concat(v); break;
@@ -171,7 +182,13 @@ export default {
         }
         if (fields.hp !== undefined && opts.hpMax === undefined && opts.hp !== undefined) fields.hpMax = Math.max(fields.hpMax || 0, opts.hp);
         const e = api.create(fields);
-        if (def && !opts.noAi) {
+        // Narrative helper: `barrier: {r}` leashes the player inside the circle while the entity exists.
+        if (def && def.barrier && game.player) {
+          const r = (opts.look && opts.look.r) || def.barrier.r || 4;
+          e.data.barrier = r;
+          game.player.data.leash = { x: e.x, y: e.y, r: Math.max(0.5, r - (game.player.radius || 0.3)), barrierId: e.id };
+        }
+        if (def && !opts.noAi && !(def.type && def.type !== 'npc' && def.type !== 'enemy' && !def.ai)) {
           const aiDef = opts.ai ? Object.assign({}, def.ai, opts.ai) : def.ai;
           const brainy = aiDef || (npcDef && npcDef.onAttacked === 'guard' ? { brain: 'guard' } : null);
           if (brainy && game.sys.ai && game.sys.ai.attach) game.sys.ai.attach(e, brainy);
@@ -196,7 +213,11 @@ export default {
         all.length = j;
         // Emit after compaction; listeners may spawn (onDeath) safely.
         const n = pending.length;
-        for (let i = 0; i < n; i++) game.bus.emit('ent:removed', { ent: pending[i] });
+        for (let i = 0; i < n; i++) {
+          const r = pending[i];
+          if (r.data && r.data.barrier && game.player && game.player.data.leash && game.player.data.leash.barrierId === r.id) game.player.data.leash = null;
+          game.bus.emit('ent:removed', { ent: r });
+        }
         pending.splice(0, n);
         dirty = true;
       },

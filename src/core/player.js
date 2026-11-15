@@ -41,8 +41,11 @@ export default {
         if (!f.look_chosen) {
           if (L.CLOAKED) deepMerge(look, L.CLOAKED);
         } else {
-          const cd = classId && data.classes ? data.classes[classId] : null;
-          const sd = specId && data.specs ? data.specs[specId] : null;
+          // integration: Meta's classDef/specDef merge data over its built-in CLASSES defaults (looks included),
+          // so classes show their outfit even before the class packages fill src/data/classdefs.
+          const pr = game.sys.progression;
+          const cd = classId ? (pr && pr.classDef ? pr.classDef(classId) : data.classes && data.classes[classId]) : null;
+          const sd = specId ? (pr && pr.specDef ? pr.specDef(specId) : data.specs && data.specs[specId]) : null;
           if (cd && cd.look) deepMerge(look, cd.look);
           if (sd && sd.look) deepMerge(look, sd.look);
           const kp = p.data.kit && p.data.kit.lookPatch;

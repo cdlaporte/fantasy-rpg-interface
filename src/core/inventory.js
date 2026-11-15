@@ -176,7 +176,12 @@ export default {
       const def = itemDef(id);
       if (!count(id) || (def && def.type === 'cosmetic')) return false;
       const j = api.hotbar.indexOf(id);
-      if (j >= 0) api.hotbar[j] = api.hotbar[i];      // swap
+      const old = api.hotbar[i];
+      if (j >= 0) api.hotbar[j] = old;      // swap
+      else if (old && old !== id) {         // integration: the displaced item moves to a free slot (not lost)
+        const k = api.hotbar.indexOf(null);
+        if (k >= 0) api.hotbar[k] = old;
+      }
       api.hotbar[i] = id;
       refreshInventoryModal();
       return true;
@@ -741,7 +746,13 @@ export default {
     // ---------- ops, conditions, commands ----------
     const ops = game.ops;
     if (ops && ops.register) {
-      ops.register('give', (g, a) => { give(a[1], a.length > 2 ? a[2] : 1); });
+      // integration: ['give', id, n, {slot}] also puts the item on hotbar slot `slot` (0-based), moving whatever
+      // was there (rescue: "Press 1" must drink the potion even when rat cheese took slot 1).
+      ops.register('give', (g, a) => {
+        const got = give(a[1], a.length > 2 ? a[2] : 1);
+        const o = a[3];
+        if (got && o && typeof o.slot === 'number') assignSlot(a[1], o.slot);
+      });
       ops.register('take', (g, a) => { take(a[1], a.length > 2 ? a[2] : 1); });
       ops.register('gold', (g, a) => {
         const n = Math.round(Number(a[1]) || 0);

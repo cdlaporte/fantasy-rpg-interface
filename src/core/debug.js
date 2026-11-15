@@ -282,7 +282,7 @@ export default {
           pendingSpec: !!pr.pendingSpec, gold: inv.gold || 0, items: Object.assign({}, inv.items || {}),
           hotbar: inv.hotbar ? inv.hotbar.slice() : [], question: g.pending ? g.pending() : null,
           quest: S('quests').tracked || null, hour: S('clock').hour, god,
-          cutscene: S('cutscene').active ? (S('cutscene').active.id || true) : null,
+          cutscene: S('cutscene').active ? (S('cutscene').active.id || S('cutscene').active) : null,
         };
       },
       input(partial) { sticky.set(partial || {}); return api; },

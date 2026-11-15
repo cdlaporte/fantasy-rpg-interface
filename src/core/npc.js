@@ -235,6 +235,12 @@ export default {
         const def = all[id];
         if (!def || typeof def !== 'object') continue;
         if (!def.id) def.id = id;
+        // integration: helper defs (Narrative: stick_pickup, ambush_barrier, pet_fox have a non-npc `type`) and
+        // NPCs with an empty routine and no `at` (mossback_sprout, Laporte's scripted appearances) are spawned
+        // by cutscenes/ops only. `hideIf` (all pass) keeps an NPC away (classmates who became companions).
+        if (def.type && def.type !== 'npc') continue;
+        if (Array.isArray(def.routine) && !def.routine.length && !def.at) continue;
+        if (Array.isArray(def.hideIf) && def.hideIf.length && game.ops.test(def.hideIf, {})) continue;
         const idx = routineIndex(def, h);
         sched[id] = idx;
         const place = placeOf(def, idx);
@@ -421,6 +427,12 @@ export default {
         const def = all[id];
         if (!def || typeof def !== 'object') continue;
         if (!def.id) def.id = id;
+        // integration: helper defs (Narrative: stick_pickup, ambush_barrier, pet_fox have a non-npc `type`) and
+        // NPCs with an empty routine and no `at` (mossback_sprout, Laporte's scripted appearances) are spawned
+        // by cutscenes/ops only. `hideIf` (all pass) keeps an NPC away (classmates who became companions).
+        if (def.type && def.type !== 'npc') continue;
+        if (Array.isArray(def.routine) && !def.routine.length && !def.at) continue;
+        if (Array.isArray(def.hideIf) && def.hideIf.length && game.ops.test(def.hideIf, {})) continue;
         const idx = routineIndex(def, h);
         const old = id in sched ? sched[id] : idx;
         if (old === idx) { sched[id] = idx; continue; }

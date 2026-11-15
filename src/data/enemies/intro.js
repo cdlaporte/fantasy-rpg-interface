@@ -24,7 +24,7 @@ export default {
   // L2 elite. The tutorial's first "boss": telegraphed lunge, tail swipe when crowded.
   giant_rat: {
     id: 'giant_rat', name: 'Sir Squeaks-a-Lot', level: 2, tags: ['beast', 'rat', 'elite'],
-    stats: { hp: 40, power: 5, defense: 0, speed: 2.6, radius: 0.45, xp: 33 },
+    stats: { hp: 30, power: 3, defense: 0, speed: 2.6, radius: 0.45, xp: 33 },   // integration feel pass: was hp 40 power 5 (downed an L2 novice)
     flying: false,
     ai: { brain: 'charger', aggro: 6, leash: 12 },
     attacks: [

@@ -144,6 +144,8 @@ export default {
       rats_1: [12, 88], rats_2: [14, 64], big_rat: [11, 50], bridge: [12, 77],
       clearing: [13, 30], malgrim_spot: [13, 26], hex_1: [10, 28], hex_2: [16, 28], laporte_arrive: [13, 18],
       exit_town: [13, 4], exit_north: [13, 0],
+      // integration: markers the Narrative cutscenes use (opening walk; where Laporte stops outside the barrier)
+      walk_1: [13, 109], laporte_stand: [13, 25],
     },
     exits: [
       { at: 'exit_north', w: 7, h: 1, to: 'town', marker: 'gate_south', if: [['flag', 'intro_done']],
@@ -203,11 +205,9 @@ export default {
       { kind: 'flowerbed', x: 10, y: 12 },
       { kind: 'flowerbed', x: 15, y: 15 },
     ],
-    spawns: [
-      { kind: 'rat', area: [8, 85, 9, 6], n: 3, respawn: 0, level: 1, if: [['not', ['flag', 'tutorial_done']]] },
-      { kind: 'rat', area: [9, 61, 10, 7], n: 4, respawn: 0, level: 1, if: [['not', ['flag', 'tutorial_done']]] },
-      { kind: 'giant_rat', area: [9, 48, 5, 4], n: 1, respawn: 0, level: 2, if: [['not', ['flag', 'tutorial_done']]] },
-    ],
+    // integration: the tutorial rats and the giant rat are spawned by cutscene intro_wake when its prompts ask
+    // for them (Narrative), so the quest kill counts match; the zone itself spawns nothing.
+    spawns: [],
     npcs: [],
     gates: [],
     chests: [],

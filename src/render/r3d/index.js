@@ -69,7 +69,7 @@ export function create() {
 
   // ---------------- zone ----------------
   function freeZone() {
-    if (borderMesh) { scene.remove(borderMesh); borderMesh.geometry.dispose(); borderMesh = null; }
+    freeBorder();
     for (const c of chunks) freeChunk(c);
     chunks = [];
     emitters = [];
@@ -119,9 +119,12 @@ export function create() {
     return c;
   }
   function buildZoneMeshes() {
-    if (borderMesh) { scene.remove(borderMesh); borderMesh.geometry.dispose(); borderMesh = null; }
-    const bg = buildBorder(zd);
-    if (bg) { borderMesh = new THREE.Mesh(bg, mats.chunk); borderMesh.frustumCulled = false; scene.add(borderMesh); }
+    freeBorder();
+    for (const bg of buildBorder(zd)) {
+      const m = new THREE.Mesh(bg, mats.chunk);
+      if (borderMeshes.length === 0) m.frustumCulled = false;   // the first is the ground plane
+      scene.add(m); borderMeshes.push(m);
+    }
     chunkCols = Math.ceil(zd.zv.w / CHUNK);
     chunkRows = Math.ceil(zd.zv.h / CHUNK);
     chunks = new Array(chunkCols * chunkRows);
@@ -397,7 +400,8 @@ export function create() {
 
   const rectTmp = { x0: 0, y0: 0, x1: 0, y1: 0 };
   const sp = new THREE.Vector3();
-  let borderMesh = null;
+  let borderMeshes = [];
+  function freeBorder() { for (const m of borderMeshes) { scene.remove(m); m.geometry.dispose(); } borderMeshes = []; }
 
   const r = {
     id: '3d',

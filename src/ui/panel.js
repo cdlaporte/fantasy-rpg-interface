@@ -1,16 +1,352 @@
-// STUB: replaced by the UI package
-// Plain-text left panel from HudState.
-export function createPanel(el) {
-  const pre = document.createElement('div');
-  pre.className = 'panel-text';
-  el.appendChild(pre);
+// Left panel (280 px): portrait, name, class line, level, HP / XP / resource bars, stats, basic attack, four ability
+// slots, six item slots, tracked quest, companions and nudges. Built once; update(hud) only touches what changed.
+import { el, add, setText, setStyle, setClass, show, keycap, pixelCanvas } from './dom.js';
+import { iconCanvas, setIcon } from './icons.js';
+import { buildPortrait, portraitKey } from './portraits.js';
+import { blitGrid } from './pixelart.js';
+import { roman, frac, fmtNum } from './format.js';
+
+const ABILITY_SLOTS = ['space', 'q', 'f', 'shift'];
+const KEY_LABEL = { space: 'Space', q: 'Q', f: 'F', shift: 'Shift' };
+
+/** Crop a 32x32 portrait grid to the face (x 4..27, y 0..23) for small 2x avatars. */
+export function faceCrop(g) { return g.slice(0, 24).map((r) => r.slice(4, 28)); }
+
+function bar(cls, label) {
+  const b = el('div', 'bar ' + cls);
+  const lab = el('span', 'bar-label', label);
+  const track = el('div', 'bar-track');
+  const fill = el('div', 'bar-fill');
+  const ghost = el('div', 'bar-ghost');
+  const pips = el('div', 'bar-pips');
+  const txt = el('span', 'bar-text');
+  add(track, ghost, fill, pips, txt);
+  add(b, lab, track);
+  return { root: b, lab, fill, ghost, txt, pips, lastFrac: -1, pipN: -1 };
+}
+
+function setBar(b, f, text) {
+  if (Math.abs(b.lastFrac - f) > 0.001) {
+    // the ghost lags behind on loss (chip damage feel)
+    if (f < b.lastFrac) setStyle(b.ghost, 'width', (b.lastFrac * 100).toFixed(1) + '%');
+    b.lastFrac = f;
+    setStyle(b.fill, 'width', (f * 100).toFixed(1) + '%');
+    clearTimeout(b.ghostT);
+    b.ghostT = setTimeout(() => setStyle(b.ghost, 'width', (b.lastFrac * 100).toFixed(1) + '%'), 450);
+  }
+  setText(b.txt, text);
+}
+
+function setPips(b, n, max, color) {
+  const want = max > 0 && max <= 12 ? max : 0;
+  if (b.pipN !== want) {
+    b.pipN = want;
+    while (b.pips.firstChild) b.pips.removeChild(b.pips.firstChild);
+    for (let i = 0; i < want; i++) b.pips.appendChild(el('i', 'pip'));
+  }
+  for (let i = 0; i < want; i++) setClass(b.pips.children[i], 'on', i < n);
+  if (color) setStyle(b.pips, '--pip', color);
+}
+
+/**
+ * @param {HTMLElement} root  #panel
+ * @param {Object} [ctx] {game, emitSfx}
+ */
+export function createPanel(root, ctx = {}) {
+  const wrap = el('div', 'pnl');
+
+  // --- hero card
+  const hero = el('div', 'pnl-hero px-box');
+  const frame = el('div', 'portrait-frame');
+  const portrait = pixelCanvas(32, 32, 'portrait');
+  frame.appendChild(portrait);
+  const info = el('div', 'hero-info');
+  const name = el('div', 'hero-name pxfont');
+  const cls = el('div', 'hero-class');
+  const lvRow = el('div', 'hero-row');
+  const lv = el('span', 'lv-badge pxfont');
+  const gold = el('span', 'gold');
+  const goldN = el('span', 'gold-n pxfont');
+  add(gold, iconCanvas('coin', 'icon-sm'), goldN);
+  add(lvRow, lv, gold);
+  const wanted = el('div', 'wanted-badge pxfont', 'WANTED');
+  frame.appendChild(wanted);
+  add(hero, frame, info);
+
+  // --- bars
+  const bars = el('div', 'pnl-bars');
+  const hp = bar('bar-hp', 'HP');
+  const xp = bar('bar-xp', 'XP');
+  const res = bar('bar-res', '');
+  add(bars, hp.root, xp.root, res.root);
+
+  // --- stats
+  const stats = el('div', 'pnl-stats');
+  const stat = (icon, title) => {
+    const s = el('span', 'stat');
+    s.title = title;
+    const v = el('span', 'stat-v pxfont');
+    add(s, iconCanvas(icon, 'icon-sm'), el('span', 'stat-k', title), v);
+    stats.appendChild(s);
+    return v;
+  };
+  const sPow = stat('sword', 'Power'), sDef = stat('shield', 'Defense'), sSpd = stat('dash', 'Speed');
+  add(info, name, cls, lvRow, stats);
+
+  // --- basic attack
+  const basic = el('div', 'pnl-basic px-box');
+  const bIcon = iconCanvas('sword', 'icon-md');
+  const bText = el('div', 'basic-text');
+  const bTitle = el('div', 'sec-title pxfont', 'ATTACK');
+  const bName = el('div', 'basic-name');
+  add(bText, bTitle, bName);
+  const rank = el('div', 'rank-pips');
+  for (let i = 0; i < 5; i++) rank.appendChild(el('i', 'rpip'));
+  const rankLab = el('span', 'rank-lab pxfont');
+  add(basic, bIcon, bText, el('div', 'basic-right', null));
+  add(basic.lastChild, rankLab, rank);
+
+  // --- abilities
+  const abil = el('div', 'pnl-abil');
+  const slots = ABILITY_SLOTS.map((slot) => {
+    const s = el('div', 'aslot');
+    const box = el('div', 'aslot-box');
+    const ic = iconCanvas('lock', 'icon-lg');
+    const cd = el('div', 'cd-sweep');
+    const lock = el('div', 'aslot-lock');
+    const lockLv = el('span', 'lock-lv pxfont');
+    add(lock, iconCanvas('lock', 'icon-sm'), lockLv);
+    const cost = el('span', 'aslot-cost pxfont');
+    const kc = keycap(KEY_LABEL[slot], 'aslot-key');
+    add(box, ic, cd, lock, cost, kc);
+    const nm = el('div', 'aslot-name');
+    add(s, box, nm);
+    abil.appendChild(s);
+    return { slot, s, box, ic, cd, lock, lockLv, cost, nm, wasReady: true, flashT: 0 };
+  });
+
+  // --- items
+  const items = el('div', 'pnl-items');
+  const islots = [];
+  for (let i = 0; i < 6; i++) {
+    const s = el('div', 'islot');
+    const ic = iconCanvas(null, 'icon-md');
+    const k = el('span', 'islot-key pxfont', String(i + 1));
+    const n = el('span', 'islot-n pxfont');
+    const cd = el('div', 'cd-sweep');
+    add(s, ic, cd, k, n);
+    s.addEventListener('click', () => { const g = ctx.game; if (g && g.commands.useSlot) g.commands.useSlot(i); });
+    items.appendChild(s);
+    islots.push({ s, ic, n, cd });
+  }
+
+  // --- quest
+  const quest = el('div', 'pnl-quest px-box');
+  const qTitle = el('div', 'sec-title pxfont', 'QUEST');
+  const qName = el('div', 'quest-name');
+  const qStep = el('div', 'quest-step');
+  const qProg = el('div', 'quest-prog');
+  const qProgFill = el('div', 'quest-prog-fill');
+  qProg.appendChild(qProgFill);
+  add(quest, qTitle, qName, qStep, qProg);
+
+  // --- companions
+  const comps = el('div', 'pnl-comps');
+  const compEls = [];
+
+  // --- nudges
+  const nudges = el('div', 'pnl-nudges');
+  const nBoon = el('div', 'nudge nudge-boon');
+  const nBoonText = el('span', 'nudge-text');
+  add(nBoon, iconCanvas('star', 'icon-sm'), nBoonText, keycap('Tab'));
+  nBoon.addEventListener('click', () => ctx.onBoonNudge && ctx.onBoonNudge());
+  const nSpec = el('div', 'nudge nudge-spec');
+  const nSpecText = el('span', 'nudge-text');
+  const nSpecKey = keycap('Tab');
+  add(nSpec, iconCanvas('up', 'icon-sm'), nSpecText, nSpecKey);
+  add(nudges, nBoon, nSpec);
+
+  add(wrap, hero, bars, basic, el('div', 'sec-title pxfont sec-abil', 'ABILITIES'), abil,
+    el('div', 'sec-title pxfont sec-items', 'ITEMS'), items, quest, comps, nudges);
+  root.appendChild(wrap);
+
+  let pKey = '';
+  const compKeys = [];
+
+  function updateCompanions(list, t) {
+    const n = list ? list.length : 0;
+    while (compEls.length < n) {
+      const c = el('div', 'comp');
+      const cv = pixelCanvas(24, 24, 'comp-face');
+      const nm = el('div', 'comp-name');
+      const hb = el('div', 'comp-hp');
+      const hf = el('div', 'comp-hp-fill');
+      hb.appendChild(hf);
+      const right = el('div', 'comp-right');
+      add(right, nm, hb);
+      add(c, cv, right);
+      comps.appendChild(c);
+      compEls.push({ c, cv, nm, hf });
+      compKeys.push('');
+    }
+    for (let i = 0; i < compEls.length; i++) {
+      const ce = compEls[i];
+      show(ce.c, i < n);
+      if (i >= n) continue;
+      const co = list[i];
+      setText(ce.nm, co.name || co.id || '');
+      setStyle(ce.hf, 'width', (frac(co.hpFrac ?? 1, 1) * 100).toFixed(0) + '%');
+      setClass(ce.c, 'down', !!co.down);
+      setClass(ce.hf, 'low', (co.hpFrac ?? 1) < 0.35);
+      const mood = co.down ? 'worried' : (co.hpFrac ?? 1) < 0.35 ? 'worried' : 'calm';
+      const key = portraitKey(co.look, mood, t + i * 1.3, 'sky');
+      if (key !== compKeys[i]) {
+        compKeys[i] = key;
+        blitGrid(ce.cv, faceCrop(buildPortrait(co.look, { mood, t: t + i * 1.3, bg: 'sky' })));
+      }
+    }
+    show(comps, n > 0);
+  }
+
+  function questStep(q, game) {
+    if (q.step === null || q.step === undefined) return '';
+    if (typeof q.step === 'string') return q.step;
+    const def = game && game.data && game.data.quests && game.data.quests[q.id];
+    const st = def && def.steps && def.steps[q.step];
+    return st ? st.text : '';
+  }
+
+  function questProgress(p) {
+    if (p === null || p === undefined || p === '') return { text: '', f: -1 };
+    if (typeof p === 'number') return p <= 1 ? { text: '', f: p } : { text: String(p), f: -1 };
+    if (typeof p === 'string') {
+      const m = p.match(/(\d+)\s*\/\s*(\d+)/);
+      return { text: p, f: m ? frac(+m[1], +m[2]) : -1 };
+    }
+    if (typeof p === 'object') {
+      const n = p.n ?? p.have ?? p.done ?? 0, of = p.of ?? p.need ?? p.total ?? 0;
+      return { text: of ? `${n}/${of}` : '', f: of ? frac(n, of) : -1 };
+    }
+    return { text: '', f: -1 };
+  }
+
   return {
-    update(hud) {
-      const p = hud.player;
-      pre.textContent = `${p.name}\nLevel ${p.level}  XP ${p.xp}/${p.xpNext}\nHP ${p.hp}/${p.hpMax}\nGold ${p.gold}\n\n` +
-        `${hud.zoneName}\n${hud.daypart} ${hud.hour.toFixed(1)}h`;
+    el: wrap,
+    update(hud, game, t = 0) {
+      const p = hud.player || {};
+      // portrait
+      const mood = p.hpMax > 0 && p.hp / p.hpMax < 0.3 ? 'worried' : 'calm';
+      const key = portraitKey(p.look, mood, t, 'sky') + (p.cloaked ? 'c' : '');
+      if (key !== pKey) { pKey = key; blitGrid(portrait, buildPortrait(p.look, { mood, t, bg: 'sky' })); }
+      setClass(frame, 'cloaked', !!p.cloaked);
+      setText(name, p.name || '');
+      const clsText = p.className ? (p.specName ? `${p.className} · ${p.specName}` : p.className) : (p.cloaked ? 'Mysterious traveler' : 'Novice');
+      setText(cls, clsText);
+      setText(lv, 'LV ' + (p.level || 1));
+      setText(goldN, fmtNum(p.gold || 0));
+      show(wanted, !!p.wanted);
+
+      setBar(hp, frac(p.hp, p.hpMax), `${Math.ceil(p.hp || 0)}/${p.hpMax || 0}`);
+      setClass(hp.root, 'low', p.hpMax > 0 && p.hp / p.hpMax < 0.3);
+      setBar(xp, frac(p.xp, p.xpNext), `${p.xp || 0}/${p.xpNext || 0}`);
+      const r = p.resource;
+      const kh = hud.kitHud;
+      show(res.root, !!r || !!(kh && kh.pipsMax));
+      if (r || (kh && kh.pipsMax)) {
+        const color = (r && r.color) || '#58d68d';
+        setStyle(res.root, '--res', color);
+        setText(res.lab, r ? (r.name || r.id || '').slice(0, 5) : (kh.label || 'Pips').slice(0, 5));
+        if (r && kh && kh.pipsMax && r.max <= 12 && r.max === kh.pipsMax) {
+          setBar(res, frac(r.value, r.max), '');
+        } else {
+          setBar(res, r ? frac(r.value, r.max) : frac(kh.pips, kh.pipsMax), r ? `${Math.floor(r.value)}/${r.max}` : '');
+        }
+        setPips(res, kh ? kh.pips || 0 : 0, kh ? kh.pipsMax || 0 : 0, color);
+        setClass(res.root, 'pips-only', !r);
+      }
+      setText(sPow, Math.round(p.power || 0));
+      setText(sDef, Math.round(p.defense || 0));
+      setText(sSpd, (Math.round((p.speed || 0) * 10) / 10).toString());
+
+      // basic attack
+      const b = hud.basic || {};
+      setIcon(bIcon, b.icon || 'sword');
+      setText(bName, b.name || 'Bare hands');
+      const rk = Math.max(1, Math.min(5, b.rank || 1));
+      setText(rankLab, roman(rk));
+      for (let i = 0; i < 5; i++) setClass(rank.children[i], 'on', i < rk);
+      if (kh && kh.stance) setText(bTitle, 'ATTACK · ' + String(kh.stance).toUpperCase());
+      else setText(bTitle, 'ATTACK');
+
+      // abilities
+      const abs = hud.abilities || [];
+      for (let i = 0; i < 4; i++) {
+        const s = slots[i];
+        const a = abs[i] || {};
+        const unlocked = !!a.unlocked;
+        const hasAbility = !!a.id || !!a.name;
+        setIcon(s.ic, hasAbility ? a.icon || 'star' : 'lock');
+        setClass(s.s, 'locked', !unlocked);
+        setClass(s.s, 'empty', !hasAbility);
+        setClass(s.s, 'active', !!a.active);
+        const cdf = unlocked ? Math.max(0, Math.min(1, a.cdFrac || 0)) : 0;
+        setStyle(s.cd, '--cd', cdf.toFixed(3));
+        const ready = unlocked && (a.ready ?? cdf <= 0);
+        setClass(s.s, 'cooling', unlocked && !ready);
+        if (ready && !s.wasReady) { setClass(s.s, 'flash', false); void s.s.offsetWidth; setClass(s.s, 'flash', true); }
+        s.wasReady = ready;
+        setText(s.lockLv, !unlocked && a.unlockLevel ? 'Lv ' + a.unlockLevel : '');
+        setText(s.cost, unlocked && a.cost ? a.cost : '');
+        setText(s.nm, hasAbility ? (unlocked ? a.name : a.name || '???') : '—');
+        s.s.title = hasAbility ? `${a.name}${a.desc ? ': ' + a.desc : ''}` : 'Locked';
+      }
+
+      // items
+      const its = hud.items || [];
+      for (let i = 0; i < 6; i++) {
+        const s = islots[i];
+        const it = its[i];
+        setClass(s.s, 'empty', !it);
+        if (it) {
+          setIcon(s.ic, it.icon || 'potion');
+          setText(s.n, it.count > 1 ? 'x' + it.count : '');
+          setStyle(s.cd, '--cd', Math.max(0, Math.min(1, it.cdFrac || 0)).toFixed(3));
+          s.s.title = it.name || it.id;
+        } else {
+          if (s.ic.__icon) { s.ic.getContext('2d').clearRect(0, 0, 16, 16); s.ic.__icon = null; }
+          setText(s.n, '');
+          setStyle(s.cd, '--cd', '0');
+          s.s.title = 'Empty slot';
+        }
+      }
+
+      // quest
+      const q = hud.quest;
+      show(quest, !!q);
+      if (q) {
+        setText(qName, q.name || q.id);
+        setText(qStep, questStep(q, game));
+        const pr = questProgress(q.progress);
+        show(qProg, pr.f >= 0);
+        if (pr.f >= 0) setStyle(qProgFill, 'width', (pr.f * 100).toFixed(0) + '%');
+        qProg.title = pr.text;
+        setText(qTitle, pr.text ? `QUEST  ${pr.text}` : 'QUEST');
+      }
+
+      updateCompanions(hud.companions, t);
+
+      // nudges
+      const nb = hud.pendingBoons || 0;
+      show(nBoon, nb > 0);
+      setText(nBoonText, nb > 1 ? `${nb} boons ready!` : 'Boon ready!');
+      show(nSpec, !!hud.pendingSpec);
+      const ceremonyDone = game && game.flags && game.flags.spec_ceremony_done;
+      setText(nSpecText, ceremonyDone ? 'New path ready!' : 'See Mr. Laporte!');
+      show(nSpecKey, !!ceremonyDone);
+      show(nudges, nb > 0 || !!hud.pendingSpec);
     },
-    dispose() { pre.remove(); },
+    dispose() { wrap.remove(); },
   };
 }
+
 export default createPanel;

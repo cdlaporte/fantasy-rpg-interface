@@ -41,8 +41,12 @@ export function show(node, on) {
 }
 
 /** A keyboard key cap: <span class="keycap">E</span>. */
+const ARROWS = { '\u2190': 'left', '\u2191': 'up', '\u2192': 'right', '\u2193': 'down' };
+
 export function keycap(label, extra) {
-  const k = el('span', 'keycap' + (extra ? ' ' + extra : ''), label);
+  const dir = ARROWS[label];
+  const k = el('span', 'keycap' + (extra ? ' ' + extra : ''), dir ? null : label);
+  if (dir) { k.appendChild(el('i', 'kc-arrow kc-' + dir)); k.setAttribute('aria-label', dir + ' arrow'); }
   if (String(label).length > 2) k.classList.add('keycap-wide');
   return k;
 }

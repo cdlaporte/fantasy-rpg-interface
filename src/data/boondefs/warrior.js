@@ -1,2 +1,72 @@
 // warrior boons: class pool and spec pools (see docs/CLASSES.md). Owned by the warrior class package.
-export default {};
+// Shape: `{id, class | spec, name, desc, icon, tags}` (docs/notes/meta.md) plus `nums` read by the kits.
+// Ids are the snake_case of the CLASSES names (the same ids Meta's built-in defaults use).
+export default {
+  // ---- Warrior (class pool) ----
+  blazing_bash: { id: 'blazing_bash', class: 'warrior', name: 'Blazing Bash', icon: 'fire', tags: ['space', 'fire'],
+    desc: 'Shield Bash leaves a trail of fire behind you.',
+    nums: { step: 0.8, r: 0.75, dur: 3, dmg: 0.35, burn: 0.3 } },
+  aftershock: { id: 'aftershock', class: 'warrior', name: 'Aftershock', icon: 'roar', tags: ['q'],
+    desc: 'War Cry booms twice: a bigger second shockwave hits 0.6 s later.',
+    nums: { delay: 0.6, r: 4.5, dmg: 1.0, knockback: 10 } },
+  cleaving_wind: { id: 'cleaving_wind', class: 'warrior', name: 'Cleaving Wind', icon: 'sword', tags: ['basic'],
+    desc: 'Every fourth swing throws a slicing crescent of wind.',
+    nums: { every: 4, dmg: 0.8, range: 4, speed: 11, radius: 0.3 } },
+  unstoppable: { id: 'unstoppable', class: 'warrior', name: 'Unstoppable', icon: 'shield', tags: ['passive'],
+    desc: 'Above 50 Rage nothing can knock you back or slow you down. You glow.',
+    nums: { at: 50 } },
+  ricochet_bash: { id: 'ricochet_bash', class: 'warrior', name: 'Ricochet Bash', icon: 'dash', tags: ['space'],
+    desc: 'A Shield Bash that connects bounces into a second enemy.',
+    nums: { range: 4.5, dmgMul: 0.8 } },
+  battle_hymn: { id: 'battle_hymn', class: 'warrior', name: 'Battle Hymn', icon: 'heart', tags: ['q', 'support'],
+    desc: 'War Cry heals you and your classmates 15% and makes everyone faster.',
+    nums: { heal: 0.15, r: 6, haste: 0.3, hasteDur: 4 } },
+  rage_spikes: { id: 'rage_spikes', class: 'warrior', name: 'Rage Spikes', icon: 'star', tags: ['passive'],
+    desc: 'Getting hit blasts out a ring of spikes (every 2 s at most).',
+    nums: { r: 1.5, dmg: 0.8, icd: 2, knockback: 5 } },
+  second_wind: { id: 'second_wind', class: 'warrior', name: 'Second Wind', icon: 'heart', tags: ['passive'],
+    desc: 'Once a minute, dropping below 25% health heals 30% and blasts enemies away.',
+    nums: { below: 0.25, heal: 0.3, icd: 60, r: 3, knockback: 12 } },
+
+  // ---- Knight ----
+  mirror_shield: { id: 'mirror_shield', spec: 'knight', name: 'Mirror Shield', icon: 'shield', tags: ['f'],
+    desc: 'A Perfect Block fires a beam of light straight back at the attacker.',
+    nums: { dmg: 1.5, range: 8, w: 0.6 } },
+  phalanx: { id: 'phalanx', spec: 'knight', name: 'Phalanx', icon: 'shield', tags: ['f', 'support'],
+    desc: 'While your Shield Wall is up, nearby classmates get a shield too.',
+    nums: { r: 5, frac: 0.2, refresh: 0.5 } },
+  earthsplitter: { id: 'earthsplitter', spec: 'knight', name: 'Earthsplitter', icon: 'roar', tags: ['f'],
+    desc: 'Shield Slam cracks the ground: a wave rolls 5 tiles forward.',
+    nums: { range: 5, speed: 9, radius: 0.55 } },
+  oathkeeper: { id: 'oathkeeper', spec: 'knight', name: 'Oathkeeper', icon: 'shield', tags: ['shift', 'support'],
+    desc: 'Aegis lasts 2 s longer and heals everyone inside.',
+    nums: { extra: 2, healCoef: 0.6 } },
+
+  // ---- Berserker ----
+  cyclone: { id: 'cyclone', spec: 'berserker', name: 'Cyclone', icon: 'axe', tags: ['f'],
+    desc: 'Whirlwind sucks enemies in and grows bigger the longer you spin.',
+    nums: { maxR: 2.8, growT: 3, pull: 4 } },
+  axe_storm: { id: 'axe_storm', spec: 'berserker', name: 'Axe Storm', icon: 'axe', tags: ['basic'],
+    desc: 'Thrown axes ricochet between three enemies before flying home.',
+    nums: { bounces: 2, bounceRange: 4.5 } },
+  meteor_heart: { id: 'meteor_heart', spec: 'berserker', name: 'Meteor Heart', icon: 'meteor', tags: ['shift', 'fire'],
+    desc: 'Skyfall Leap leaves a burning crater where you land.',
+    nums: { r: 2.2, dur: 4, dmg: 0.5, burn: 0.4 } },
+  undying: { id: 'undying', spec: 'berserker', name: 'Undying', icon: 'heart', tags: ['passive'],
+    desc: 'During Frenzy your health cannot drop below 1. Nothing stops you.',
+    nums: {} },
+
+  // ---- Battlemage ----
+  elemental_overlap: { id: 'elemental_overlap', spec: 'battlemage', name: 'Elemental Overlap', icon: 'storm', tags: ['passive'],
+    desc: 'Hit an enemy with a different element to detonate it: steam, shatter or plasma!',
+    nums: { window: 5, steam: { r: 1.8, dmg: 1.4 }, shatter: { dmg: 2.0, stun: 0.6, r: 1.2 }, plasma: { r: 1.6, dmg: 1.6, chain: 2 } } },
+  twin_runes: { id: 'twin_runes', spec: 'battlemage', name: 'Twin Runes', icon: 'rune', tags: ['basic'],
+    desc: 'Your waves fire in pairs: your current element and the one before it.',
+    nums: { spread: 0.08 } },
+  rune_trail: { id: 'rune_trail', spec: 'battlemage', name: 'Rune Trail', icon: 'fire', tags: ['space'],
+    desc: 'Shield Bash leaves a trail of your current element.',
+    nums: { step: 0.8, r: 0.8, dur: 3, dmg: 0.3 } },
+  encore: { id: 'encore', spec: 'battlemage', name: 'Encore', icon: 'storm', tags: ['shift'],
+    desc: 'Runestorm adds a fourth surprise pulse of a random element.',
+    nums: {} },
+};

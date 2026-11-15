@@ -312,3 +312,47 @@ test('melee arc respects arc, range, maxTargets; aoe delay telegraphs; zones tic
   step(130);
   assert.ok(hz - z.hp >= 6, 'ticked about four times');
 });
+
+test('all 16 building blocks run for players and deal their effects', () => {
+  const { game, step, p } = mk();
+  const A = game.abilities;
+  p.angle = 0;
+  const foes = [0, 1, 2, 3].map((i) => dummy(game, p.x + 1.5 + i * 1.1, p.y + (i % 2) * 0.4, 300));
+  const hp = () => foes.reduce((s, e) => s + e.hp, 0);
+  let before = hp();
+  const fxTypes = new Set();
+  const origFx = game.fx;
+  game.fx = (e) => { fxTypes.add(e.type); origFx(e); };
+  const check = (name, fn) => { before = hp(); fn(); assert.ok(hp() < before, name + ' dealt damage'); };
+  check('melee_arc', () => A.use('melee_arc', p, { angle: 0, range: 2, dmg: 1, repeat: 2 }));
+  check('projectile', () => { A.use('projectile', p, { angle: 0, dmg: 1 }); step(30); });
+  check('multishot', () => { A.use('multishot', p, { angle: 0, n: 3, spread: 20, dmg: 1 }); step(30); });
+  check('beam', () => A.use('beam', p, { angle: 0, range: 7, dmg: 1 }));
+  check('aoe_ring', () => A.use('aoe_ring', p, { r: 3, dmg: 1 }));
+  check('ground_target', () => { A.use('ground_target', p, { angle: 0, dist: 3, r: 2, dmg: 1, meteor: true }); step(60); });
+  check('chain', () => { const h = A.use('chain', p, { range: 4, jumps: 3, dmg: 1 }); assert.equal(h.length, 3); });
+  check('zone', () => { A.use('zone', p, { dist: 3, r: 2, dmg: 1, dur: 1 }); step(40); });
+  const x0 = p.x;
+  game.physics.teleport(foes[0], p.x + 1.5, p.y);
+  check('dash', () => { A.use('dash', p, { angle: 0, dist: 3, dmg: 1, through: true }); step(30); });
+  assert.ok(p.x > x0 + 2, 'dashed forward');
+  game.physics.teleport(p, 6.5, 12.5);
+  const sx = p.x;
+  A.use('leap', p, { angle: 0, dist: 4, land: { r: 2, dmg: 1 } });
+  let maxZ = 0;
+  for (let i = 0; i < 40; i++) { step(); maxZ = Math.max(maxZ, p.z); }
+  assert.ok(maxZ > 1 && p.z === 0 && p.x > sx + 3, 'leapt with a z arc');
+  const r = A.use('blink', p, { angle: Math.PI, dist: 3 });
+  assert.ok(r && p.x < r.x0 - 2.5, 'blinked');
+  assert.equal(A.use('blink', p, { angle: Math.PI, dist: 3, x: 0 }) && p.x >= 1, true, 'never into walls');
+  p.hp = 5;
+  assert.ok(A.use('heal', p, { pct: 0.5 }) > 0);
+  A.use('buff_self', p, { id: 'cry', dur: 2, power: 0.3, fxTag: 'haste' });
+  assert.ok(game.combat.mod(p, 'power') === 0.3 && p.fxTags.includes('haste'));
+  A.use('guard', p, {}); assert.ok(p.data.guard); A.unguard(p);
+  A.use('stealth', p, { dur: 1, smoke: true }); assert.ok(p.status.stealth > 0);
+  const pets = A.use('summon', p, { def: { id: 'imp', look: { rig: 'blob' } }, n: 2 });
+  assert.equal(pets.length, 2);
+  for (const t of ['slash', 'beam', 'shockwave', 'meteor', 'bolt', 'trail', 'afterimage', 'heal', 'sparkle', 'smoke', 'pillar']) assert.ok(fxTypes.has(t), 'fx ' + t);
+  assert.equal(A.use('nope', p, {}), false);
+});

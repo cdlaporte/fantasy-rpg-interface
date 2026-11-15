@@ -250,7 +250,10 @@ export default {
         if (opts.critMult) info.critMult = opts.critMult;
         info.fromStealth = !!src && src.status.stealth > 0;
         info.amount = amt;
-        if (src) kitHook(src, 'onOutgoing', info);
+        if (src) {
+          kitHook(src, 'onOutgoing', info);
+          if (src.type === 'summon' && src.owner != null) kitHook(ents.get(src.owner), 'onMinionOutgoing', info);
+        }
         if (st.mark > 0 && info.type !== 'true') info.amount *= 1 + (sp.mark || 0.3);
         kitHook(target, 'onIncoming', info);
         if (info.cancel) return 0;
@@ -789,16 +792,19 @@ export default {
       if (o.maxTargets && out.length > o.maxTargets) out.length = o.maxTargets;
       const d = dmgOpts(source, o, o.type || 'magic');
       d.knockback = o.knockback != null ? o.knockback : 4;
-      if (amount > 0 || o.status) {
-        for (let i = 0; i < out.length; i++) {
-          const t = out[i];
-          let ang = o.shape === 'line' ? o.angle || 0 : angleTo(x, y, t.x, t.y);
-          if (o.pull) ang = wrapAngle(ang + Math.PI);
-          d.angle = ang; d.kbAngle = ang;
-          const dealt = amount > 0 ? damage(t, amount, d) : 0;
-          if (amount <= 0 && o.status) applyStatuses(t, o.status, source);
-          if (o.onHit) o.onHit(game, t, dealt, source);
+      for (let i = 0; i < out.length; i++) {
+        const t = out[i];
+        let ang = o.shape === 'line' ? o.angle || 0 : angleTo(x, y, t.x, t.y);
+        if (o.pull) ang = wrapAngle(ang + Math.PI);
+        d.angle = ang; d.kbAngle = ang;
+        let dealt = 0;
+        if (amount > 0) dealt = damage(t, amount, d);
+        else {
+          // No damage (level-up ring, pure control): statuses and knockback only.
+          if (o.status) applyStatuses(t, o.status, source);
+          if (d.knockback && !t.tags.includes('boss')) game.physics.push(t, ang, d.knockback);
         }
+        if (o.onHit) o.onHit(game, t, dealt, source);
       }
       if (o.fx !== false) {
         const color = colorOf(o, source);

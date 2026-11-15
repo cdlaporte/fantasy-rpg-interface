@@ -21,7 +21,7 @@ import ninja from './ninja.js';
 export const KITS = { novice, warrior, mage, rogue, knight, berserker, battlemage, conjurer, sorcerer, monk, archer, thief, ninja };
 
 const ZERO_RES = Object.freeze({ value: 0, max: 0 });
-const HOOK_NAMES = ['onHit', 'onHurt', 'onKill', 'onBlock', 'onOutgoing', 'onIncoming', 'onMinionHit', 'onMinionKill', 'onCatch'];
+const HOOK_NAMES = ['onHit', 'onHurt', 'onKill', 'onBlock', 'onOutgoing', 'onIncoming', 'onMinionHit', 'onMinionKill', 'onMinionOutgoing', 'onCatch'];
 
 export default {
   id: 'kits',

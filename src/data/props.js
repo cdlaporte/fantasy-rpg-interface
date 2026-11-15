@@ -89,6 +89,9 @@ const defs = [
   P('gate_arch_peaks', 'gate_arch', [5, 1], false, { stone: '#c9ccd8', trim: '#ffffff', variant: 4 }, { tall: 3 }),
   P('gate_arch_aether', 'gate_arch', [5, 1], false, { stone: '#8f88b8', trim: '#c9a6ff', variant: 5 }, { tall: 3 }),
   P('gate_arch_south', 'gate_arch', [5, 1], false, { stone: '#d8cfc0', trim: '#c8503c', variant: 6 }, { tall: 3 }),
+  // vertical arches (east/west gates): the arch spans the long axis of the footprint
+  P('gate_arch_v_forest', 'gate_arch', [1, 5], false, { stone: '#b9c9a8', trim: '#4cbf55', variant: 1 }, { tall: 3 }),
+  P('gate_arch_v_dunes', 'gate_arch', [1, 5], false, { stone: '#f0dca0', trim: '#e8a03c', variant: 2 }, { tall: 3 }),
   P('rune_gate', 'rune_gate', [3, 1], true, { stone: '#8f88b8', rune: '#9fe6ff' }),
   P('bridge', 'bridge', [3, 2], false, { wood: '#c98c50', rail: '#8a5a33' }),
   P('bridge_long', 'bridge', [3, 4], false, { wood: '#c98c50', rail: '#8a5a33', variant: 1 }),

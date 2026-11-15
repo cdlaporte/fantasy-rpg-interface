@@ -8,9 +8,10 @@
 //   macro: {cell, rows, legend, warp?, warpBig?, shore?, paint?, filler?, decoClear?}   one char = cell x cell tiles
 //
 // A legend value is either a tile id string, or an object (see docs/notes/world.md):
-//   {tile, mix: [[tileId, frac, scale]], deco: {propKind: density}, path: true, under: tileId, width}
+//   {tile, mix: [[tileId, frac, scale]], deco: {propKind: density}, fringe: {propKind: density}, path: true, under: tileId, width}
 //   - mix: noise patches of another tile (same solidity class as `tile`), `frac` 0..1 of the area, `scale` in tiles.
 //   - deco: per-tile probability of scattering a decoration prop (clumped by low-frequency noise).
+//   - fringe: like deco, for tiles that touch a solid tile (ragged tree lines along walls); no spacing rule.
 //   - path (macro only): the cell is filled with `under`; a meandering ribbon of `tile`, `width` tiles wide,
 //     joins the jittered centers of 4-adjacent path cells (and runs to the map edge from edge cells).
 //
@@ -68,29 +69,44 @@ function normalizeLegend(legend, tileIndexById) {
     L.solid = SOLID[L.base];
     for (const m of o.mix || []) {
       const mi = tileIdx(tileIndexById, m[0]);
-      if (mi >= 0 && SOLID[mi] === L.solid) L.mix.push({ idx: mi, frac: m[1] || 0.2, scale: m[2] || 5 });
+      if (mi >= 0 && SOLID[mi] === L.solid) L.mix.push({ idx: mi, frac: m[1] || 0.2, scale: m[2] || 5, thr: mixThreshold(m[1] || 0.2) });
     }
-    let i = 0;
-    for (const kind of Object.keys(o.deco || {})) {
-      const pd = PROPS[kind];
-      if (!pd) continue;
-      const p = +o.deco[kind] || 0;
-      if (p <= 0) continue;
-      L.decoTotal += p;
-      L.deco.push({ kind, p, solid: !!(pd.solid && pd.footprint), w: pd.footprint ? pd.footprint[0] : 1, h: pd.footprint ? pd.footprint[1] : 1, salt: 31 + i++ * 17 });
-    }
+    const decoList = (src) => {
+      const list = [];
+      for (const kind of Object.keys(src || {})) {
+        const pd = PROPS[kind];
+        const p = +src[kind] || 0;
+        if (!pd || p <= 0) continue;
+        list.push({ kind, p, solid: !!(pd.solid && pd.footprint), w: pd.footprint ? pd.footprint[0] : 1, h: pd.footprint ? pd.footprint[1] : 1 });
+      }
+      return list;
+    };
+    L.deco = decoList(o.deco);
+    L.fringe = decoList(o.fringe);
+    L.decoTotal = L.deco.length + L.fringe.length;
     out[ch] = L;
   }
   return out;
 }
 
-const DEFAULT_L = { ch: '?', idx: 0, base: 0, solid: false, path: false, mix: [], deco: [], decoTotal: 0 };
+const DEFAULT_L = { ch: '?', idx: 0, base: 0, solid: false, path: false, mix: [], deco: [], fringe: [], decoTotal: 0 };
+
+// fbm quantiles (measured once, deterministic) so that `frac` in mix specs means "fraction of the area"
+const FBM_Q = (() => {
+  const s = [];
+  for (let y = 0; y < 96; y++) for (let x = 0; x < 96; x++) s.push(fbm(x * 1.7, y * 1.3, 4, 977));
+  s.sort((a, b) => a - b);
+  const q = new Float32Array(101);
+  for (let k = 0; k <= 100; k++) q[k] = s[Math.min(s.length - 1, Math.floor((k / 100) * s.length))];
+  return q;
+})();
+function mixThreshold(frac) { return FBM_Q[Math.max(0, Math.min(100, Math.round((1 - frac) * 100)))]; }
 
 function mixTile(L, x, y, seed) {
   let t = L.base;
   for (let i = 0; i < L.mix.length; i++) {
     const m = L.mix[i];
-    if (fbm(x, y, m.scale, seed + 211 + i * 37) > 1 - m.frac * 1.15 + 0.08) t = m.idx;
+    if (fbm(x, y, m.scale, seed + 211 + i * 37) > m.thr) t = m.idx;
   }
   return t;
 }
@@ -210,6 +226,15 @@ export function buildZoneGrid(zoneDef, tileIndexById) {
       for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
         const i = y * w + x;
         if (snap[i] !== waterI) continue;
+        const u = x % cell, v = y % cell, cc = Math.floor(cell / 2) - 1;
+        const ocx = (x / cell) | 0, ocy = (y / cell) | 0;
+        if (cellL(ocx, ocy).base === waterI) {
+          // keep the water core and the 2-wide water band toward water neighbours, so a 1-cell stream stays a barrier
+          const wet = (cx2, cy2) => cx2 >= 0 && cy2 >= 0 && cx2 < cw && cy2 < ch && cellL(cx2, cy2).base === waterI;
+          const inU = u >= cc && u <= cc + 1, inV = v >= cc && v <= cc + 1;
+          if ((inU && inV) || (inU && ((v < cc && wet(ocx, ocy - 1)) || (v > cc + 1 && wet(ocx, ocy + 1))))
+            || (inV && ((u < cc && wet(ocx - 1, ocy)) || (u > cc + 1 && wet(ocx + 1, ocy))))) continue;
+        }
         let land = false;
         for (let oy = -1; oy <= 1 && !land; oy++) for (let ox = -1; ox <= 1; ox++) {
           const nx = x + ox, ny = y + oy;
@@ -384,14 +409,17 @@ export function buildZoneGrid(zoneDef, tileIndexById) {
       const L = reg[i];
       if (!L || !L.decoTotal || reserved[i] || blocked[i] || isPath[i] || occupied[i]) continue;
       if (reg[i] && tiles[i] !== L.base && !L.mix.some((m) => m.idx === tiles[i])) continue;   // painted/shore tile
-      const clump = 0.2 + 1.6 * fbm(x, y, 7, seed + 97);
       const r = hash2(x, y, seed + 131) / 256;
+      // fringe: tiles touching a solid tile (tree walls, cliffs) get their own list, packed tighter
+      const edge = L.fringe.length && ((x > 0 && SOLID[tiles[i - 1]]) || (x < w - 1 && SOLID[tiles[i + 1]]) || (y > 0 && SOLID[tiles[i - w]]) || (y < h - 1 && SOLID[tiles[i + w]]));
+      const list = edge ? L.fringe : L.deco;
+      const clump = edge ? 1 : 0.2 + 1.6 * fbm(x, y, 7, seed + 97);
       let acc = 0, pick = null;
-      for (const d of L.deco) { acc += d.p * clump; if (r < acc) { pick = d; break; } }
+      for (const d of list) { acc += d.p * clump; if (r < acc) { pick = d; break; } }
       if (!pick) continue;
       if (pick.solid) {
         if (pick.w !== 1 || pick.h !== 1) continue;
-        if (occ(x - 1, y) || occ(x, y - 1) || occ(x - 1, y - 1) || occ(x + 1, y - 1)) continue;   // breathing room
+        if (!edge && (occ(x - 1, y) || occ(x, y - 1) || occ(x - 1, y - 1) || occ(x + 1, y - 1))) continue;   // breathing room
         if (!simple(x, y)) continue;
         blocked[i] = 1;
       }

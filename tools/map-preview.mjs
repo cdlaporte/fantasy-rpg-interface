@@ -2,7 +2,7 @@
 // Zone map preview: `node tools/map-preview.mjs <zoneId> [out.png] [scale]` (default out tests/e2e/out/map-<zone>.png, scale 8).
 // Pure Node (zlib only). Tiles by palette color, prop footprints with a glyph per model, markers as labeled dots,
 // spawn areas (red), exits (blue), gates (magenta), chests (gold), triggers (orange) as outlined rectangles.
-// Grid lines every 10 tiles with coordinates in the margins. Options: --no-labels, --no-deco.
+// Grid lines every 10 tiles with coordinates in the margins. Options: --no-labels, --no-deco, --crop=x,y,w,h (tiles).
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
@@ -92,9 +92,11 @@ function propColor(p) {
   return hex(c);
 }
 
-export function renderZone(id, { scale = 8, labels = true, deco = true } = {}) {
+export function renderZone(id, { scale = 8, labels = true, deco = true, crop = null } = {}) {
   const z = buildZone(id);
-  const { w, h, def } = z;
+  const { def } = z;
+  // crop [x, y, w, h] in tiles: render the full map, then cut (keeps the code simple)
+  const w = z.w, h = z.h;
   const M = 18;                                  // margin (px) for coordinates
   const S = scale;
   const R = new Raster(w * S + M * 2, h * S + M * 2, [24, 26, 34]);
@@ -177,6 +179,13 @@ export function renderZone(id, { scale = 8, labels = true, deco = true } = {}) {
     lab(name, cx + 4, cy - 2, [255, 255, 160]);
   }
   R.text(`${def.id}  ${def.name || ''}  ${w}x${h}`, M, M + h * S + 12 > R.h - 6 ? R.h - 6 : M + h * S + 12, [255, 255, 255], 1);
+  if (crop) {
+    const cx = Math.max(0, crop[0] * S), cy = Math.max(0, crop[1] * S);
+    const cw = Math.min(R.w - cx, crop[2] * S + M * 2), chh = Math.min(R.h - cy, crop[3] * S + M * 2);
+    const out = Buffer.alloc(cw * chh * 3);
+    for (let y = 0; y < chh; y++) R.buf.copy(out, y * cw * 3, ((cy + y) * R.w + cx) * 3, ((cy + y) * R.w + cx + cw) * 3);
+    return { png: encodePNG(cw, chh, out), w: cw, h: chh, zone: z };
+  }
   return { png: encodePNG(R.w, R.h, R.buf), w: R.w, h: R.h, zone: z };
 }
 
@@ -188,7 +197,9 @@ if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
   const out = args[1] || path.join(root, 'tests/e2e/out', `map-${id}.png`);
   const scale = +(args[2] || 8);
-  const r = renderZone(id, { scale, labels: !flags.includes('--no-labels'), deco: !flags.includes('--no-deco') });
+  const cropArg = flags.find((f) => f.startsWith('--crop='));
+  const crop = cropArg ? cropArg.slice(7).split(',').map(Number) : null;
+  const r = renderZone(id, { scale, labels: !flags.includes('--no-labels'), deco: !flags.includes('--no-deco'), crop });
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, r.png);
   console.log(`${out} ${r.w}x${r.h}`);

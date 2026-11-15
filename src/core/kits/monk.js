@@ -173,42 +173,61 @@ function updateMeditation(game, p, dt) {
 }
 
 // ---------------------------------------------------------------------------------------------- flying kick
+// Each leg is an invulnerable `dash` with no built-in contact damage: the kit does the contact check itself (update) so a
+// chained leg never re-hits the enemy it starts next to, then ends the leg and aims the next one.
 function kickLeg(game, p, angle, dist, i) {
   const s = S(game), kk = s.kick;
   const st = p.data.kit.mo_kick;
+  st.leg = i; st.angle = angle; st.legHit = null; st.active = true;
   game.fx({ type: 'afterimage', x: p.x, y: p.y, ent: p.id, color: s.color });
   game.abilities.use('dash', p, {
-    angle, dist, speed: kk.speed, invuln: true, dmg: kk.dmg * (1 + kk.grow * i), stopOnHit: true, knockback: kk.knockback, through: true,
-    color: s.color, trail: true, type: 'melee', hitRadius: 0.55, hitStop: 0.04,
-    onHit(g, t) {
-      st.hits.push(t.id);
-      g.fx({ type: 'slash', x: t.x, y: t.y, angle, arc: 90, r: 0.8, color: s.color, style: 'fist' });
-      g.fx({ type: 'burst', x: t.x, y: t.y, n: 10 + i * 3, color: s.color, r: 0.5 + i * 0.1 });
-      g.kits.gain(p, s.combo.kiPerHit);
-      st.legs++;
-    },
-    onEnd(g, c, hits) {
-      if (!hits.length || i >= st.chains) return;
-      const last = hits[hits.length - 1];
-      const near = enemiesNear(g, p, last.x, last.y, kk.chainRange, p.data.kit.mo_near || (p.data.kit.mo_near = []));
-      let best = null, bd = Infinity;
-      for (let j = 0; j < near.length; j++) {
-        const e = near[j];
-        if (st.hits.indexOf(e.id) >= 0) continue;
-        const d = (e.x - p.x) * (e.x - p.x) + (e.y - p.y) * (e.y - p.y);
-        if (d < bd) { bd = d; best = e; }
-      }
-      if (!best) return;
-      const a = Math.atan2(best.y - p.y, best.x - p.x);
-      const d = Math.sqrt(bd);
-      kickLeg(g, p, a, d + 0.4, i + 1);
-    },
+    angle, dist, speed: kk.speed, invuln: true, dmg: 0, through: true, color: s.color, trail: true,
+    onEnd(g) { st.active = false; chainKick(g, p, st); },
   });
+  game.ents.setAnim(p, 'dash', dist / kk.speed + 0.1);
+}
+function chainKick(game, p, st) {
+  const kk = S(game).kick;
+  const last = st.legHit;
+  if (!last || st.leg >= st.chains) return;
+  const near = enemiesNear(game, p, last.x, last.y, kk.chainRange, p.data.kit.mo_near || (p.data.kit.mo_near = []));
+  let best = null, bd = Infinity;
+  for (let j = 0; j < near.length; j++) {
+    const e = near[j];
+    if (st.hits.indexOf(e.id) >= 0) continue;
+    const d = (e.x - p.x) * (e.x - p.x) + (e.y - p.y) * (e.y - p.y);
+    if (d < bd) { bd = d; best = e; }
+  }
+  if (!best) return;
+  kickLeg(game, p, Math.atan2(best.y - p.y, best.x - p.x), Math.sqrt(bd) + 0.4, st.leg + 1);
+}
+function updateKick(game, p) {
+  const k = p.data.kit, st = k.mo_kick;
+  if (!st || !st.active || !p.data.dash || st.legHit) return;
+  const s = S(game), kk = s.kick;
+  const near = enemiesNear(game, p, p.x, p.y, p.radius + 1.6, k.mo_near || (k.mo_near = []));
+  let hit = null;
+  for (let j = 0; j < near.length; j++) {
+    const t = near[j];
+    if (st.hits.indexOf(t.id) >= 0) continue;
+    const dx = t.x - p.x, dy = t.y - p.y, rr = p.radius + t.radius + 0.35;
+    if (dx * dx + dy * dy <= rr * rr) { hit = t; break; }
+  }
+  if (!hit) return;
+  const i = st.leg;
+  st.hits.push(hit.id); st.legHit = hit; st.legs++;
+  const amount = kk.dmg * (1 + kk.grow * i) * game.combat.powerOf(p);
+  game.combat.damage(hit, amount, { source: p, type: 'melee', knockback: kk.knockback, kbAngle: st.angle, color: s.color,
+    tags: ['flying_kick'] });
+  game.fx({ type: 'slash', x: hit.x, y: hit.y, angle: st.angle, arc: 90, r: 0.8, color: s.color, style: 'fist' });
+  game.fx({ type: 'burst', x: hit.x, y: hit.y, n: 10 + i * 3, color: s.color, r: 0.5 + i * 0.1 });
+  game.kits.gain(p, s.combo.kiPerHit);
+  p.data.dash.remain = 0;            // stop on the hit; the dash ends next step and onEnd chains on
 }
 function castKick(game, p, ctx) {
   const s = S(game), kk = s.kick;
   const wind = boon(game, 'wind_step');
-  p.data.kit.mo_kick = { hits: [], legs: 0, chains: kk.chains + (wind ? s.wind_step.chains : 0) };
+  p.data.kit.mo_kick = { hits: [], legs: 0, leg: 0, angle: 0, legHit: null, active: false, chains: kk.chains + (wind ? s.wind_step.chains : 0) };
   if (wind) {
     game.combat.status(p, 'haste', s.wind_step.hasteT, s.wind_step.haste);
     game.fx({ type: 'sparkle', x: p.x, y: p.y, n: 10, color: s.jade, r: 0.6 });
@@ -239,6 +258,7 @@ function updatePalms(game, p, dt) {
   while (run.i < tp.strikes && run.t >= run.next) {
     run.next += every;
     const list = enemiesNear(game, p, run.x0, run.y0, tp.range, k.mo_near || (k.mo_near = []));
+    for (let a = 1; a < list.length; a++) { const e = list[a]; let b = a - 1; while (b >= 0 && list[b].id > e.id) { list[b + 1] = list[b]; b--; } list[b + 1] = e; }
     const ox = p.x, oy = p.y;
     game.fx({ type: 'afterimage', x: ox, y: oy, ent: p.id, color: s.color });
     if (list.length) {
@@ -290,7 +310,7 @@ const monk = {
     k.mo_beat = 0; k.mo_lastT = -9; k.mo_punchUntil = 0; k.mo_punchA = 0; k.mo_still = 0; k.mo_med = false; k.mo_hpAcc = 0; k.mo_sparkT = 0;
     k.mo_pops = []; k.mo_near = []; k.mo_palmsRun = null;
     k.mo_reflOpts = { color: s.color };
-    k.mo_palmOpts = { source: p, type: 'melee', knockback: 1.5, color: s.color, hitStop: 0.03, tags: ['thousand_palms'] };
+    k.mo_palmOpts = { source: p, type: 'melee', knockback: 0.5, color: s.color, hitStop: 0.03, tags: ['thousand_palms'] };
     k.mo_off = game.bus.on('proj:reflected', (e) => onReflected(game, p, e));
   },
   onUnequip(game, p) {
@@ -301,6 +321,7 @@ const monk = {
     if (k.mo_pops) for (const q of k.mo_pops) { const e = game.ents.get(q.id); if (e) e.z = q.z0; }
   },
   update(game, p, dt) {
+    updateKick(game, p);
     updateDeflect(game, p);
     updatePops(game, p);
     updatePalms(game, p, dt);

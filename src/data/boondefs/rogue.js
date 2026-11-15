@@ -1,2 +1,52 @@
 // rogue boons: class pool and spec pools (see docs/CLASSES.md). Owned by the rogue class package.
-export default {};
+// Shape read by Meta: {id, class | spec, name, desc, icon, tags}; the kits read the extra number fields.
+export default {
+  // ---- Rogue class pool (8) ----
+  ricochet_knives: { id: 'ricochet_knives', class: 'rogue', name: 'Ricochet Knives', icon: 'knives', tags: ['fan'],
+    desc: 'Fan of Knives bounces: every knife hops to a second enemy.', bounce: 1, bounceRange: 4 },
+  shadow_roll: { id: 'shadow_roll', class: 'rogue', name: 'Shadow Roll', icon: 'roll', tags: ['roll'],
+    desc: 'Dodge Roll leaves a smoke cloud. Enemies inside lose track of you.', r: 1.8, dur: 3 },
+  venom_edge: { id: 'venom_edge', class: 'rogue', name: 'Venom Edge', icon: 'dagger', tags: ['basic', 'venom'],
+    desc: 'Your daggers stack green venom. Five stacks burst in a toxic splash.', dps: 0.12, dur: 4, icd: 0.5, burstAt: 5, burstCoef: 0.6, burstR: 1.3 },
+  roll_strike: { id: 'roll_strike', class: 'rogue', name: 'Roll Strike', icon: 'roll', tags: ['roll'],
+    desc: 'Rolling through enemies slashes them, and each one hit gives a combo pip.', coef: 0.8 },
+  blade_flurry: { id: 'blade_flurry', class: 'rogue', name: 'Blade Flurry', icon: 'dagger', tags: ['basic'],
+    desc: 'At five pips your attacks spin and hit everything around you.', range: 1.3 },
+  quick_hands: { id: 'quick_hands', class: 'rogue', name: 'Quick Hands', icon: 'knives', tags: ['fan'],
+    desc: 'Every enemy Fan of Knives defeats refunds a pip and 2 seconds of cooldown.', pips: 1, cdr: 2 },
+  lucky_streak: { id: 'lucky_streak', class: 'rogue', name: 'Lucky Streak', icon: 'star', tags: ['crit', 'roll'],
+    desc: 'Critical hits sparkle and instantly reset Dodge Roll.', icd: 0.8 },
+  boomerang_blade: { id: 'boomerang_blade', class: 'rogue', name: 'Boomerang Blade', icon: 'dagger', tags: ['basic'],
+    desc: 'Every fifth attack throws a spinning dagger that flies out and back.', every: 5, coef: 0.9, range: 5, speed: 11 },
+
+  // ---- Archer (4) ----
+  split_arrow: { id: 'split_arrow', spec: 'archer', name: 'Split Arrow', icon: 'bow', tags: ['power_shot'],
+    desc: 'Power Shot splits into three arrows after its first hit.', n: 3, arc: 30, dmgMul: 0.6, range: 6 },
+  pinning_shot: { id: 'pinning_shot', spec: 'archer', name: 'Pinning Shot', icon: 'bow', tags: ['power_shot'],
+    desc: 'A fully drawn Power Shot pins enemies to the ground for 2 seconds.', root: 2 },
+  rain_of_fire: { id: 'rain_of_fire', spec: 'archer', name: 'Rain of Fire', icon: 'rain', tags: ['arrow_rain'],
+    desc: 'Arrow Rain turns into flaming arrows that set the ground on fire.', burnDps: 0.35, burnDur: 3 },
+  hawk: { id: 'hawk', spec: 'archer', name: 'Hawk', icon: 'star', tags: ['pet'],
+    desc: 'A hawk rides with you and dives on your last target every 4 seconds.', every: 4, coef: 1.4, range: 9, diveSpeed: 14 },
+
+  // ---- Thief (4) ----
+  coin_toss: { id: 'coin_toss', spec: 'thief', name: 'Coin Toss', icon: 'coin', tags: ['gold'],
+    desc: 'Picking up gold can flick a coin at the nearest enemy. Money hurts!', chance: 0.6, coef: 0.9, range: 7 },
+  vanishing_act: { id: 'vanishing_act', spec: 'thief', name: 'Vanishing Act', icon: 'smoke', tags: ['stealth'],
+    desc: 'Defeat an enemy from stealth and Smoke Vanish is ready again.' },
+  loaded_dice: { id: 'loaded_dice', spec: 'thief', name: 'Loaded Dice', icon: 'coin', tags: ['backstab'],
+    desc: 'Backstabs crit for x4 instead of x3 and can knock loose an item.', critMult: 4, itemChance: 0.15,
+    items: ['cheese', 'bread', 'potion_small', 'smoke_pellet'] },
+  caltrop_trail: { id: 'caltrop_trail', spec: 'thief', name: 'Caltrop Trail', icon: 'roll', tags: ['roll'],
+    desc: 'Dodge Roll scatters spiky caltrops along its path.', n: 3, r: 0.9, dur: 4, coef: 0.12, slow: 0.35 },
+
+  // ---- Ninja (4) ----
+  explosive_tags: { id: 'explosive_tags', spec: 'ninja', name: 'Explosive Tags', icon: 'bomb', tags: ['decoy'],
+    desc: 'Your decoy explodes in a bigger, fiery blast that leaves the ground burning.', r: 2.5, coefMul: 1.2, burnDps: 0.2, burnDur: 3, fireDur: 3 },
+  blade_storm: { id: 'blade_storm', spec: 'ninja', name: 'Blade Storm', icon: 'shuriken', tags: ['shuriken'],
+    desc: 'Returning shuriken orbit around you for 2 seconds, slicing anything close.', dur: 2, r: 1.2, spin: 7, rehit: 0.5, coefMul: 0.4 },
+  substitution: { id: 'substitution', spec: 'ninja', name: 'Substitution', icon: 'shadow', tags: ['defense'],
+    desc: 'Every 12 seconds the next hit misses: you poof into a log and reappear nearby.', cd: 12, dist: 2 },
+  clone_mastery: { id: 'clone_mastery', spec: 'ninja', name: 'Clone Mastery', icon: 'shadow', tags: ['clones'],
+    desc: 'Your shadow clones copy Shadow Step too, leaving decoys of their own.', decoyCoef: 0.6 },
+};

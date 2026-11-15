@@ -245,12 +245,22 @@ function ground(p, ox, oy, tx, ty, t, v, frame) {
   }
 }
 
+/** Smooth value noise in 0..1 (bilinear between hashed lattice points, smoothstep). */
+function vnoise(x, y, scale, seed) {
+  const fx = x / scale, fy = y / scale;
+  const ix = Math.floor(fx), iy = Math.floor(fy);
+  let tx = fx - ix, ty = fy - iy;
+  tx = tx * tx * (3 - 2 * tx); ty = ty * ty * (3 - 2 * ty);
+  const a = hash(ix, iy, seed), b = hash(ix + 1, iy, seed), c = hash(ix, iy + 1, seed), d = hash(ix + 1, iy + 1, seed);
+  return a + (b - a) * tx + (c - a) * ty + (a - b - c + d) * tx * ty;
+}
+
 function grassTufts(p, ox, oy, gx0, gy0, b, a, v) {
-  const hi = light(a, 0.18), patch = mix(a, light(a, 0.3), 0.35);
+  const hi = light(a, 0.18), patch = mix(a, light(a, 0.3), 0.3);
   for (let y = 0; y < TP; y += 1) for (let x = 0; x < TP; x += 1) {
     const gx = gx0 + x, gy = gy0 + y;
-    const f = Math.sin(gx * 0.045 + Math.sin(gy * 0.06) * 1.5) + Math.sin(gy * 0.05 - gx * 0.02);
-    if (f > 1.25 || (f > 1.1 && ((gx + gy) & 1))) p.set(ox + x, oy + y, patch);
+    const f = vnoise(gx, gy, 31, 3) * 0.55 + vnoise(gx, gy, 13, 5) * 0.3 + vnoise(gx, gy, 5, 7) * 0.15;
+    if (f > 0.64 || (f > 0.61 && ((gx + gy) & 1) && (gy & 1))) p.set(ox + x, oy + y, patch);
   }
   for (let i = 0; i < 4; i++) {
     const n1 = hash(gx0 + i * 5, gy0, 31), n2 = hash(gx0, gy0 + i * 7, 33);

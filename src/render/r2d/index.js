@@ -183,6 +183,8 @@ export function create() {
     g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
     g.fillStyle = bg; g.fillRect(0, 0, aw, ah);
 
+    // age existing fx first, so events spawned this frame start at age 0
+    fx.update(dt);
     // one-shot fx (entity positions needed for afterimages)
     entById.clear();
     for (let i = 0; i < frame.entCount; i++) entById.set(frame.ents[i].id, frame.ents[i]);
@@ -197,7 +199,6 @@ export function create() {
       }
       fx.spawn(f, quality, spr);
     }
-    fx.update(dt);
 
     if (zv) drawTiles(t, ox, oy, aw, ah);
 
@@ -446,7 +447,7 @@ export function create() {
     if (s.glow.length && quality > 0) {
       for (let i = 0; i < s.glow.length; i++) {
         const gp = s.glow[i];
-        fx.glow(g, dx + gp[0] * sc, dy + gp[1] * sc, 7 * gp[3] * sc, gp[2], 0.55 + 0.2 * Math.sin(t * 5 + i + v.id));
+        fx.glow(g, dx + gp[0] * sc, dy + gp[1] * sc, 6 * gp[3] * sc, gp[2], 0.4 + 0.15 * Math.sin(t * 5 + i + v.id));
       }
     }
     if (rig === 'humanoid' && look.aura && quality > 0) live.aura(g, v, look.aura, X, Y - z, wx, wy - z, hgt, false);

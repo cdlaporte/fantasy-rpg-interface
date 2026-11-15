@@ -173,10 +173,10 @@ export function paintHumanoid(look0, dirView, anim, frame) {
   const H = held ? held.style : null;
   const longW = H === 'staff' || H === 'spear' || H === 'broom';
   if (dir === 2) {
-    hand = [armL0, -7 + by]; wdir = longW ? [0, -1] : [-1, -1];
+    hand = [armL0 - (longW ? 1 : 0), -7 + by]; wdir = longW ? [0, -1] : [-1, -1];
     offHand = [armR0 + 1, -7 + by];
   } else if (dir === 0) {
-    hand = [armR0 + 1, -7 + by]; wdir = longW ? [0, -1] : [1, -1]; heldBehind = true;
+    hand = [armR0 + 1 + (longW ? 1 : 0), -7 + by]; wdir = longW ? [0, -1] : [1, -1]; heldBehind = true;
     offHand = [armL0, -7 + by];
   } else {
     hand = [1 + bx, -8 + by]; wdir = longW ? [0, -1] : [1, -1];
@@ -196,9 +196,9 @@ export function paintHumanoid(look0, dirView, anim, frame) {
       hand = [[armR0 + 1, -11], [3, -16], [-2, -16]][f]; wdir = [[1, -1], [0, -1], [-1, -1]][f]; heldBehind = true;
     }
   } else if (arm === 'cast') {
-    if (dir === 1) { hand = [4 + bx, -14 + by]; wdir = [1, -1]; }
-    else if (dir === 2) { hand = [armL0 - 1, -15 + by]; wdir = [0, -1]; }
-    else { hand = [armR0 + 2, -15 + by]; wdir = [0, -1]; }
+    if (dir === 1) { hand = [5 + bx, -17 + by]; wdir = [1, -1]; }
+    else if (dir === 2) { hand = [armL0 - 1, -17 + by]; wdir = [0, -1]; }
+    else { hand = [armR0 + 2, -17 + by]; wdir = [0, -1]; }
   } else if (arm === 'charge') {
     if (dir === 1) { hand = [-4 + bx, -9 + by]; wdir = [-1, -1]; }
     else if (dir === 2) { hand = [armL0 - 1, -10 + by]; wdir = [-1, -1]; }
@@ -220,9 +220,12 @@ export function paintHumanoid(look0, dirView, anim, frame) {
   if (capeCol && dir !== 0) {
     const cLo = dark(capeCol, 0.3), cIn = L.cape.lining ? L.cape.lining : dark(capeCol, 0.45);
     if (dir === 2) {
-      R(armL0 - 1, -13 + by, armR0 + 2, -3 + by, cIn);
-      R(armL0 - 1, -4 + by, armR0 + 2, -3 + by, cLo);
-      if (capeTrim) R(armL0 - 1, -3 + by, armR0 + 2, -3 + by, capeTrim);
+      // visible as two flared panels behind the arms, plus the collar over the shoulders
+      const l0 = armL0, r0 = armR0 + 1, fl = flutter;
+      p.poly([AX + l0, AY - 13 + by, AX + l0 + 2, AY - 13 + by, AX + l0 + 1, AY - 2 + by, AX + l0 - 3 - fl, AY - 2 + by], capeCol);
+      p.poly([AX + r0 - 1, AY - 13 + by, AX + r0 + 1, AY - 13 + by, AX + r0 + 4 + fl, AY - 2 + by, AX + r0, AY - 2 + by], cLo);
+      R(l0 - 2 - fl, -4 + by, l0, -3 + by, cIn); R(r0 + 1, -4 + by, r0 + 3 + fl, -3 + by, cIn);
+      if (capeTrim) { R(l0 - 3 - fl, -2 + by, l0 + 1, -2 + by, capeTrim); R(r0, -2 + by, r0 + 4 + fl, -2 + by, capeTrim); }
     } else {
       const back = anim === 'dash' ? -10 : anim === 'walk' ? -8 - flutter : -7;
       p.poly([AX - 3 + bx, AY - 13 + by, AX + 0 + bx, AY - 13 + by, AX - 2 + bx, AY - 2 + by, AX + back + bx, AY - 3 + by - flutter], capeCol);
@@ -260,6 +263,10 @@ export function paintHumanoid(look0, dirView, anim, frame) {
 
   // ---------- arms ----------
   if (dir !== 1) { armFront(true); armFront(false); }
+  if (capeCol && dir === 2 && !L._collar) {
+    R(tw0, -13 + by, tw0 + 1, -12 + by, capeCol); R(tw1 - 1, -13 + by, tw1, -12 + by, dark(capeCol, 0.2));
+    S(tw0 + 1, -11 + by, capeTrim || '#ffd24a'); S(tw1 - 1, -11 + by, capeTrim || '#ffd24a');
+  }
 
   // ---------- head ----------
   head();
@@ -572,6 +579,7 @@ export function paintHumanoid(look0, dirView, anim, frame) {
     if (!far && hand && (arm === 'attack' || arm === 'cast' || arm === 'charge' || arm === 'block' || arm === 'spin' || arm === 'out')) {
       if (C.style !== 'cloak') R(x - 1, y0, x + 1, y0 + 2, c);
       p.thick(AX + x, AY + y0 + 1, AX + hand[0], AY + hand[1] - 1, 2, c);
+      p.line(AX + x, AY + y0 + 2, AX + hand[0], AY + hand[1], dark(sc, 0.45));
       drawHandAt(hand[0], hand[1]);
       return;
     }
@@ -582,6 +590,7 @@ export function paintHumanoid(look0, dirView, anim, frame) {
     if (pose.legs === 'sit') sw = far ? 0 : 2;
     const hx2 = x + sw, hy2 = -7 + oy - (Math.abs(sw) > 1 ? 1 : 0);
     p.thick(AX + x, AY + y0, AX + hx2, AY + hy2 - 1, 2, c);
+    if (!far) p.line(AX + x - 1, AY + y0 + 1, AX + hx2 - 1, AY + hy2 - 1, dark(sc, 0.45));
     if (!far) { S(x, y0, light(sc, 0.2)); if (C.style === 'quarterzip') { S(x, y0 + 3, C.s); S(x + 1, y0 + 3, C.s); } }
     if (!far && C.style === 'robe') R(hx2 - 1, hy2 - 2, hx2 + 1, hy2 - 2, C.a);
     drawHandAt(hx2, hy2, true, far);

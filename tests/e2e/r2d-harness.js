@@ -214,6 +214,16 @@ function fxGrid() {
   return { zone: z, ents, fxs, cam: { x: z.w / 2, y: z.h / 2, zoom: 0.62 } };
 }
 
+// one fx, large: 'one:<type>:<style>@<phase>'
+function oneFx(spec) {
+  const [type, style] = spec.split(':');
+  const z = zone('one', 12, 8, 'grass', 'default');
+  const v = ent(H(0, { held: { style: 'sword', color: '#d8dee8' } }), 5.6, 4.6, { dir: 1, anim: 'attack' });
+  const f = makeFxEvent();
+  assignFxEvent(f, { type, style: style || null, x: 6, y: 4.6, angle: -0.2, arc: 120, r: 1.2, n: 16, x2: type === 'trail' ? 3.5 : type === 'beam' || type === 'bolt' ? 8.5 : null, y2: type === 'trail' ? 4.6 : type === 'beam' || type === 'bolt' ? 3.5 : null, w: 0.4, ent: v.id, color: null, dur: 0 });
+  return { zone: z, ents: [v], fxs: [{ f }], cam: { x: 6, y: 4, zoom: 2.2 } };
+}
+
 const SCENES = { town: () => town(false), town_evening: () => town(true), forest, academy: academyScene, road, occlusion, stress, fx: fxGrid };
 
 // ------------------------------------------------------------------ driver
@@ -245,7 +255,7 @@ function show(name) {
   const [base, phase] = name.split('@');
   sceneName = name;
   nid = 1;
-  scene = SCENES[base]();
+  scene = base.startsWith('one:') ? oneFx(base.slice(4)) : SCENES[base]();
   r.unloadZone();
   r.loadZone(scene.zone);
   bar.textContent = 'r2d harness: ' + name;

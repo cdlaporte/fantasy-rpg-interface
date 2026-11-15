@@ -6,7 +6,7 @@ import { makeCanvas } from './pix.js';
 
 const TAU = Math.PI * 2;
 const SLASH_DUR = { sword: 0.2, axe: 0.28, dagger: 0.16, claw: 0.22, fist: 0.22, stick: 0.2, crescent: 0.32, spin: 0.38 };
-const SLASH_COL = { sword: '#ffffff', axe: '#ffd0a0', dagger: '#e8fff4', claw: '#ffd0e0', fist: '#ffe680', stick: '#f4e3c4', crescent: '#9fe6ff', spin: '#ffffff' };
+const SLASH_COL = { sword: '#ffffff', axe: '#ffd0a0', dagger: '#e8fff4', claw: '#ffd0e0', fist: '#ffe680', stick: '#fff8e0', crescent: '#9fe6ff', spin: '#ffffff' };
 export const FX_KNOWN = ['hit', 'slash', 'burst', 'ring', 'shockwave', 'beam', 'bolt', 'trail', 'afterimage', 'pillar', 'meteor',
   'sparkle', 'heal', 'levelup', 'poof', 'smoke', 'screenFlash', 'text'];
 
@@ -83,7 +83,7 @@ export function createFx() {
         const s = shape('slash', f.dur || SLASH_DUR[st]); s.x = x; s.y = y - z - 7; s.ang = f.angle || 0;
         s.arc = (f.arc || (st === 'spin' ? 360 : st === 'dagger' ? 70 : 110)) * Math.PI / 180;
         s.r = Math.max(8, (f.r || 1) * T); s.c = c || SLASH_COL[st]; s.style = st;
-        s.c2 = f.color2 || (st === 'axe' ? '#ff6a3c' : st === 'crescent' ? '#c9a6ff' : st === 'fist' ? '#ffb030' : light(s.c, 0.6));
+        s.c2 = f.color2 || (st === 'axe' ? '#ff6a3c' : st === 'crescent' ? '#c9a6ff' : st === 'fist' ? '#ffb030' : st === 'stick' ? '#c8a070' : st === 'claw' ? '#ff6a8a' : mix(s.c, '#9fe6ff', 0.5));
         if (st === 'axe') for (let i = 0; i < 6 * q; i++) { const a = s.ang + (R() - 0.5) * s.arc, v = 50 + R() * 50; emit(PK_ROCK, x + Math.cos(a) * s.r * 0.8, y - 4 + Math.sin(a) * s.r * 0.6, Math.cos(a) * v, Math.sin(a) * v * 0.5, 0.35, i & 1 ? '#c8b090' : '#8a7a62', 2, 1, opt(4, 60, -260, 1)); }
         if (st === 'stick') for (let i = 0; i < 3 * q + 1; i++) { const a = s.ang + (R() - 0.5) * s.arc; emit(PK_LEAF, x + Math.cos(a) * s.r * 0.8, y - 6 + Math.sin(a) * s.r * 0.6, Math.cos(a) * 30, Math.sin(a) * 20 - 10, 0.5, i & 1 ? '#7cc95a' : '#a0703c', 1, 1, opt(4, 30, -100, 2)); }
         if (st === 'fist') { const r2 = shape('ring', 0.22); r2.x = x + Math.cos(s.ang) * s.r * 0.85; r2.y = y - 7 + Math.sin(s.ang) * s.r * 0.85; r2.r = 9; r2.c = s.c; r2.w = 2; }
@@ -481,10 +481,10 @@ export function createFx() {
     const thick = st === 'axe' ? 0.62 : st === 'crescent' ? 0.6 : st === 'stick' ? 0.3 : st === 'spin' ? 0.45 : 0.48;
     const r0 = r * (1 - thick), r1 = r;
     // outer soft band
-    g.globalAlpha = 0.45 * fade; g.fillStyle = s.c2;
+    g.globalAlpha = 0.55 * fade; g.fillStyle = s.c2;
     arcBand(g, x, y, r0 * 0.85, r1 * 1.08, tail, head, sq);
     // main band
-    g.globalAlpha = 0.9 * fade; g.fillStyle = s.c;
+    g.globalAlpha = fade; g.fillStyle = s.c;
     arcBand(g, x, y, r0 + (r1 - r0) * 0.3, r1, tail + (head - tail) * 0.35, head, sq);
     // leading bright edge
     g.globalAlpha = fade; g.strokeStyle = '#ffffff'; g.lineWidth = st === 'axe' || st === 'crescent' ? 2 : 1;

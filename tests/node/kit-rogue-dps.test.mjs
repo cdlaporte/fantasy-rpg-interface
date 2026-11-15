@@ -4,11 +4,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame } from '../../src/core/game.js';
+import { config } from '../../src/config.js';
 import data from '../../src/data/index.js';
 import { scriptedInput } from '../../src/platform/input.js';
 import { DT } from '../../src/contracts.js';
 
-const TARGET = { 3: 10, 5: 17, 8: 30, 10: 40, 12: 52 };
+const TARGET = Object.fromEntries(Object.entries({ 3: 10, 5: 17, 8: 30, 10: 40, 12: 52 }).map(([k, v]) => [k, v * config.numberScale]));   // CLASSES band x number scale
 const BAND = 0.15;
 const SEEDS = [7, 11, 23, 31, 42, 57, 64, 99];
 // Sensible picks, in the order they are offered at levels 4 / 6 / 8 / 10 / 12.
@@ -38,7 +39,7 @@ function mixedFight(spec, level, seed) {
   const { game, p } = setup(spec, level, seed);
   const cx = 30, cy = 21;
   game.physics.teleport(p, cx - 3, cy);
-  const hpN = Math.round(6 * Math.pow(level, 1.4));
+  const hpN = Math.round(6 * Math.pow(level, 1.4) * config.numberScale);
   const tough = game.ents.spawn('rat', cx + 1, cy, { level });
   tough.hp = tough.hpMax = Math.round(hpN * 2.5);
   const enemies = [tough];

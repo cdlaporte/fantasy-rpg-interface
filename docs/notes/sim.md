@@ -19,7 +19,12 @@ Tests: `node --test tests/node` (39 Sim tests + skeleton), `node tests/e2e/skele
 - **Angles**: radians, 0 = east, clockwise on screen. `ctx.angle` for the basic is the attack key direction.
 - **Reused arrays**: `combat.meleeArc`, `combat.aoe` (immediate), `abilities.use('melee_arc'|'aoe_ring'|'beam')` and
   every `ents.inRadius(..)` without `out` return arrays that are **reused by the next call**. Copy (`.slice()`) if
-  you keep them. `multishot`, `chain`, `summon` return new arrays.
+  you keep them. `multishot`, `chain`, `summon` return new arrays. The combat loops (`meleeArc`, `aoe`, zone ticks,
+  `damage`) keep one scratch set per nesting depth, so a kit hook that calls combat again from inside `damage()` /
+  an `onHit` callback never corrupts the loop it runs in (the returned array of a *nested* call is its own).
+- **Number scale** (`config.numberScale`, 6): data keeps readable base numbers for hp, power, regen and absolute heal /
+  shield amounts; the Sim, Meta and Story multiply them where they are consumed (see `docs/notes/fixcore.md`).
+  `combat.damage` / `heal` never scale. Anything you derive from `power`, `hpMax` or a dealt amount is already scaled.
 - **Params objects are never mutated** by blocks. Kits may pass constant objects from data.
 - **Allocation**: kits may allocate per cast/attack; never allocate per step in `update` (reuse `p.data.kit` fields).
 - Everything uses `game.rng` and `game.t` (deterministic; the determinism test runs 3000 steps twice).
@@ -140,6 +145,11 @@ Order:
 8. Defense (not for `'true'`): `amount *= 10 / (10 + stats.defense)`; then `*= max(0.05, 1 + mod(target,'dmgTaken'))`.
 9. Crit multiplier, then round: `max(1, round)` (0 when fully blocked).
 10. `status.shield` absorbs `statusPower.shield` HP first (text "Absorbed").
+10b. **Kit hook `onLethal(game, target, info)`** (the "about to be downed" point): called when the final damage
+    `info.dealt` (after defense, crit and shield absorption) would take `target.hp` to 0 or less and no `data.minHp`
+    floor protects it. Heal the target, raise a shield, or lower `info.dealt` (mutable; set it to `hp - 1` to survive).
+    Runs for every layer of the target's kit, before the hp is written; `'player:down'` / death only follow if the hit is
+    still lethal afterwards. Second Wind uses it.
 11. Floor: `data.minHp` (> 0) — hp never drops below it.
 12. Flash, damage `text` fx (`dmg`/`crit`, or `miss` "Blocked"/"Perfect!"), `hit` fx, sfx `hit`/`hurt`, short `hurt` anim
     for non-players that are idle/walking and not winding up.
@@ -149,7 +159,9 @@ Order:
     `opts.shake` bumps `camera.shake`.
 15. Statuses `opts.status`, lifesteal `opts.lifesteal` (fraction healed to the source).
 16. Attacking from stealth breaks it (`info.fromStealth` is true in the hit event) unless `opts.keepStealth` or a DoT.
-17. A player-side hit on a `town` entity emits `'crime' {victim}`.
+17. A player-side hit on a `town` entity emits `'crime' {victim}` (once, from Story's `'hit'` listener). Town entities can
+    only be damaged by the player's **direct** attacks: `meleeArc` and projectiles fired by the player itself. Zones,
+    `aoe`, `chain`, `dash` contact, summons, companions and clones never damage them (wanted or not).
 18. At 0 hp: the player -> `'player:down' {source}` (once; `data.down`); companions, town NPCs (unless
     `data.canDie`) and `data.downable` entities go **down** (10 s companions, 8 s NPCs, anim `ko`, untargetable,
     `'ent:down'`, then `'ent:up'` with 50% / full hp); everything else is killed.
@@ -161,7 +173,7 @@ Order:
 `lifesteal`, `keepStealth`, `silent` (no text/sfx), `color` (hit spark), `tags`, `dot`.
 
 `info` (hooks; pooled, do not keep): `{target, source, amount (mutable), type, element, crit (mutable), critMult
-(mutable), angle, proj, tags, fromStealth, cancel, blocked, perfect, opts}`.
+(mutable), angle, proj, tags, fromStealth, cancel, blocked, perfect, opts, dealt (onLethal only, mutable)}`.
 
 `status` param forms (everywhere): `{stun: 0.8}`, `{slow: [3, 0.4]}` (seconds, power), `{id:'burn', t:3, p:2, chance:0.5}`,
 or an array of those.
@@ -269,8 +281,8 @@ Also *added*: `unguard(ent) -> {blocked, blocks, perfects, heldT}|null`, `tagFor
 | `melee_arc` | all `combat.meleeArc` params + `lunge` (tiles forward impulse), `repeat` (n swings, e.g. twin daggers 2) | hits[] (reused) |
 | `projectile` | all `combat.projectile` params; `anim` ('cast'), `sfx` | ent |
 | `multishot` | `n=3`, `spread=30` (deg, total fan), `ring` (full circle), `parallel` (side spacing in tiles, e.g. Twin Bolts 0.3) + projectile params | ents[] |
-| `beam` | `angle, range=7, w=0.5, dmg, pierce=true` (false: first target), `stopAtWall=true`, `knockback=2`, `color`, `status`, `onHit`, `fx` ('beam') | hits[] |
-| `dash` | `angle, dist=2.5, speed=14, invuln` (s or true = whole dash), `dmg` (contact; 0 = none), `hitRadius=0.5`, `stopOnHit`, `maxHits`, `knockback=6`, `status`, `through` (no body blocking), `trail=true`, `color`, `onHit(game,t,dealt,c)`, `onEnd(game,c,hits)` | true |
+| `beam` | `angle, range=7, w=0.5, dmg, pierce=true` (false: first target), `stopAtWall=true`, `knockback=2`, `color`, `status`, `onHit`, `fx` ('beam'), `anim` ('cast'; `false` leaves the caster's animation alone) | hits[] |
+| `dash` | `angle, dist=2.5, speed=14, invuln` (s or true = whole dash), `dmg` (contact; 0 = none), `hitRadius=0.5`, `stopOnHit`, `maxHits`, `knockback=6`, `status`, `tags` (forwarded to the hit), `exclude` (entity ids never hit), `through` (no body blocking), `trail=true`, `color`, `onHit(game,t,dealt,c)`, `onEnd(game,c,hits)` | true |
 | `aoe_ring` | `r=2, dmg, knockback=6, pull, delay, telegraph, fx='shockwave', color, status, shake, zone` (+ x,y) | hits[] or pending ent |
 | `ground_target` | `x,y` or `dist=4` ahead along `angle` (clamped by walls), `r=1.5, dmg, delay=0.8, telegraph='circle', meteor, fx` ('meteor' with meteor, else 'burst'), `zone`, `shake` | pending ent |
 | `summon` | `kind`/`def, n=1, max, key, ttl, brain, powerMul, hpMul, taunt, replace=true, onReplace(game, old), attacks, look, scale, dist` + summon opts. Enemy casters spawn data enemies owned by them (`data.summoned`, refused at `max`) | ents[] |
@@ -279,7 +291,7 @@ Also *added*: `unguard(ent) -> {blocked, blocks, perfects, heldT}|null`, `tagFor
 | `heal` | `n` / `pct` (of hpMax) / `coef` (x power), `target`, `allies` (r) | healed |
 | `zone` | all `combat.zone` params; position `x,y` or `dist` ahead or the caster; `follow: true` = the caster | ent |
 | `stealth` | `dur=5, speed=0.25, smoke` (true or zone params; default smoke r 2, 3 s, slow), `fx` | true |
-| `chain` | `target` or nearest from `x,y`/caster, `range=4, jumps=3` (targets), `dmg, falloff=0.8` (>1 grows), `color, status, element='storm', fx='bolt', onHit(game,t,dealt,c,i)` | hits (new) |
+| `chain` | `target` or nearest from `x,y`/caster, `range=4, jumps=3` (targets), `dmg, falloff=0.8` (>1 grows), `color, status, element='storm', exclude` (entity ids or entities never chosen, e.g. the starting target)`, fx='bolt', onHit(game,t,dealt,c,i)` | hits (new) |
 | `leap` | `x,y` or `dist=5` ahead, `dur=0.6, height=2, invuln=true, land {r=2.5, dmg, knockback=7, fx='shockwave', status, shake=0.3, zone}, onLand(game, c)` | true |
 | `blink` | `angle, dist=3.5, away` (reverse), `invuln=0.2, color, fx` | `{x0, y0, x, y}` or false |
 
@@ -317,7 +329,7 @@ export default {
   onEquip(game, p), onUnequip(game, p), update(game, p, dt), hud(game, p, hud),
   basic(game, p, ctx),
   abilities: { space|q|f|shift: { id, name, icon, desc, unlock, cd, cost, need, cdOnRelease, cast, hold, release, isActive } },
-  hooks: { onHit, onHurt, onKill, onBlock, onOutgoing, onIncoming, onMinionHit, onMinionKill, onMinionOutgoing, onCatch },
+  hooks: { onHit, onHurt, onKill, onBlock, onOutgoing, onIncoming, onLethal, onMinionHit, onMinionKill, onMinionOutgoing, onCatch },
 };
 ```
 
@@ -337,8 +349,8 @@ export default {
   guard; fresh `p.data.kit = {speedMul: 1, lookPatch: null}` (**all kit state lives here; class and spec share it —
   namespace your keys**); `p.data.resource` (value kept when the resource id is unchanged, else `start`); new layers'
   `onEquip`; `refreshLook()`; `'ability:unlocked'` for newly available slots.
-- `'ability:unlocked' {slot, id}` is emitted by the Sim on `'levelup'` for abilities whose `unlock` level was just
-  reached, and on class/spec set. (Meta should not emit it too.) `'ability:locked' {slot, id, unlock}` when a locked
+- `'ability:unlocked'`: Meta's progression is the single emitter (richer payload) whenever it provides `abilityList`; the Sim only emits `{slot, id}` as a fallback when there is no progression system (on `'levelup'` for abilities whose
+  `unlock` level was just reached, and on class/spec set). Never both. `'ability:locked' {slot, id, unlock}` when a locked
   slot is pressed.
 
 ### 7.1 `ctx` (one reused object; do not keep it)
@@ -380,7 +392,7 @@ with `resource.pips` the Sim sets `game.kits.kitHud = {pips, pipsMax}`. In `kit.
 
 `onHit` (p dealt a hit: the `'hit'` payload), `onHurt` (p was hit), `onKill` (`'death'` payload, p is the killer),
 `onBlock` (`'block'` payload), `onMinionHit` / `onMinionKill` (a summon owned by p), `onCatch` (`'proj:caught'`),
-and the synchronous damage hooks `onOutgoing` / `onIncoming` / `onMinionOutgoing` (`info`, mutable, see 4.1).
+and the synchronous damage hooks `onOutgoing` / `onIncoming` / `onLethal` / `onMinionOutgoing` (`info`, mutable, see 4.1).
 DoT ticks arrive as hits with `e.dot = true`.
 
 ## 8. Recipes for kit mechanics
@@ -538,8 +550,7 @@ data.classes.warrior.companion = { npc: 'bram', name: 'Bram', mult: 0.7, brain: 
 
 ## 14. Requests to other packages
 
-- **Meta**: add `inventory.equippedLookPatch()` (cosmetics patch) and emit `'cosmetic:equipped'`; do not emit
-  `'ability:unlocked'` (the Sim does); call `game.sys.player.refreshLook()` is not needed after setClass/setSpec
+- **Meta**: add `inventory.equippedLookPatch()` (cosmetics patch) and emit `'cosmetic:equipped'`; `'ability:unlocked'` is Meta's alone; call `game.sys.player.refreshLook()` is not needed after setClass/setSpec
   (events or the classId change are enough); `progression.recalc()` should keep `player.stats.{power, defense,
   speed}` and `hpMax` current (the Sim never overwrites them after init).
 - **Story**: NPC defs that should fight need `ai` + `attacks` (or `onAttacked: 'guard'` for the guard brain); the Sim

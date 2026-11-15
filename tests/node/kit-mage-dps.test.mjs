@@ -3,13 +3,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame } from '../../src/core/game.js';
+import { config } from '../../src/config.js';
 import data from '../../src/data/index.js';
 import { createQuestions } from '../../src/questions/index.js';
 import { createRng } from '../../src/core/rng.js';
 import { mk, ring, meanDps, DT } from './kit-mage-lib.test.mjs';
 
 // CLASSES balance sheet: level 3 ~10, 5 ~17, 8 ~30, 10 ~40, 12 ~52 (+-15%).
-const TARGET = { 3: 10, 5: 17, 8: 30, 10: 40, 12: 52 };
+const TARGET = Object.fromEntries(Object.entries({ 3: 10, 5: 17, 8: 30, 10: 40, 12: 52 }).map(([k, v]) => [k, v * config.numberScale]));   // CLASSES band x number scale
 const ROWS = [[null, 3], [null, 5], ['conjurer', 8], ['conjurer', 10], ['conjurer', 12], ['sorcerer', 8], ['sorcerer', 10],
   ['sorcerer', 12], ['monk', 8], ['monk', 10], ['monk', 12]];
 

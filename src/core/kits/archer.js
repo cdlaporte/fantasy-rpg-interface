@@ -197,7 +197,7 @@ function starfallFire(game, p) {
     angle, look: arrowLook(C.star, '#ffffff', S.size), speed: S.speed, range: S.range, radius: 0.45, dmg: S.coef, pierce: true,
     knockback: 0, tags: TAG_STAR, hitStop: 0.04, shake: 0.2,
     onHit(g, t) {
-      if (t.alive && !t.removed && !t.tags.includes('boss') && t.hpMax <= S.dragMaxHp && ar.drag.length < 8) ar.drag.push(t.id);
+      if (t.alive && !t.removed && !t.tags.includes('boss') && t.hpMax <= S.dragMaxHp * (game.config.numberScale || 1) && ar.drag.length < 8) ar.drag.push(t.id);
       g.fx({ type: 'burst', x: t.x, y: t.y, n: 10, r: 0.7, color: C.star });
     },
     onExpire(g, pr) {

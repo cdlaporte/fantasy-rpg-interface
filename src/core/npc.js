@@ -108,10 +108,11 @@ export default {
 
     function spawnNpc(def, x, y, place) {
       const s = def.stats || {};
-      const hp = s.hp || 10;
+      const ns = game.config.numberScale || 1;     // number scale: def numbers are the readable base values
+      const hp = Math.round((s.hp || 10) * ns);
       const e = game.ents.spawn(def.id, x, y, {
         type: 'npc', team: def.team || 'town', def, name: def.name || '', look: clone(def.look) || { rig: 'humanoid' },
-        hp, hpMax: hp, stats: Object.assign({ power: 1, defense: 0, speed: 2 }, s),
+        hp, hpMax: hp, stats: Object.assign({ power: 1, defense: 0, speed: 2 }, s, { hp, power: (s.power != null ? s.power : 1) * ns }),
         tags: Array.isArray(def.tags) ? def.tags.slice() : [], interact: makeInteract(def),
         dir: DIR.DOWN, angle: Math.PI / 2,
         data: { npcId: def.id, minHp: (def.team || 'town') === 'town' ? 1 : undefined },

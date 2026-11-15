@@ -6,6 +6,12 @@
 //   summon_pet {kind, dur}                                 resource {} (focus_scroll: the focus gate)
 // Cosmetics carry `slot` ('hat' | 'cape' | 'outfitColor') and a `look` patch applied over the player look.
 
+import { config } from '../config.js';
+
+// Health amounts below are written in readable base numbers; the game multiplies them by config.numberScale where they
+// are used (inventory), so descriptions show the scaled values.
+const NS = config.numberScale || 1;
+
 const consumable = (id, name, desc, icon, price, stack, use, cd = 1) =>
   ({ id, type: 'consumable', name, desc, icon, price, stack, use, cd, look: null });
 const key = (id, name, desc, icon = 'key') =>
@@ -19,11 +25,11 @@ const dye = (id, name, desc, price, primary, secondary) =>
 
 const list = [
   // ---- hotbar consumables (STORY ids) ----
-  consumable('potion_small', 'Small Potion', 'Tastes like cherry and a little like pennies. Heals 30 + 30%.', 'potion', 15, 9,
+  consumable('potion_small', 'Small Potion', `Tastes like cherry and a little like pennies. Heals ${30 * NS} + 30%.`, 'potion', 15, 9,
     { effect: 'heal', amount: 30, frac: 0.3 }),
-  consumable('potion_big', 'Big Potion', 'The family size. Heals 60 + 50%.', 'potion', 45, 5,
+  consumable('potion_big', 'Big Potion', `The family size. Heals ${60 * NS} + 50%.`, 'potion', 45, 5,
     { effect: 'heal', amount: 60, frac: 0.5 }, 2),
-  consumable('bread', 'Fresh Bread', 'Still warm. Heals 45 over 8 seconds. Do not eat while fighting. (Eat while fighting.)',
+  consumable('bread', 'Fresh Bread', `Still warm. Heals ${45 * NS} over 8 seconds. Do not eat while fighting. (Eat while fighting.)`,
     'bread', 6, 9, { effect: 'heal_over_time', amount: 45, dur: 8 }, 4),
   consumable('bomb', 'Fizzbomb', 'Throw it ahead. It goes BOOM in a very friendly way.', 'bomb', 20, 5,
     { effect: 'bomb', dmg: 3, r: 2, range: 4, delay: 0.7 }, 2),
@@ -36,8 +42,8 @@ const list = [
   consumable('focus_scroll', 'Focus Scroll', 'Answer correctly: full resource, cooldowns reset, +50% power for 6 s.', 'book', 40, 3,
     { effect: 'resource' }, 20),
   // ---- extra consumables ----
-  consumable('cheese', 'Pantry Cheese', 'A rat was saving this. Heals 12.', 'bread', 3, 9, { effect: 'heal', amount: 12, frac: 0 }),
-  consumable('honey_bun', 'Honey Bun', 'Sticky, golden, legendary. Heals 90 over 10 seconds.', 'bread', 14, 5,
+  consumable('cheese', 'Pantry Cheese', `A rat was saving this. Heals ${12 * NS}.`, 'bread', 3, 9, { effect: 'heal', amount: 12, frac: 0 }),
+  consumable('honey_bun', 'Honey Bun', `Sticky, golden, legendary. Heals ${90 * NS} over 10 seconds.`, 'bread', 14, 5,
     { effect: 'heal_over_time', amount: 90, dur: 10 }, 4),
   consumable('herbal_tea', 'Herbal Tea', 'Cures burns, frost, slows, roots and venom. Warm and smug.', 'tonic', 12, 5,
     { effect: 'cure' }, 3),

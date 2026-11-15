@@ -208,7 +208,7 @@ export default {
     if (k.offFreeze) { k.offFreeze(); k.offFreeze = null; }
     for (let j = 0; j < 3; j++) game.ents.setFxTag(p, TAGS[j], false);
   },
-  /** Level-10 aura follows the element (warrior W.refresh / fixAura extension hook). */
+  /** Level-10 aura follows the element (warrior W.refresh extension hook). */
   aura(game, p) {
     const bm = p.data.kit && p.data.kit.bm;
     if (!bm || game.kits.level(p) < 10) return null;

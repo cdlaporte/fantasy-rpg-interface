@@ -109,15 +109,16 @@ function desiredAura(game, p) {
   }
   return null;
 }
-// The Sim's refreshLook applies the default level-10 aura AFTER the kit patch (COMMON 12), so a kit-chosen aura
-// (War Cry flare, Battlemage element) is re-applied when the look changes. See docs/notes/kit-warrior.md (request R1).
-function fixAura(game, p) {
-  const want = desiredAura(game, p);
-  if (!want || !p.look) return;
-  const a = p.look.aura;
-  if (a && a.style === want.style && a.color === want.color) return;
-  p.look.aura = { style: want.style, color: want.color };
-  p.lookRev = (p.lookRev || 0) + 1;
+
+function secondWind(game, p, k, b) {
+  const col = W.colors(game);
+  k.swT = game.t + b.icd;
+  game.combat.heal(p, Math.round(p.hpMax * b.heal), { source: p });
+  game.combat.aoe(p, { x: p.x, y: p.y, r: b.r, dmg: 0, knockback: b.knockback, fx: 'shockwave', color: col.gold });
+  game.fx({ type: 'pillar', x: p.x, y: p.y, r: 1.1, color: col.rage, dur: 0.8 });
+  game.fx({ type: 'burst', x: p.x, y: p.y, n: 24, r: 1.5, color: col.gold });
+  game.fx({ type: 'text', x: p.x, y: p.y, z: 1.6, text: 'Second Wind!', style: 'info', ent: p.id });
+  game.camera.shake = Math.max(game.camera.shake, 0.35);
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -220,12 +221,10 @@ const KIT = {
     k.spikeT = 0; k.swT = -1e9;
     k.unst = false;
     k.bashX0 = p.x; k.bashY0 = p.y; k.bashRaged = false; k.bashChained = false; k.ricoAt = 0; k.ricoT = null;
-    k.offLook = game.bus.on('look:changed', (e) => { if (e && e.ent === p && p.data.kit === k) fixAura(game, p); });
     W.refresh(game, p);
   },
   onUnequip(game, p) {
     const k = p.data.kit;
-    if (k.offLook) { k.offLook(); k.offLook = null; }
     game.combat.removeMod(p, 'unstoppable');
     if (k.unst) p.glow = null;
   },
@@ -343,6 +342,13 @@ const KIT = {
       k.combatT = game.t;
       if (e.tags === TAG_BASIC && e.amount > 0) W.gainRage(game, p, k.ragePerHit);
     },
+    /** The hit would down the player: Second Wind fires first, and the player survives it on at least 1 hp. */
+    onLethal(game, p, info) {
+      const k = p.data.kit;
+      if (!k || !W.has(game, p, 'second_wind') || p.data.down || game.t < k.swT) return;
+      secondWind(game, p, k, W.bnums(game, 'second_wind'));
+      if (p.hp - info.dealt < 1) info.dealt = Math.max(0, p.hp - 1);
+    },
     onHurt(game, p, e) {
       const k = p.data.kit;
       if (!k) return;
@@ -359,15 +365,7 @@ const KIT = {
       }
       if (W.has(game, p, 'second_wind') && p.hp > 0 && !p.data.down && game.t >= k.swT) {
         const b = W.bnums(game, 'second_wind');
-        if (p.hp < p.hpMax * b.below) {
-          k.swT = game.t + b.icd;
-          game.combat.heal(p, Math.round(p.hpMax * b.heal), { source: p });
-          game.combat.aoe(p, { x: p.x, y: p.y, r: b.r, dmg: 0, knockback: b.knockback, fx: 'shockwave', color: col.gold });
-          game.fx({ type: 'pillar', x: p.x, y: p.y, r: 1.1, color: col.rage, dur: 0.8 });
-          game.fx({ type: 'burst', x: p.x, y: p.y, n: 24, r: 1.5, color: col.gold });
-          game.fx({ type: 'text', x: p.x, y: p.y, z: 1.6, text: 'Second Wind!', style: 'info', ent: p.id });
-          game.camera.shake = Math.max(game.camera.shake, 0.35);
-        }
+        if (p.hp < p.hpMax * b.below) secondWind(game, p, k, b);
       }
     },
   },

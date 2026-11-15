@@ -22,12 +22,18 @@ export default {
   init(game) {
     const ents = game.ents;
     const rng = game.rng;
-    const scratchA = [], scratchB = [], scratchC = [], meleeOut = [], aoeOut = [], chainOut = [];
+    const scratchB = [], scratchC = [];
+    // Scratch arrays for the loops that call damage() (and therefore kit hooks that may run combat again): one set
+    // per nesting depth, so a hook that fires another arc / AoE / zone tick cannot corrupt the loop it runs inside.
+    const candPool = [[]], outPool = [[]];
+    let depth = 0;
+    const candAt = (d) => candPool[d] || (candPool[d] = []);
+    const outAt = (d) => outPool[d] || (outPool[d] = []);
     const lookCache = new Map();
     const pendingAoe = [];       // delayed AoEs without a telegraph (no entity)
     const infoPool = [];
     let infoDepth = 0;
-    let fSrc = null, fTeam = null, fOwnerIsPlayer = false;
+    let fSrc = null, fTeam = null, fDirect = false;
     let homeHits = null;
     const homeFilter = (c) => filterHit(c) && homeHits.indexOf(c.id) < 0;
 
@@ -54,18 +60,21 @@ export default {
     function targetable(t) {
       return !!t && !t.removed && t.alive && DAMAGEABLE[t.type] === 1 && !t.data.down && !t.data.untargetable && !t.asleep;
     }
-    /** Can attacks from `src` (team `team`) damage `t`? Town NPCs can be hit by the player directly (crime). */
-    function canHitTeam(team, t, ownerIsPlayer, src) {
+    /**
+     * Can attacks from `src` (team `team`) damage `t`? Town entities are only ever hit by the player's own direct
+     * attacks (`direct`: the player's melee arcs and projectiles; that is the crime rule). Zones, AoEs, chains,
+     * dashes, summons, companions and clones never damage them, wanted or not.
+     */
+    function canHitTeam(team, t, direct, src) {
       if (!targetable(t) || t === src) return false;
-      if (hostileTeams(team, t.team)) return true;
-      return ownerIsPlayer && t.team === 'town' && t.type === 'npc';
+      if (t.team === 'town') return direct && t.type === 'npc';
+      return hostileTeams(team, t.team);
     }
-    const filterHit = (t) => canHitTeam(fTeam, t, fOwnerIsPlayer, fSrc);
-    function setFilter(src, hitsTeam) {
+    const filterHit = (t) => canHitTeam(fTeam, t, fDirect, fSrc);
+    function setFilter(src, hitsTeam, direct) {
       fSrc = src;
       fTeam = hitsTeam ? oppositeOf(hitsTeam) : teamOf(src);
-      const o = src ? ownerOf(src) : null;
-      fOwnerIsPlayer = !!o && o === game.player;
+      fDirect = !!direct && !!src && src === game.player;
     }
     // hitsTeam 'enemy' means "damage the enemy team": pick a team hostile to it.
     function oppositeOf(t) { return t === 'enemy' ? 'player' : t === 'player' ? 'enemy' : t === 'town' ? 'player' : 'neutral'; }
@@ -220,7 +229,7 @@ export default {
       infoDepth++;
       i.target = null; i.source = null; i.amount = 0; i.type = 'melee'; i.element = null; i.crit = false; i.critMult = 2;
       i.angle = 0; i.blocked = 0; i.perfect = false; i.cancel = false; i.proj = null; i.tags = null; i.fromStealth = false;
-      i.opts = null; i.reflected = false;
+      i.opts = null; i.reflected = false; i.dealt = 0;
       return i;
     }
     function kitHook(ent, name, info) {
@@ -239,6 +248,7 @@ export default {
         return 0;
       }
       const info = getInfo();
+      const dpd = depth++;       // hooks run inside this call: anything they start must not reuse our loops' scratch
       try {
         info.target = target; info.source = src; info.proj = proj; info.opts = opts;
         info.type = opts.type || 'melee'; info.element = opts.element || null; info.tags = opts.tags || null;
@@ -294,9 +304,15 @@ export default {
           if (sp.shield <= 0) clearStatus(target, 'shield');
           if (!opts.silent && ab > 0) fxText(target, 'Absorbed', 'miss');
         }
-        // Floors.
-        let newHp = target.hp - dealt;
+        // About to be downed / killed: kits may react before the hit lands (heal, shield, cut the damage). The hook
+        // sees info.dealt (mutable, final damage after defense and shields) and the target's current hp.
         const floor = target.data.minHp;
+        if (dealt > 0 && !(floor > 0) && target.hp - dealt <= 0) {
+          info.dealt = dealt;
+          kitHook(target, 'onLethal', info);
+          dealt = Math.max(0, Math.round(info.dealt));
+        }
+        let newHp = target.hp - dealt;
         if (floor > 0 && newHp < floor) newHp = Math.min(target.hp, floor);
         target.hp = newHp;
         if (dealt > 0 || info.blocked > 0) target.flash = 1;
@@ -342,7 +358,7 @@ export default {
         game.bus.emit('hit', ev);
         return dealt;
       } finally {
-        infoDepth--;
+        infoDepth--; depth = dpd;
       }
     }
 
@@ -481,15 +497,19 @@ export default {
 
     // ---------- melee ----------
     function meleeArc(source, o = {}) {
-      const out = o.out || meleeOut;
+      const dp = depth++;
+      try { return meleeArcAt(source, o, dp); } finally { depth = dp; }
+    }
+    function meleeArcAt(source, o, dp) {
+      const out = o.out || outAt(dp);
       out.length = 0;
       const angle = o.angle != null ? o.angle : source.angle;
       const arc = o.arc != null ? o.arc : 90, range = o.range != null ? o.range : 1;
       const off = o.offset || 0;
       const ox = o.x != null ? o.x : source.x + Math.cos(angle) * off, oy = o.y != null ? o.y : source.y + Math.sin(angle) * off;
       const amount = o.amount != null ? o.amount : (o.dmg != null ? o.dmg : 1) * powerOf(source);
-      setFilter(source, o.hitsTeam);
-      const cand = ents.inRadius(ox, oy, range + 1.5, filterHit, scratchA);
+      setFilter(source, o.hitsTeam, true);
+      const cand = ents.inRadius(ox, oy, range + 1.5, filterHit, candAt(dp));
       for (let i = 0; i < cand.length; i++) {
         const t = cand[i];
         const dx = t.x - ox, dy = t.y - oy, d = Math.sqrt(dx * dx + dy * dy);
@@ -568,7 +588,7 @@ export default {
         explode: o.explode || null, landZone: o.landZone || null,
         onHit: o.onHit || null, onExpire: o.onExpire || null, onCatch: o.onCatch || null,
         hitsTeam: o.hitsTeam || null, hits: [], ghost: !!o.ghost, owner: source.id, reflectedTick: -1, reflected: false,
-        ownerIsPlayer: ownerOf(source) === game.player, maxHits: o.maxHits || 0, hitCount: 0, src: source,
+        ownerIsPlayer: source === game.player, maxHits: o.maxHits || 0, hitCount: 0, src: source,
       };
       let z = o.z != null ? o.z : (source.z || 0) + 0.5;
       if (pd.gravityZ > 0) {
@@ -667,7 +687,7 @@ export default {
       const pd = e.data.proj;
       fSrc = ents.get(pd.owner) || null;
       fTeam = pd.hitsTeam ? oppositeOf(pd.hitsTeam) : e.team;
-      fOwnerIsPlayer = pd.ownerIsPlayer;
+      fDirect = pd.ownerIsPlayer;
     }
     function updateProjectile(e, dt) {
       const pd = e.data.proj;
@@ -746,7 +766,7 @@ export default {
       if (!pd || !newOwner) return false;
       const old = ents.get(pd.owner);
       proj.team = newOwner.team; proj.owner = newOwner.id;
-      pd.owner = newOwner.id; pd.src = newOwner; pd.hitsTeam = null; pd.ownerIsPlayer = ownerOf(newOwner) === game.player;
+      pd.owner = newOwner.id; pd.src = newOwner; pd.hitsTeam = null; pd.ownerIsPlayer = newOwner === game.player;
       pd.traveled = 0; pd.hits.length = 0; pd.returning = false; pd.returns = false; pd.reflectedTick = game.tick; pd.reflected = true;
       if (opts.mult) pd.dmg *= opts.mult;
       if (opts.homing) pd.homing = opts.homing;
@@ -757,13 +777,16 @@ export default {
     }
     function reflectInArc(owner, x, y, angle, arc, range, opts) {
       let n = 0;
-      const cand = ents.inRadius(x, y, range, null, scratchB);
-      for (let i = 0; i < cand.length; i++) {
-        const p = cand[i];
-        if (p.type !== 'projectile' || !p.data.proj || !hostileTeams(p.team, owner.team)) continue;
-        if (Math.abs(angleDiff(angle, angleTo(x, y, p.x, p.y))) > (arc * DEG) / 2) continue;
-        if (reflect(p, owner, opts)) n++;
-      }
+      const dp = depth++;
+      try {
+        const cand = ents.inRadius(x, y, range, null, candAt(dp));
+        for (let i = 0; i < cand.length; i++) {
+          const p = cand[i];
+          if (p.type !== 'projectile' || !p.data.proj || !hostileTeams(p.team, owner.team)) continue;
+          if (Math.abs(angleDiff(angle, angleTo(x, y, p.x, p.y))) > (arc * DEG) / 2) continue;
+          if (reflect(p, owner, opts)) n++;
+        }
+      } finally { depth = dp; }
       return n;
     }
 
@@ -782,11 +805,15 @@ export default {
       return true;
     }
     function resolveAoe(source, o, x, y, amount, out) {
+      const dp = depth++;
+      try { return resolveAoeAt(source, o, x, y, amount, out || outAt(dp), dp); } finally { depth = dp; }
+    }
+    function resolveAoeAt(source, o, x, y, amount, out, dp) {
       out.length = 0;
-      setFilter(source, o.hitsTeam);
+      setFilter(source, o.hitsTeam, false);
       const reach = o.shape === 'line' ? (o.len || o.r || 4) + 1 : (o.r || 1.5) + 1.5;
       const cx = o.shape === 'line' ? x + Math.cos(o.angle || 0) * reach / 2 : x, cy = o.shape === 'line' ? y + Math.sin(o.angle || 0) * reach / 2 : y;
-      const cand = ents.inRadius(cx, cy, o.shape === 'line' ? reach / 2 + 1 : reach, filterHit, scratchA);
+      const cand = ents.inRadius(cx, cy, o.shape === 'line' ? reach / 2 + 1 : reach, filterHit, candAt(dp));
       for (let i = 0; i < cand.length; i++) {
         const t = cand[i];
         if (o.exclude && o.exclude.indexOf(t.id) >= 0) continue;
@@ -848,7 +875,7 @@ export default {
         if (!e) return rec.meteor || rec;
         return e;
       }
-      return resolveAoe(source, o, x, y, amount, o.out || aoeOut);
+      return resolveAoe(source, o, x, y, amount, o.out || null);
     }
 
     // ---------- lingering zones ----------
@@ -878,14 +905,16 @@ export default {
       if (zd.acc < zd.tick) return;
       zd.acc -= zd.tick;
       const src = zd.src;
-      setFilter(src, o.hitsTeam);
       zoneOut.length = 0;
-      const cand = ents.inRadius(e.x, e.y, zd.r + 1, null, scratchA);
+      const dp = depth++;
+      try {
+      const cand = ents.inRadius(e.x, e.y, zd.r + 1, null, candAt(dp));
       for (let i = 0; i < cand.length; i++) {
         const t = cand[i];
         if (!targetable(t)) continue;
         const dx = t.x - e.x, dy = t.y - e.y, d = Math.sqrt(dx * dx + dy * dy);
         if (d - t.radius > zd.r) continue;
+        setFilter(src, o.hitsTeam, false);     // a hook inside a previous hit may have re-pointed the shared filter
         const enemy = filterHit(t);
         const ally = !enemy && !hostileTeams(e.team, t.team) && t.team === e.team;
         if (enemy) {
@@ -906,6 +935,7 @@ export default {
           if (o.allyStatus) applyStatuses(t, o.allyStatus, src);
         }
       }
+      } finally { depth = dp; }
       if (o.onTick) o.onTick(game, e, zoneOut);
     }
 
@@ -988,7 +1018,7 @@ export default {
           if (acc[k] >= DOT_TICK) {
             acc[k] -= DOT_TICK;
             const per = k === 'venom' ? (e.statusPower.venom || 1) * ((e.data.stacks && e.data.stacks.venom) || 1) : e.statusPower.burn || 1;
-            const amt = Math.max(1, Math.round(per * DOT_TICK));
+            const amt = per > 0 ? Math.max(1, Math.round(per * DOT_TICK)) : 0;   // numberScale: ticks are no longer tiny
             const srcE = e.data.dotSrc && e.data.dotSrc[k];
             const d = dmgOpts(srcE || null, {}, 'true');
             d.source = srcE || null; d.knockback = 0; d.dot = true; d.raw = true; d.element = k === 'burn' ? 'fire' : 'poison';
@@ -1011,7 +1041,7 @@ export default {
       if (ad.meteor && !ad.meteor.removed) ad.meteor.z = Math.max(0, ad.meteor.data.fallZ * (ad.t / ad.total));
       if (ad.t > 0) return false;
       if (ad.meteor) ents.remove(ad.meteor);
-      resolveAoe(ad.src, ad.o, ad.x, ad.y, ad.amount, aoeOut);
+      resolveAoe(ad.src, ad.o, ad.x, ad.y, ad.amount, null);
       if (ad.o.meteor) game.camera.shake = Math.max(game.camera.shake, 0.4);
       return true;
     }
@@ -1083,7 +1113,7 @@ export default {
         if (a.length >= 3) { who = ents.find(a[1]); n = a[2]; }
         if (!who) return;
         if (who.data.down && who.type !== 'player') { who.data.downT = 0; }
-        heal(who, n == null ? who.hpMax : n);
+        heal(who, n == null ? who.hpMax : n * (game.config.numberScale || 1));   // script numbers are base values
       });
       ops.register('kill', (g, a) => {
         const list = ents.findAll(a[1], []);
@@ -1093,7 +1123,7 @@ export default {
 
     const api = {
       hostile(a, b) { return !!a && !!b && a !== b && hostileTeams(a.team, b.team); },
-      targetable, canHit(src, t) { setFilter(src, null); return filterHit(t); },
+      targetable, canHit(src, t, direct) { setFilter(src, null, direct); return filterHit(t); },
       damage, heal, kill, status, clearStatus, breakStealth,
       stacks(e, id) { return (e && e.data.stacks && e.data.stacks[id]) || 0; },
       setStacks(e, id, n) { (e.data.stacks || (e.data.stacks = {}))[id] = n; },

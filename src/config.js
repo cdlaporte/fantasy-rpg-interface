@@ -5,6 +5,7 @@ export const config = {
   startMarker: 'start',
   fallbackZone: 'test',        // used when startZone is missing from data.zones
   levelCap: 12,
+  numberScale: 6,              // every health and damage number in the game is this many times bigger (see docs/notes/fixcore.md)
   dayLengthSeconds: 720,       // a full in-game day = 12 real minutes
   startHour: 8,
   activationRadius: 30,        // tiles; entities farther from the player are asleep

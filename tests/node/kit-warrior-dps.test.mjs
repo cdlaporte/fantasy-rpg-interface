@@ -3,11 +3,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame } from '../../src/core/game.js';
+import { config } from '../../src/config.js';
 import data from '../../src/data/index.js';
 import { DT, makeInputState } from '../../src/contracts.js';
 import { mk } from './kit-warrior.test.mjs';
 
-export const TARGET = { 3: 10, 5: 17, 8: 30, 10: 40, 12: 52 };
+export const TARGET = Object.fromEntries(Object.entries({ 3: 10, 5: 17, 8: 30, 10: 40, 12: 52 }).map(([k, v]) => [k, v * config.numberScale]));   // CLASSES band x number scale
 // A sensible boon pick per spec (boons at 4, 6, 8, 10, 12; at least one spec boon from 8).
 export const LOADOUT = {
   warrior: ['cleaving_wind', 'rage_spikes', 'aftershock', 'ricochet_bash', 'blazing_bash'],

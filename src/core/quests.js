@@ -232,7 +232,7 @@ export default {
     game.bus.on('flag', () => { each('flag', (id, g, q) => { if (flagOk(g)) advance(id, q.step); }); });
     game.bus.on('interact', (ev) => {
       const e = ev && ev.ent;
-      if (!e) return;
+      if (!e || ev.noQuest) return;
       each('interact', (id, g, q) => {
         const want = g.id || g.kind;
         if (e.id === want || e.kind === want || (e.def && e.def.id === want) || (e.data && e.data.propId === want)

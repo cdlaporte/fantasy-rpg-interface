@@ -3,6 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame } from '../../src/core/game.js';
 import baseData from '../../src/data/index.js';
+import { config } from '../../src/config.js';
 import { createQuestions } from '../../src/questions/index.js';
 import { xpNext, rankAt, DEFAULT_BOONS } from '../../src/core/progression.js';
 import { DT, makeInputState } from '../../src/contracts.js';
@@ -20,6 +21,7 @@ function make(opts = {}) {
     game.bus.on(e, (p) => log.push([e, p]));
   return { game, log, of: (e) => log.filter((x) => x[0] === e).map((x) => x[1]) };
 }
+const NS = config.numberScale;   // health and power are base numbers x the number scale
 const quietWarn = () => { const w = console.warn; console.warn = () => {}; return () => { console.warn = w; }; };
 
 test('xp curve and rank thresholds', () => {
@@ -72,15 +74,15 @@ test('level up: full heal, fx, knockback ring, toast, events, boons, cap', () =>
 test('stats from the balance sheet, spec mods, data overrides', () => {
   let { game } = make();
   const p = game.player, pr = game.progression;
-  assert.equal(p.hpMax, 25); assert.equal(p.stats.power, 2); assert.equal(p.stats.speed, 3.2);
+  assert.equal(p.hpMax, 25 * NS); assert.equal(p.stats.power, 2 * NS); assert.equal(p.stats.speed, 3.2);   // number scale: hp and power x NS, speed untouched
   pr.setLevel(3, { quiet: true });
   pr.setClass('warrior', { quiet: true });
-  assert.equal(p.hpMax, 44 + 9 * 3);
-  assert.equal(p.stats.power, 8.9);
+  assert.equal(p.hpMax, (44 + 9 * 3) * NS);
+  assert.equal(p.stats.power, Math.round(8.9 * NS * 100) / 100);
   assert.equal(p.stats.speed, 3.4);
   pr.setLevel(8, { quiet: true });
   pr.setSpec('knight', { quiet: true });
-  assert.equal(p.hpMax, Math.round((44 + 72) * 1.25));
+  assert.equal(p.hpMax, Math.round((44 + 72) * 1.25 * NS));
   assert.equal(p.stats.speed, Math.round(3.4 * 0.95 * 100) / 100);
   const hud = game.hudState();
   assert.equal(hud.player.className, 'Warrior');
@@ -89,18 +91,18 @@ test('stats from the balance sheet, spec mods, data overrides', () => {
   // statMods hook (kits / items)
   p.data.statMods = { test: { power: 2 } };
   pr.recalc();
-  assert.equal(p.stats.power, Math.round((5 + 1.3 * 8) * 2 * 100) / 100);
+  assert.equal(p.stats.power, Math.round((5 + 1.3 * 8) * 2 * NS * 100) / 100);
   // data overrides the defaults field by field
   ({ game } = make({ data: {
     classes: { warrior: { id: 'warrior', name: 'Brawler', base: { hp: 100, hpPerLevel: 0, power: 10, powerPerLevel: 0, speed: 5, defense: 2 } } },
     specs: { knight: { id: 'knight', from: 'warrior', name: 'Paladin', mods: { hp: 2 } } },
   } }));
   game.progression.setClass('warrior', { quiet: true });
-  assert.equal(game.player.hpMax, 100);
+  assert.equal(game.player.hpMax, 100 * NS);
   assert.equal(game.player.stats.defense, 2);
   assert.equal(game.progression.className(), 'Brawler');
   game.progression.setSpec('knight', { quiet: true });
-  assert.equal(game.player.hpMax, 200);
+  assert.equal(game.player.hpMax, 200 * NS);
   assert.equal(game.player.stats.speed, 4.75, 'mods not given in data keep the CLASSES default (knight speed x0.95)');
 });
 
@@ -159,10 +161,28 @@ test('boon offers: class pool, spec pool, no repeats, deterministic', () => {
     a.progression.chooseBoon(offer.find((o) => knightIds.includes(o.id)).id);
   }
   assert.ok(!a.progression.offerBoons(3).some((o) => knightIds.includes(o.id)), 'spec pool exhausted');
-  // data/boons.js replaces the default pool
-  const { game: g } = make({ data: { boons: { b1: { id: 'b1', class: 'rogue', name: 'One', desc: 'd', icon: 'star' }, b2: { id: 'b2', class: 'rogue', name: 'Two', desc: 'd', icon: 'star' } } } });
+  // data/boons.js merges per id over the default pool: new ids are added, known ids override fields only
+  const { game: g } = make({ data: { boons: { b1: { id: 'b1', class: 'rogue', name: 'One', desc: 'd', icon: 'star' }, venom_edge: { name: 'Renamed' } } } });
+  const ids = g.progression.boonDefs().map((x) => x.id);
+  assert.ok(ids.includes('b1') && ids.includes('boomerang_blade') && ids.includes('second_wind'), 'defaults stay');
+  const ve = g.progression.boonDefs().find((x) => x.id === 'venom_edge');
+  assert.equal(ve.name, 'Renamed');
+  assert.equal(ve.class, 'rogue');
+  assert.ok(ve.desc, 'default desc kept');
   g.progression.setClass('rogue', { quiet: true });
-  assert.deepEqual(g.progression.offerBoons(3).map((o) => o.id).sort(), ['b1', 'b2']);
+  const rogueIds = g.progression.boonDefs().filter((x) => x.class === 'rogue' && !x.spec).map((x) => x.id);
+  assert.ok(rogueIds.includes('b1') && rogueIds.includes('boomerang_blade'));
+  assert.ok(g.progression.offerBoons(3).every((o) => rogueIds.includes(o.id)));
+});
+
+test('classes and specs merge per id: partial data adds or overrides, never hides the built-in ones', () => {
+  const { game } = make({ data: { classes: { mage: { name: 'Wizard' }, bard: { id: 'bard', name: 'Bard', color: '#fff', blurb: 'x', base: { hp: 30, hpPerLevel: 5, power: 4, powerPerLevel: 1, speed: 3.3 } } }, specs: { skald: { id: 'skald', from: 'bard', name: 'Skald' } } } });
+  const pr = game.progression;
+  assert.deepEqual(pr.classIds(), ['warrior', 'mage', 'rogue', 'bard']);
+  assert.equal(pr.classDef('mage').name, 'Wizard');
+  assert.ok(pr.classDef('mage').base.hp > 0 && pr.classDef('mage').look, 'default fields kept');
+  assert.ok(pr.specIds('warrior').includes('knight'), 'default specs stay');
+  assert.deepEqual(pr.specIds('bard'), ['skald']);
 });
 
 test('boon picker: Tab opens it through the boon gate; pickBoon; wrong answer -> 2 options', async () => {

@@ -2,7 +2,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DT } from '../../src/contracts.js';
+import { config } from '../../src/config.js';
 import data from '../../src/data/index.js';
+
+const NS = config.numberScale;
 import { mk, dummy, run600 } from './kit-warrior.test.mjs';
 
 const K = { spec: 'knight' };
@@ -70,19 +73,19 @@ test('Perfect Block stuns a melee attacker 1 s; a late block only reduces 85%; S
   g.p.angle = 0; g.p.dir = 1;
   g.step(1, { held: { f: true } });
   const hp0 = g.p.hp;
-  g.game.combat.damage(g.p, 20, { source: foe, type: 'melee' });
+  g.game.combat.damage(g.p, 20 * NS, { source: foe, type: 'melee' });
   assert.equal(g.p.hp, hp0, 'perfect: no damage');
   assert.ok(foe.status.stun > 0.9);
   g.step(30, { held: { f: true } });
-  g.game.combat.damage(g.p, 20, { source: foe, type: 'melee' });
-  assert.equal(hp0 - g.p.hp, 3, 'late block reduces 85%');
+  g.game.combat.damage(g.p, 20 * NS, { source: foe, type: 'melee' });
+  assert.equal(hp0 - g.p.hp, 3 * NS, 'late block reduces 85%');
   const slamSmall = (() => { const n = g.hits.length; g.step(1, { held: { f: false } }); return g.hits.slice(n).reduce((a, h) => a + h.amount, 0); })();
   // second round blocks much more damage -> a bigger slam
   g.game.abilities.reset(g.p);
   g.step(5);
   g.step(1, { held: { f: true } });
   g.step(30, { held: { f: true } });
-  for (let i = 0; i < 6; i++) g.game.combat.damage(g.p, 30, { source: foe, type: 'melee' });
+  for (let i = 0; i < 6; i++) g.game.combat.damage(g.p, 30 * NS, { source: foe, type: 'melee' });
   const n2 = g.hits.length;
   g.step(1, { held: { f: false } });
   const slamBig = g.hits.slice(n2).reduce((a, h) => a + h.amount, 0);

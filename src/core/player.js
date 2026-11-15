@@ -12,10 +12,11 @@ export default {
   id: 'player',
   init(game) {
     const data = game.data;
+    const ns = game.config.numberScale || 1;
     const p = game.ents.create({
       kind: 'player', type: 'player', team: 'player', name: game.name, look: { rig: 'humanoid' },
-      radius: 0.3, solid: true, pushable: true, hp: 25, hpMax: 25, level: 1,
-      stats: { power: 2, defense: 0, speed: 3.2 },
+      radius: 0.3, solid: true, pushable: true, hp: 25 * ns, hpMax: 25 * ns, level: 1,
+      stats: { power: 2 * ns, defense: 0, speed: 3.2 },
       data: { name: game.name, classId: null, specId: null, target: null, kit: { speedMul: 1, lookPatch: null }, scriptLook: null },
     });
     game.player = p;
@@ -60,6 +61,8 @@ export default {
             };
             look.aura = clone(aura);
           }
+          // A kit's own aura (War Cry flare, Battlemage element) wins over the default level-10 aura.
+          if (kp && kp.aura) look.aura = clone(kp.aura);
         }
         if (f.has_stick && !classId) look.held = clone(STICK);
         if (p.data.scriptLook) deepMerge(look, p.data.scriptLook);
@@ -84,7 +87,8 @@ export default {
           else game.toast(it.locked || 'Not yet.', 'info');
           return true;
         }
-        game.bus.emit('interact', { ent: t });
+        // `noQuest` (pickpocket prompt): the kit still sees the press, but quests must not count it as talking.
+        game.bus.emit('interact', { ent: t, noQuest: !!it.noQuest });
         if (ops && ops.run && it.do) ops.run(it.do, { self: t, npc: t });
         return true;
       },

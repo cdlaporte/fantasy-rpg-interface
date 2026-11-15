@@ -86,7 +86,7 @@ export default {
     },
     ranks: { 3: 'Shuriken', 4: 'Shuriken Storm' },
     kit: {
-      dmgScale: 0.095,   // replaces the class dmgScale for this spec (measured, docs/notes/kit-rogue.md)
+      dmgScale: 0.14,   // replaces the class dmgScale for this spec (measured, docs/notes/kit-rogue.md)
       colors: { main: '#3d348b', sash: '#e63946', steel: '#cfd8dc', shadow: '#6a5acd' },
       afterimage: { every: 0.22, critWindow: 1 },
       shuriken: { n: 3, spread: 30, range: 6, coef: 0.5, speed: 12, interval: 0.3, catchCdr: 0.3 },

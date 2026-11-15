@@ -1,7 +1,7 @@
 // Meta package. progression (CONTRACTS 12, docs/CLASSES.md): xp and levels, attack rank, class and
 // specialization, boons, stat derivation, the class / spec / look pickers, and the player-down flow (12a).
 // Built-in defaults from the CLASSES balance sheet are used wherever data/classes.js, data/specs/*.js or
-// data/boons.js do not provide a value (data wins field by field; boons: data replaces the default pool).
+// data/boons.js do not provide a value (data wins field by field; classes, specs and boons merge per id).
 // See docs/notes/meta.md for the API reference.
 import { createRng } from './rng.js';
 
@@ -370,19 +370,25 @@ export default {
       out.id = id;
       return out;
     }
+    // Data merges over the built-in pools PER ID: a partial data set (one class filled, a handful of boons) adds to
+    // or overrides the defaults; it never hides the entries it does not mention.
+    const unionIds = (defaults, dataObj) => {
+      const out = Object.keys(defaults);
+      for (const k of Object.keys(dataObj || {})) if (!(k in defaults)) out.push(k);
+      return out;
+    };
     function classIds() {
-      const ids = Object.keys(data().classes || {}).filter((k) => k !== 'novice' && (data().classes[k] || {}).pickable !== false);
-      return ids.length ? ids : Object.keys(DEFAULT_CLASSES);
+      return unionIds(DEFAULT_CLASSES, data().classes).filter((k) => k !== 'novice' && (classDef(k) || {}).pickable !== false);
     }
     function specIds(classId) {
-      const ds = data().specs || {};
-      const all = Object.keys(ds).length ? Object.keys(ds) : Object.keys(DEFAULT_SPECS);
-      return all.filter((id) => { const s = specDef(id); return s && (!classId || s.from === classId); });
+      return unionIds(DEFAULT_SPECS, data().specs).filter((id) => { const s = specDef(id); return s && (!classId || s.from === classId); });
     }
     function boonDefs() {
       const db = data().boons || {};
-      const list = Object.keys(db).length ? Object.keys(db).map((k) => Object.assign({ id: k }, db[k])) : DEFAULT_BOONS;
-      return list.slice().sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+      const byId = new Map();
+      for (const d of DEFAULT_BOONS) byId.set(d.id, d);
+      for (const k of Object.keys(db)) byId.set(k, Object.assign({}, byId.get(k), { id: k }, db[k]));
+      return Array.from(byId.values()).sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
     }
     function boonDef(id) { return boonDefs().find((b) => b.id === id) || null; }
 
@@ -445,6 +451,8 @@ export default {
         if (api.level >= AURA_LEVEL && api.classId) {
           look.aura = { style: AURA_STYLES[api.classId] || 'glow', color: (s && s.color) || (c && c.color) || '#ffd24a' };
         }
+        const kp = p.data.kit && p.data.kit.lookPatch;
+        if (kp && kp.aura) look.aura = clone(kp.aura);
       }
       if (!api.classId && game.flags.has_stick) look.held = { style: 'stick', color: '#8b5a2b', glow: null };
       p.look = look;
@@ -476,7 +484,10 @@ export default {
           if (m.defense) defense *= m.defense;
         }
       }
-      const hpMax = Math.max(1, Math.round(hp));
+      // Number scale: the class tables stay in readable base numbers; health and power (hence all damage) scale here.
+      const ns = game.config.numberScale || 1;
+      power *= ns;
+      const hpMax = Math.max(1, Math.round(hp * ns));
       if (!p.stats) p.stats = {};
       p.stats.power = Math.round(power * 100) / 100;
       p.stats.speed = Math.round(speed * 100) / 100;

@@ -548,7 +548,7 @@ export default {
         if (ai.thresholds) bossStep(e, ai);
         if (e.data.hitStop > 0) continue;
         if (e.status.stun > 0) { e.vx = 0; e.vy = 0; continue; }
-        if (ai.cfg.regen && game.t - (e.data.lastHurtT || -9) > 2 && e.hp < e.hpMax) e.hp = Math.min(e.hpMax, e.hp + ai.cfg.regen * dt);
+        if (ai.cfg.regen && game.t - (e.data.lastHurtT || -9) > 2 && e.hp < e.hpMax) e.hp = Math.min(e.hpMax, e.hp + ai.cfg.regen * (game.config.numberScale || 1) * dt);
         if (ai.windT > 0) {
           ai.windT -= dt;
           e.vx = 0; e.vy = 0;

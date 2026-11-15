@@ -1,4 +1,3 @@
-// STUB: replaced by the Content package (starter content by the skeleton)
 // Tile defs; array index = tile number stored in zone.tiles. Keep index 0 = grass (the mapgen fallback).
 // {id, solid, shape: flat|block|water|pit, h, pattern, colors: {a, b, side}}
 
@@ -26,4 +25,8 @@ export default [
   T('cloud', 'cloud', 'flat', false, 0, '#ffffff', '#e6f0ff'),
   T('starfloor', 'starfloor', 'flat', false, 0, '#3d3a8c', '#ffe680'),
   T('wall', 'stone', 'block', true, 2, '#cfd2dc', '#b4b8c6', '#9a9eae'),
+  // --- additions by World (append only; never reorder) ---
+  T('palisade', 'planks', 'block', true, 1.5, '#b0743d', '#8a5a33', '#7a4e2c'),
+  T('rune_floor', 'starfloor', 'flat', false, 0, '#8f88b8', '#c9a6ff'),
+  T('mossy_stone', 'stone', 'flat', false, 0, '#a9b8a0', '#8fa58a'),
 ];

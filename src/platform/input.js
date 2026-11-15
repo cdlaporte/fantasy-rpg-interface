@@ -97,16 +97,23 @@ export function createInput(target, opts = {}) {
   const core = createCore();
   const moveDown = {};
   const isBlocked = opts.isBlocked || (() => false);
+  // integration (UI request): a key whose keydown arrives while a modal is open belongs to the modal, even if
+  // the modal closes before this bubble-phase listener runs (the stub question card answers on `1` in a capture
+  // listener and gates close the modal in a microtask, so `1` also used hotbar item 1). A capture listener,
+  // registered before the UI's, remembers that and the press is ignored until that key goes up.
+  const swallowed = Object.create(null);
+  const onCapture = (e) => { if (!e.repeat) swallowed[e.code] = isBlocked(); };
   const onDown = (e) => {
     const c = e.code;
     if (PREVENT.has(c) && !isBlocked()) e.preventDefault();
-    if (e.repeat) return;
+    if (e.repeat || swallowed[c]) return;
     if (MOVE_MAP[c]) moveDown[c] = true;
     else if (ATTACK_MAP[c] !== undefined) core.attack(ATTACK_MAP[c], true);
     else if (KEY_MAP[c]) core.key(KEY_MAP[c], true);
   };
   const onUp = (e) => {
     const c = e.code;
+    swallowed[c] = false;
     if (MOVE_MAP[c]) moveDown[c] = false;
     else if (ATTACK_MAP[c] !== undefined) core.attack(ATTACK_MAP[c], false);
     else if (KEY_MAP[c]) {
@@ -115,6 +122,7 @@ export function createInput(target, opts = {}) {
     }
   };
   const onBlur = () => { for (const k in moveDown) moveDown[k] = false; core.releaseAll(); };
+  target.addEventListener('keydown', onCapture, true);
   target.addEventListener('keydown', onDown);
   target.addEventListener('keyup', onUp);
   target.addEventListener('blur', onBlur);
@@ -127,6 +135,7 @@ export function createInput(target, opts = {}) {
     },
     reset: onBlur,
     dispose() {
+      target.removeEventListener('keydown', onCapture, true);
       target.removeEventListener('keydown', onDown);
       target.removeEventListener('keyup', onUp);
       target.removeEventListener('blur', onBlur);

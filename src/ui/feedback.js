@@ -78,7 +78,12 @@ export function createFeedback(hudEl, viewEl, ctx) {
   const cardSub = el('div', 'zone-card-sub');
   add(card, el('div', 'zone-card-orn'), cardName, cardSub, el('div', 'zone-card-orn'));
   const vignette = el('div', 'vignette');
+  // integration: "Esc  Skip" hint while a skippable cutscene runs (Story: cutscene.active && cutscene.skippable)
+  const skipHint = el('div', 'skip-hint pxfont');
+  skipHint.textContent = 'Esc  Skip';
+  skipHint.hidden = true;
   hudEl.prepend(vignette, lbTop, lbBot);
+  hudEl.append(skipHint);
   hudEl.append(fade, card);
   let cardTimer = 0;
 
@@ -155,6 +160,8 @@ export function createFeedback(hudEl, viewEl, ctx) {
       else pushBanner(banner('banner-quest small', 'QUEST UPDATED', name, extra || '', null), 2000);
     },
     letterbox(on) { setClass(hudEl, 'letterboxed', !!on); },
+    /** Show the skip hint while a skippable cutscene runs. */
+    skippable(on) { if (skipHint.hidden === !!on) skipHint.hidden = !on; },
     transition(phase) {
       if (phase === 'out') { fade.classList.add('instant'); fade.classList.add('on'); void fade.offsetWidth; fade.classList.remove('instant'); }
       else { fade.classList.remove('on'); }
@@ -167,7 +174,7 @@ export function createFeedback(hudEl, viewEl, ctx) {
       clearTimeout(cardTimer);
       cardTimer = setTimeout(() => card.classList.remove('show'), 2800);
     },
-    dispose() { for (const n of [bannerHost, boss, tut, prompt, lbTop, lbBot, fade, card, vignette]) n.remove(); },
+    dispose() { for (const n of [bannerHost, boss, tut, prompt, lbTop, lbBot, fade, card, vignette, skipHint]) n.remove(); },
   };
   return api;
 }

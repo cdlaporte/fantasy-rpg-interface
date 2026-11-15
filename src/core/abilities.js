@@ -389,6 +389,8 @@ export default {
         if (!cd) return;
         if (slot) { if (cd[slot]) cd[slot].until = 0; } else for (const k in cd) cd[k].until = 0;
       },
+      /** integration (Meta request): alias of reset(ent) for the focus scroll. */
+      resetCooldowns(ent) { api.reset(ent); },
       /** added: lower a guard raised with the `guard` block; returns {blocked, blocks, perfects, heldT} or null. */
       unguard(ent) {
         const g = ent && ent.data.guard;

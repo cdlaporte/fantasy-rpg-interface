@@ -338,6 +338,15 @@ export default {
       const cid = p.data.classId || prog().classId || (KITS[specId] && KITS[specId].parent) || null;
       api.set(p, cid, specId);
     });
+    let fbKey = null, fbList = null;
+    function fallbackAbility(L, slot) {
+      const pr = game.sys.progression;
+      if (!L.classId || !pr || !pr.abilityList) return null;
+      const key = L.classId + '/' + (L.specId || '');
+      if (key !== fbKey) { fbKey = key; fbList = pr.abilityList(L.classId, L.specId || null, false) || []; }
+      for (let i = 0; i < fbList.length; i++) if (fbList[i].slot === slot) return fbList[i];
+      return null;
+    }
     const metaUnlocks = () => !!(game.sys.progression && game.sys.progression.abilityList);
     let lastLevel = null;
     game.bus.on('levelup', ({ level: lv }) => {
@@ -387,6 +396,15 @@ export default {
       for (let i = 0; i < hud.abilities.length; i++) {
         const a = hud.abilities[i];
         const ab = L.abilities[a.slot];
+        const fb = !ab ? fallbackAbility(L, a.slot) : null;
+        if (!ab && fb) {
+          // integration: the class kit does not implement this slot yet (stub kits): show the designed ability
+          // from Meta's data/defaults so the panel reads "Lv 3 Blink", but it is never ready.
+          const un = lv >= fb.unlock;
+          a.id = fb.id; a.name = fb.name; a.icon = un ? fb.icon : 'lock'; a.desc = fb.desc; a.unlocked = un; a.unlockLevel = fb.unlock;
+          a.cdFrac = 0; a.ready = false; a.active = false; a.cost = 0;
+          continue;
+        }
         if (!ab) {
           a.id = null; a.name = ''; a.icon = 'lock'; a.desc = ''; a.unlocked = false; a.unlockLevel = 0;
           a.cdFrac = 0; a.ready = false; a.active = false; a.cost = 0;

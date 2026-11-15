@@ -61,8 +61,18 @@ export function createUI(rootEl, opts = {}) {
     }
   }
 
+  function canSkip() {
+    const cs = game && game.cutscene;
+    return !!(cs && cs.active && cs.skippable && (!game.modal || game.modal.type === 'dialogue'));
+  }
   function onKey(e) {
     if (!game) return;
+    // integration: Escape skips a skippable cutscene (also while one of its lines is showing)
+    if (e.code === 'Escape' && !e.repeat && canSkip()) {
+      e.stopPropagation(); e.preventDefault();
+      if (game.commands.skipCutscene) game.commands.skipCutscene();
+      return;
+    }
     if (game.modal) {
       if (modals && (game.modal.type === 'question' || modals.passKeys())) return; // the provider owns the keys
       e.stopPropagation(); // keep the game's input from seeing keys that belong to the modal
@@ -88,6 +98,7 @@ export function createUI(rootEl, opts = {}) {
     panel.update(hud, game, now / 1000);
     minimap.update(hud, game);
     feedback.update(hud, game);
+    feedback.skippable(canSkip());
     modals.poll(game);
     if (params.perf) perfUi = performance.now() - t0;
   }
@@ -139,6 +150,8 @@ export function createUI(rootEl, opts = {}) {
       on('quest:step', (e) => feedback.quest('step', questName(e.id), stepText(e)));
       on('quest:done', (e) => feedback.quest('done', questName(e.id)));
       on('letterbox', (e) => feedback.letterbox(e && e.on));
+      // integration: the dialogue modal is mutated in place per line; refresh at once instead of at the next poll
+      on('dialogue:line', () => modals.poll(game));
       on('zone:transition', (e) => feedback.transition(e && e.phase));
       on('zone:load', (e) => {
         minimap.zoneChanged(game);

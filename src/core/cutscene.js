@@ -591,6 +591,8 @@ export default {
       setTutorial,
     };
 
+    // integration: UI command (Escape during a skippable cutscene; see src/ui/index.js)
+    game.commands.skipCutscene = () => api.skip();
     ops.register('cutscene', (g, a, ctx) => api.play(a[1], { nested: !!(ctx && ctx.cutscene && run) }));
     ops.register('tutorial', (g, a) => { setTutorial(a[1], a[2], a[3]); });
     ops.register('bubble', (g, a, ctx) => {

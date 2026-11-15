@@ -89,12 +89,12 @@ function applyElement(game, p, t, i, dealt) {
   if (W.has(game, p, 'elemental_overlap')) {
     const ov = W.bnums(game, 'elemental_overlap');
     const m = t.data.bmEl;
-    if (m && m.el !== i && game.t - m.t <= ov.window) {
+    if (m && m.el !== i && game.t - m.t <= ov.window && game.t >= m.cd) {
       const was = m.el;
-      m.el = i; m.t = game.t;       // the new element now rides the target: keep dancing to chain detonations
+      m.el = i; m.t = game.t; m.cd = game.t + (ov.icd || 0);   // the new element now rides the target: keep dancing
       detonate(game, p, t, was, i);
       if (!t.alive || t.removed) return;
-    } else if (m) { m.el = i; m.t = game.t; } else t.data.bmEl = { el: i, t: game.t };
+    } else if (m) { m.el = i; m.t = game.t; } else t.data.bmEl = { el: i, t: game.t, cd: 0 };
   }
   if (i === 0) game.combat.status(t, 'burn', n.fire.burnDur, n.fire.burnCoef * game.combat.powerOf(p), p);
   else if (i === 1) game.combat.status(t, 'frost', n.frost.slowDur, n.frost.slow, p);
@@ -138,7 +138,7 @@ function fireWave(game, p, angle, i, side, rank4) {
   const w = N(game).wave;
   const col = colorOf(game, i);
   const e = game.abilities.use('projectile', p, { angle, side, model: 'wave', color: col, glow: col, size: rank4 ? 1.5 : 1.2,
-    speed: w.speed, range: w.range, dmg: w.dmg, radius: w.radius, pierce: rank4 ? true : 0, knockback: 2.5,
+    speed: w.speed, range: w.range, dmg: rank4 && w.dmg4 != null ? w.dmg4 : w.dmg, radius: w.radius, pierce: rank4 ? true : 0, knockback: 2.5,
     type: 'magic', element: ELEMENTS[i], tags: TAG_SKILL, onHit: waveHit, onExpire: waveEnd, anim: 'attack', sfx: 'spell' });
   if (e && e.data) { e.data.bmRank4 = !!rank4; e.data.bmZones = 0; e.data.bmChained = false; }
   return e;

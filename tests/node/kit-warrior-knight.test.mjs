@@ -2,6 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DT } from '../../src/contracts.js';
+import data from '../../src/data/index.js';
 import { mk, dummy, run600 } from './kit-warrior.test.mjs';
 
 const K = { spec: 'knight' };
@@ -138,7 +139,7 @@ test('Bulwark Aura: classmates within 4 tiles take 30% less damage (gold ring un
   assert.ok(g.fxOf('ring').some((e) => e.color === '#f2c94c' && Math.abs(e.x - c.x) < 0.5), 'gold ring under the classmate');
 });
 
-test('Aegis of Flinkerton: 80% less inside, enemies pushed out, radiant pillar + shockwave (coef 3) at the end', () => {
+test('Aegis of Flinkerton: 80% less inside, enemies pushed out, radiant pillar + shockwave at the end', () => {
   const g = mk({ ...K, level: 11, ring: 4, r: 1.5, hp: 50000 });
   g.setRage(60);
   g.press('shift');
@@ -151,8 +152,8 @@ test('Aegis of Flinkerton: 80% less inside, enemies pushed out, radiant pillar +
   for (const f of g.foes) g.game.physics.teleport(f, g.p.x + 1, g.p.y);
   const n = g.hits.length;
   g.step(Math.round(4 / DT));
-  const end = g.hits.slice(n).filter((h) => h.amount === Math.round(3 * g.p.stats.power));
-  assert.ok(end.length >= 1, 'coef 3 shockwave at the end');
+  const end = g.hits.slice(n).filter((h) => h.amount === Math.round(data.specs.knight.nums.aegis.endDmg * g.p.stats.power));
+  assert.ok(end.length >= 1, 'end shockwave');
   assert.ok(g.fxOf('pillar').length >= 2 && g.fxOf('screenFlash').length >= 2);
 });
 

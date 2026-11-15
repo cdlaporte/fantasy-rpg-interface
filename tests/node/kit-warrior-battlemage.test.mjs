@@ -2,6 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DT } from '../../src/contracts.js';
+import data from '../../src/data/index.js';
 import { mk, dummy, run600 } from './kit-warrior.test.mjs';
 
 const M = { spec: 'battlemage', r: 1.25 };
@@ -33,7 +34,8 @@ for (const level of [3, 5, 8, 11, 12]) {
       assert.ok(g.fxOf('ring').some((e) => e.color === FROST && e.r >= 5), 'frost ring');
       assert.ok(g.fxOf('bolt').filter((e) => e.color === STORM && e.x2 == null).length >= 6, 'six storm bolts');
       assert.ok(g.fx.types.screenFlash >= 2);
-      assert.ok(g.hits.filter((h) => h.amount === Math.round(2 * pw)).length >= 8 * 2, 'pulses at coef 2');
+      const per = Math.round(data.specs.battlemage.nums.runestorm.dmg * pw);
+      assert.ok(g.hits.filter((h) => h.amount === per && !h.dot).length >= 8 * 2, 'pulses at the Runestorm coef');
     }
   });
 }
@@ -136,9 +138,9 @@ test('boon Elemental Overlap: hitting an enemy that carries a different element 
     g.game.bus.on('rune:overlap', (e) => overlaps.push(e.a + '+' + e.b));
     swingOnce(g);                       // fire mark
     g.press('f');                        // frost nova: steam
-    g.step(100); g.game.physics.teleport(g.foes[0], g.p.x + 1.1, g.p.y);
+    g.step(130); g.game.physics.teleport(g.foes[0], g.p.x + 1.1, g.p.y);   // > 2 s per-target detonation cooldown
     g.press('f');                        // storm nova: shatter (frost + storm)
-    g.step(100); g.game.physics.teleport(g.foes[0], g.p.x + 1.1, g.p.y);
+    g.step(130); g.game.physics.teleport(g.foes[0], g.p.x + 1.1, g.p.y);
     g.press('f');                        // fire nova: plasma
     g.step(10);
     return { overlaps, texts: g.fxOf('text').filter((e) => /Steam|Shatter|Plasma/.test(e.text)).map((e) => e.text), dealt: g.dealt };

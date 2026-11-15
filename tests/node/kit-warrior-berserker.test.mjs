@@ -2,6 +2,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DT } from '../../src/contracts.js';
+import data from '../../src/data/index.js';
+const BN = data.specs.berserker.nums;
 import { mk, dummy, run600 } from './kit-warrior.test.mjs';
 
 const B = { spec: 'berserker', r: 1.2 };
@@ -85,10 +87,10 @@ test('Wild Heart: attack speed +0..60% as hp falls 100% -> 30%; Rage never decay
   assert.ok(Math.abs(g.rage() - 40) < 1e-6, 'no decay');
 });
 
-test('Twin Axes: alternating chops, 0.26 s, coef 0.7, +8 Rage per hit; rank IV axe returns and hits out and back', () => {
+test('Twin Axes: alternating chops, 0.26 s, data coef, +8 Rage per hit; rank IV axe returns and hits out and back', () => {
   const g = mk({ ...B, level: 8, ring: 1, r: 1.0, hp: 1e6 });
   g.step(1, { attackDir: 1 }); g.step(1, { attackDir: -1 });
-  assert.equal(g.hits[0].amount, Math.round(0.7 * g.p.stats.power));
+  assert.equal(g.hits[0].amount, Math.max(1, Math.round(BN.axes.dmg * g.p.stats.power)));
   assert.equal(g.rage(), 8);
   g.step(Math.round(1 / DT), { attackDir: 1 }); g.step(1, { attackDir: -1 });
   const sl = g.fxOf('slash').filter((e) => e.style === 'axe');
@@ -102,7 +104,7 @@ test('Twin Axes: alternating chops, 0.26 s, coef 0.7, +8 Rage per hit; rank IV a
   assert.ok(!h.game.ents.all.some((e) => e.type === 'projectile' && !e.removed), 'caught');
 });
 
-test('Whirlwind: needs 20 Rage, drains 20/s, 80% speed, ticks coef 0.6 within 1.6 every 0.2 s', () => {
+test('Whirlwind: needs 20 Rage, drains 20/s, 80% speed, ticks everything within 1.6 every 0.2 s', () => {
   const g = mk({ ...B, level: 8, ring: 4, r: 1.4, hp: 1e6 });
   g.setRage(10);
   g.step(1, { held: { f: true } }); g.step(3, { held: { f: true } });
@@ -113,7 +115,7 @@ test('Whirlwind: needs 20 Rage, drains 20/s, 80% speed, ticks coef 0.6 within 1.
   assert.equal(g.p.anim, 'spin');
   g.step(Math.round(1 / DT) - 1, { held: { f: true } });
   assert.ok(Math.abs(g.rage() - 40) < 1.5, 'drain 20/s: ' + g.rage());
-  const per = Math.round(0.6 * g.p.stats.power);
+  const per = Math.max(1, Math.round(BN.whirlwind.dmg * g.p.stats.power));
   const ticks = g.hits.filter((h) => h.t === g.foes[0] && h.amount === per).length;
   assert.ok(ticks >= 4 && ticks <= 6, 'ticks every 0.2 s: ' + ticks);
   for (const f of g.foes) g.game.physics.teleport(f, f.x + 10, f.y);
@@ -125,7 +127,7 @@ test('Whirlwind: needs 20 Rage, drains 20/s, 80% speed, ticks coef 0.6 within 1.
   assert.equal(g.game.kits.holding(g.p, 'f'), false, 'ends when Rage runs out');
 });
 
-test('Skyfall Leap: real z arc, invulnerable in the air, shockwave r 3 coef 4 + stun 1; larger during Frenzy', () => {
+test('Skyfall Leap: real z arc, invulnerable in the air, shockwave r 3 + stun 1; larger during Frenzy', () => {
   const leap = (frenzy) => {
     const g = mk({ ...B, level: 11, ring: 0, hp: 1e6 });
     const near = dummy(g.game, g.p.x + 5 + 2.5, g.p.y, 1e6);
@@ -139,7 +141,7 @@ test('Skyfall Leap: real z arc, invulnerable in the air, shockwave r 3 coef 4 + 
   const a = leap(false);
   assert.ok(a.zMax > 2, 'z arc ' + a.zMax);
   assert.ok(a.inv);
-  assert.ok(a.near.some((h) => h.amount === Math.round(4 * a.g.p.stats.power)));
+  assert.ok(a.near.some((h) => h.amount === Math.round(BN.skyfall.dmg * a.g.p.stats.power)));
   assert.ok(a.stun > 0.5);
   assert.equal(a.edge, false);
   const b = leap(true);

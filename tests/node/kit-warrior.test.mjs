@@ -159,7 +159,8 @@ for (const level of [3, 5, 8, 11, 12]) {
   });
 }
 
-test('Heavy Hand: every third swing is 180 degrees, coef 1.6, double knockback, hit-stop', () => {
+test('Heavy Hand: every third swing is 180 degrees, heavier (data coef), double knockback, hit-stop', () => {
+  const N = data.classes.warrior.nums;
   const g = mk({ level: 4, ring: 1, r: 1.0 });
   const f = g.foes[0];
   const amounts = [];
@@ -172,8 +173,9 @@ test('Heavy Hand: every third swing is 180 degrees, coef 1.6, double knockback, 
     amounts.push(g.hits.slice(n0).reduce((a, h) => a + h.amount, 0));
   }
   const pw = g.p.stats.power;
-  assert.equal(amounts[0], Math.round(1.0 * pw));
-  assert.equal(amounts[2], Math.round(1.6 * pw));
+  assert.equal(amounts[0], Math.round(N.sword_arc.dmg * pw));
+  assert.equal(amounts[2], Math.round(N.heavy_hand.dmg * pw));
+  assert.ok(N.heavy_hand.knockback >= 2 * N.sword_arc.knockback);
   assert.equal(stops, 1);
   // behind-you hits only on the heavy swing (180 degrees)
   const g2 = mk({ level: 4, ring: 0 });
@@ -186,7 +188,7 @@ test('Heavy Hand: every third swing is 180 degrees, coef 1.6, double knockback, 
   assert.ok(g2.hits.slice(before).some((h) => h.t === side), '180 arc reaches the flank');
 });
 
-test('Shield Bash: dash in the move direction, first enemy takes coef 1.5 + stun 0.8 + heavy knockback, +15 Rage', () => {
+test('Shield Bash: dash in the move direction, first enemy takes the bash coef + stun 0.8 + heavy knockback, +15 Rage', () => {
   const g = mk({ level: 3, ring: 0 });
   const a = dummy(g.game, g.p.x + 2, g.p.y);
   const b = dummy(g.game, g.p.x + 2.6, g.p.y);
@@ -195,7 +197,7 @@ test('Shield Bash: dash in the move direction, first enemy takes coef 1.5 + stun
   g.step(20, { moveX: 0 });
   assert.equal(g.hits.length, 1, 'only the first enemy');
   assert.equal(g.hits[0].t, a);
-  assert.equal(g.hits[0].amount, Math.round(1.5 * g.p.stats.power));
+  assert.equal(g.hits[0].amount, Math.round(data.classes.warrior.nums.shield_bash.dmg * g.p.stats.power));
   assert.ok(a.status.stun > 0.4);
   assert.ok(a.x > b.x - 0.5 || a.x > x0 + 2.5, 'knocked back');
   assert.equal(g.rage(), 15);

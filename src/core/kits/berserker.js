@@ -165,7 +165,9 @@ export default {
       hold(game, p, ctx, dt) {
         const k = p.data.kit, bz = k.bz;
         const n = N(game), w = n.whirlwind, col = C(game);
-        if (!bz.frenzyEnd && !game.kits.spend(p, w.drain * dt)) return false;
+        // Outside Frenzy the spin burns Rage; inside Frenzy it burns Frenzy time instead (same rate).
+        if (bz.frenzyEnd > game.t) bz.frenzyEnd -= dt * (w.drain / p.data.resource.max) * n.frenzy.dur;
+        else if (!game.kits.spend(p, w.drain * dt)) return false;
         bz.spinT += dt;
         bz.tickT -= dt;
         if (p.anim !== 'spin') game.ents.setAnim(p, 'spin');

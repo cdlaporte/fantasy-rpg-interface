@@ -240,8 +240,8 @@ function accents(k, t, tx, ty, v, defAt, decor) {
         const x = tx + 0.18 + r(i) * 0.64, z = ty + 0.18 + r(i + 9) * 0.64;
         const pc = (i + v) % 2 ? t.b : t.side;
         k.color(mul(t.a, 0.7)).add(T.cyl(0, 1, 3, true), [x, top + 0.06, z], [0.02, 0.12, 0.02]);
-        k.color(pc).add(T.sphere(5, 3), [x, top + 0.13, z], [0.075, 0.04, 0.075]);
-        k.color('#fff6c8').add(T.sphere(4, 2), [x, top + 0.155, z], 0.025);
+        k.color(pc).add(T.sphere(5, 3), [x, top + 0.14, z], [0.1, 0.045, 0.1]);
+        k.color('#fff6c8').add(T.sphere(4, 2), [x, top + 0.17, z], 0.035);
       }
       break;
     }
@@ -354,13 +354,15 @@ function accents(k, t, tx, ty, v, defAt, decor) {
       if (southEdge || (v & 3) === 0) {
         k.color(t.side).add(T.cyl(0.8, 1, 6), [cx + (r(1) - 0.5) * 0.2, h * 0.28, cz + 0.1], [0.12, h * 0.56, 0.12]);
       }
-      if (!interior || lead) {
-        const big = interior ? 1.45 : 1;
-        const R = 0.6 * big + r(2) * 0.12;
-        const c0 = mix(t.a, t.b, r(3) * 0.8);
-        const ox = interior ? 0.5 : 0, oz = interior ? 0.5 : 0;
-        k.color(c0).add(T.ico(1), [cx + ox + (r(4) - 0.5) * 0.15, h * 0.72 + r(5) * 0.25, cz + oz + (r(6) - 0.5) * 0.15], [R, R * 0.85, R], [r(7) * 3, r(8) * 3, 0]);
-        if (!interior && decor > 0) k.color(lighten(c0, 0.12)).add(T.ico(0), [cx + (r(9) - 0.5) * 0.3, h * 0.72 + R * 0.6, cz + (r(10) - 0.5) * 0.3], R * 0.45, [r(11), r(12), 0]);
+      const c0 = mix(t.a, t.b, r(3) * 0.8);
+      if (!interior) {
+        const R = 0.6 + r(2) * 0.12;
+        k.color(c0).add(T.ico(1), [cx + (r(4) - 0.5) * 0.15, h * 0.72 + r(5) * 0.25, cz + (r(6) - 0.5) * 0.15], [R, R * 0.85, R], [r(7) * 3, r(8) * 3, 0]);
+        if (decor > 0 && (v & 1)) k.color(mix(c0, '#a8e070', 0.3)).add(T.ico(0), [cx + (r(9) - 0.5) * 0.3, h * 0.72 + R * 0.62, cz + (r(10) - 0.5) * 0.3], R * 0.45, [r(11), r(12), 0]);
+      } else {
+        // interior: cheaper blobs, a big one on every other tile
+        const R = lead ? 0.9 : 0.62;
+        k.color(c0).add(T.sphere(8, 5), [cx + (lead ? 0.5 : 0), h * 0.7 + r(5) * 0.3, cz + (lead ? 0.5 : 0)], [R, R * 0.7, R], [0, r(8) * 3, 0]);
       }
       break;
     }

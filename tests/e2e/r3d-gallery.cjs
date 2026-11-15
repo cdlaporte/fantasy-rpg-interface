@@ -11,18 +11,16 @@ const ONLY = process.env.R3D_ONLY || '';
 const BUDGET = { draws: 120, tris: 120000, programs: 8 };
 
 // close-ups: [page, x, y, zoom, name]
-const ZOOMS = [
-  [0, 4, 3.5, 2.6, 'humanoids-a'], [0, 12, 3.5, 2.6, 'humanoids-b'], [0, 20, 3.5, 2.6, 'humanoids-c'],
-  [0, 4, 7.5, 2.6, 'humanoids-d'], [0, 12, 7.5, 2.6, 'humanoids-e'], [0, 20, 7.5, 2.6, 'humanoids-f'],
-  [0, 6, 11.5, 2.6, 'humanoids-g'], [0, 18, 11.5, 2.6, 'humanoids-h'], [0, 6, 15.5, 2.6, 'humanoids-i'], [0, 18, 15.5, 2.6, 'humanoids-j'],
-  [0, 23, 11.5, 2.6, 'heroes'],
-  [1, 6, 4, 1.6, 'creatures-a'], [1, 20, 4, 1.6, 'creatures-b'], [1, 6, 10, 1.6, 'creatures-c'], [1, 20, 10, 1.6, 'creatures-d'],
-  [1, 6, 16, 1.6, 'creatures-e'], [1, 20, 16, 1.6, 'creatures-f'],
-  [2, 7, 4, 1.5, 'models-a'], [2, 20, 4, 1.5, 'models-b'], [2, 7, 10, 1.5, 'models-c'], [2, 20, 10, 1.5, 'models-d'], [2, 7, 14.5, 1.5, 'models-e'], [2, 20, 14.5, 1.5, 'models-f'],
-  [3, 8, 4, 1.5, 'fx-a'], [3, 24, 4, 1.5, 'fx-b'], [3, 8, 10, 1.5, 'fx-c'], [3, 24, 10, 1.5, 'fx-d'], [3, 8, 15.5, 1.5, 'fx-e'], [3, 24, 15.5, 1.5, 'fx-f'],
-  [4, 9, 6, 1.2, 'tiles-a'], [4, 28, 6, 1.2, 'tiles-b'], [4, 9, 14, 1.2, 'tiles-c'], [4, 28, 14, 1.2, 'tiles-d'],
-  [4, 10, 21, 1.2, 'props-a'], [4, 28, 21, 1.2, 'props-b'], [4, 10, 28, 1.2, 'props-c'], [4, 28, 28, 1.2, 'props-d'], [4, 20, 35, 1.2, 'props-e'],
-];
+const ZOOMS = [];
+// page 0: humanoids on a 2-tile grid (13 columns); frame 3 x 2 cells per shot, plus the heroes up close
+for (const y of [1.6, 3.6, 5.6, 7.6, 9.6, 11.6, 13.6, 15.6]) for (const x of [4, 10, 16, 22]) ZOOMS.push([0, x, y, 2.6, `h-${x}-${y}`]);
+ZOOMS.push([0, 23, 9.4, 4, 'heroes'], [0, 3, 11.4, 4, 'hood']);
+// pages 1-3: 3-tile grid
+for (const n of [1, 2, 3]) for (const y of [2.6, 8.6, 14.6, 20.6]) for (const x of [5, 14, 23]) ZOOMS.push([n, x, y, 1.7, `p${n}-${x}-${y}`]);
+ZOOMS.push([1, 23, 14.2, 2.6, 'mossback']);
+// page 4: tiles and props
+for (const y of [4, 9, 14, 20, 26, 32, 37]) for (const x of [9, 22, 33]) ZOOMS.push([4, x, y, 1.25, `p4-${x}-${y}`]);
+
 
 (async () => {
   const server = await H.startServer();
@@ -57,7 +55,7 @@ const ZOOMS = [
         let cur = -1;
         for (const [n, x, y, zoom, name] of ZOOMS) {
           if (n !== cur) { await H.openGallery(page, { base: server.url, renderer: '3d', page: n }); cur = n; }
-          await page.evaluate(([x, y, z]) => { window.__gallery.setTime(n3(1.1)); window.__gallery.setCamera(x, y, z); function n3(v) { return v; } }, [x, y, zoom]);
+          await page.evaluate(([x, y, z]) => { window.__gallery.setTime(1.1); window.__gallery.setCamera(x, y, z); }, [x, y, zoom]);
           await H.shot(page, path.join(OUT, `r3d-z-${name}.png`));
         }
         // a few fx moments
@@ -71,7 +69,11 @@ const ZOOMS = [
     }
 
     if (!ONLY || ONLY === 'busy') {
+      // budgets are measured at the Chromebook play-view size (1366 - 280 px panel) x 657
+      const big = await H.newPage(browser, { viewport: { width: 1086, height: 657 } });
+      const bigErrors = H.collectErrors(big);
       for (const scene of ['town', 'enemies']) {
+        const page = big;
         await check(`busy scene ${scene} budgets`, async () => {
           await page.goto(`${server.url}/tests/e2e/r3d-harness.html?scene=${scene}`);
           await page.waitForFunction(() => window.__r3d && window.__r3d.ready === true, null, { timeout: 20000 });
@@ -92,6 +94,8 @@ const ZOOMS = [
           }
         });
       }
+      for (const e of bigErrors) errors.push(e);
+      await big.close();
     }
 
     if (!ONLY || ONLY === 'game') {

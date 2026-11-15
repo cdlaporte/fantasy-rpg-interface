@@ -26,8 +26,8 @@ const FANS = [45, 90, 135, 180, 270, 360];
 /** [geometry factory, additive, capacity, renderOrder] */
 function batchDefs() {
   const d = {
-    shadow: [() => G.disc(18, 0.45, 0.42), false, 160, 1],
-    glow: [() => G.disc(16, 0, 1), true, 256, 4],
+    shadow: [() => G.disc(18, 0.45, 0.42), false, 320, 1],
+    glow: [() => G.disc(16, 0, 0.55), true, 256, 4],
     glowN: [() => G.disc(16, 0.25, 1), false, 96, 3],
     ring: [() => G.ring([[0.74, 0], [0.84, 1], [0.95, 1], [1, 0]], 40), false, 128, 4],
     ringN: [() => G.ring([[0.84, 0], [0.9, 1], [0.96, 1], [1, 0]], 40), false, 96, 3],
@@ -348,8 +348,8 @@ export function createFx(scene, mats, camera, unknown) {
       push('beam', r.x, h, r.y, qGround(ang), L, W * 2.2 * wk, 1, r.color, 0.9);
       push('beam', r.x, h + 0.01, r.y, qGround(ang), L, W * 0.7 * wk, 1, WHITE, 1);
       push('beam', r.x, h, r.y, qUp(-ang), L, W * 1.6 * wk, 1, r.color, 0.5);
-      bill('glow', r.x, r.y, h, 0, W * 3 * wk, r.color, 0.9);
-      bill('glow', r.x2, r.y2, h, 0, W * 3.5 * wk, r.color, 0.9);
+      bill('glow', r.x, r.y, h, 0, W * 1.8 * wk, r.color, 0.9);
+      bill('glow', r.x2, r.y2, h, 0, W * 2.2 * wk, r.color, 0.9);
       bill('star', r.x2, r.y2, h, age * 6, W * 2.2 * wk, WHITE, 1 - k);
       for (let i = 0; i < lim(8); i++) {
         const u = hash(r.seed, i, 1);
@@ -401,7 +401,7 @@ export function createFx(scene, mats, camera, unknown) {
       const fade = k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4;
       const H = 5 * grow;
       push('pillar', r.x, 0, r.y, qUp(age * 2), R * (1 + 0.15 * Math.sin(age * 30)) * (1 - 0.3 * k), H, R, r.color, fade);
-      push('pillar', r.x, 0, r.y, qUp(-age * 3), R * 0.45, H * 1.1, R * 0.45, WHITE, fade);
+      push('pillar', r.x, 0, r.y, qUp(-age * 3), R * 0.45, H * 1.1, R * 0.45, WHITE, 0.55 * fade);
       ground('glow', r.x, r.y, 0.05, 0, R * 2.2, R * 2.2, r.color, 0.8 * fade);
       ground('ring', r.x, r.y, 0.07, 0, R * (1 + 1.4 * easeOut(k)), R * (1 + 1.4 * easeOut(k)), r.color, fade * (1 - k));
       for (let i = 0; i < lim(10); i++) {
@@ -469,7 +469,7 @@ export function createFx(scene, mats, camera, unknown) {
         const a = i * 2.1 + r.seed;
         const x = r.x + Math.cos(a) * 0.35, y = r.y + Math.sin(a) * 0.25;
         const h = 0.3 + life * 1.2;
-        const s = 0.11 * Math.sin(Math.min(1, life * 3) * Math.PI * 0.5);
+        const s = 0.17 * Math.sin(Math.min(1, life * 3) * Math.PI * 0.5);
         bill('plus', x, y, h, 0, s * 1.35, WHITE, 1 - life * life);
         push('plus', x, h, y + 0.02, qBill(0), s, s, s, r.color, 1 - life * life);
       }
@@ -550,7 +550,9 @@ export function createFx(scene, mats, camera, unknown) {
         for (let i = 0; i < n; i++) {
           const u = (t * 1.4 + i / n + seed * 0.3) % 1;
           const a = (i / n) * Math.PI * 2 + t * 0.6;
-          bill('flame', x + Math.cos(a) * 0.36, y + Math.sin(a) * 0.3, 0.02 + u * H * 0.55, Math.sin(t * 9 + i) * 0.15, 0.42 * (1 - u * 0.7), c, 1 - u);
+          const ax = x + Math.cos(a) * 0.36, ay = y + Math.sin(a) * 0.3, ah = 0.02 + u * H * 0.55, ar = Math.sin(t * 9 + i) * 0.15;
+          bill('flame', ax, ay, ah, ar, 0.42 * (1 - u * 0.7), c, 1 - u);
+          bill('flame', ax, ay + 0.01, ah, ar, 0.2 * (1 - u * 0.7), WHITE, 0.8 * (1 - u));
         }
         for (let i = 0; i < lim(3); i++) {
           const u = (t * 0.9 + i / 3) % 1;
@@ -612,7 +614,9 @@ export function createFx(scene, mats, camera, unknown) {
         for (let i = 0; i < lim(5); i++) {
           const u = (t * 1.8 + i / 5 + seed) % 1;
           const a = i * 1.3 + t;
-          bill('flame', x + Math.cos(a) * R * 0.6, y + Math.sin(a) * R * 0.4 + 0.05, H * (0.15 + 0.7 * u), 0, 0.3 * (1 - u * 0.6), tc('#ff8a2a'), 1 - u);
+          const fxx = x + Math.cos(a) * R * 0.6, fyy = y + Math.sin(a) * R * 0.4 + 0.05;
+          bill('flame', fxx, fyy, H * (0.1 + 0.7 * u), 0, 0.42 * (1 - u * 0.6), tc('#ff6a1a'), 1 - u * u);
+          bill('flame', fxx, fyy + 0.01, H * (0.1 + 0.7 * u), 0, 0.22 * (1 - u * 0.6), tc('#ffd25a'), 1 - u * u);
         }
         bill('glow', x, y, H * 0.5, 0, H * 0.7, tc('#ff7a2a'), 0.3);
         break;

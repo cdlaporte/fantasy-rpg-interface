@@ -426,7 +426,6 @@ function buildHair(k, s) {
       k.lineless = false;
       k.color(hc).add(T.sphere(8, 6), [0.2, hy + 0.0, -0.05], [0.07, 0.1, 0.1]);
       k.color(hc).add(T.sphere(8, 6), [-0.2, hy + 0.0, -0.05], [0.07, 0.1, 0.1]);
-      k.color(darken(hc, 0.25)).add(T.sphere(8, 6), [0, hy + 0.06, -0.2], [0.2, 0.14, 0.08]);
       break;
     }
   }
@@ -592,20 +591,22 @@ function buildHeld(k, s, sw, meta) {
     }
     case 'staff': {
       const top = s.hero === 'malgrim' ? 1.25 : 1.12;
-      const sx = s.hero ? hx - 0.07 : hx - 0.02;
-      k.push().tf(hx, 0, hz, 0, 0, s.hero ? 0.12 : 0.06).tf(-hx, 0, -hz);
-      k.color(hc).add(T.cyl(0.8, 1, 7), [sx, (top + 0.02) / 2, hz + 0.05], [0.028, top, 0.028]);
-      k.color(mul(hc, 0.7)).add(T.torus(0.35, 4, 8), [sx, top - 0.02, hz + 0.05], [0.05, 0.05, 0.05], [Math.PI / 2, 0, 0]);
+      const sx = s.hero === 'malgrim' ? hx - 0.1 : hx - 0.03;
+      const sz = s.hero === 'malgrim' ? hz - 0.1 : hz + 0.05;
+      const tilt = s.hero === 'malgrim' ? 0.1 : 0.05;
+      k.push().tf(hx, 0, hz, 0, 0, tilt).tf(-hx, 0, -hz);
+      k.color(hc).add(T.cyl(0.8, 1, 7), [sx, (top + 0.02) / 2, sz], [0.028, top, 0.028]);
+      k.color(mul(hc, 0.7)).add(T.torus(0.35, 4, 8), [sx, top - 0.02, sz], [0.05, 0.05, 0.05], [Math.PI / 2, 0, 0]);
       if (s.hero === 'malgrim') {
         for (let i = 0; i < 3; i++) {
           const a = (i / 3) * Math.PI * 2;
-          k.color('#2a1a2a').add(T.cone(4), [sx + Math.cos(a) * 0.05, top + 0.08, hz + 0.05 + Math.sin(a) * 0.05], [0.02, 0.13, 0.02], [Math.sin(a) * 0.35, 0, -Math.cos(a) * 0.35]);
+          k.color('#2a1a2a').add(T.cone(4), [sx + Math.cos(a) * 0.05, top + 0.08, sz + Math.sin(a) * 0.05], [0.02, 0.13, 0.02], [Math.sin(a) * 0.35, 0, -Math.cos(a) * 0.35]);
         }
       }
-      glowBit(() => k.color(glow || lighten(hc, 0.5), glow ? 1 : 0.3).add(s.hero === 'laporte' ? T.octa() : T.sphere(9, 7), [sx, top + 0.08, hz + 0.05],
+      glowBit(() => k.color(glow || lighten(hc, 0.5), glow ? 1 : 0.3).add(s.hero === 'laporte' ? T.octa() : T.sphere(9, 7), [sx, top + 0.08, sz],
         s.hero === 'laporte' ? [0.065, 0.1, 0.065] : 0.075));
       k.pop();
-      meta.tip = [sx - (top + 0.08) * (s.hero ? 0.12 : 0.06), top + 0.08, hz + 0.05];
+      meta.tip = [sx - (top + 0.08) * tilt, top + 0.08, sz];
       meta.glowAt = meta.tip;
       meta.staff = true;
       break;

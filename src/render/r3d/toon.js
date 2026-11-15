@@ -147,9 +147,10 @@ transformed.y += wob * 0.018 * (1.0 - vFoam * 0.5);`)
       .replace('#include <worldpos_vertex>', WORLD_VARY_VERT);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', '#include <common>\nuniform float uTime;\nvarying vec3 vWorld;\nvarying float vFoam;')
-      .replace('#include <opaque_fragment>', `float band = sin(vWorld.x * 2.2 + vWorld.z * 3.1 + uTime * 1.3) * sin(vWorld.x * 3.7 - vWorld.z * 1.9 - uTime * 0.9);
-outgoingLight += vec3(0.55, 0.65, 0.7) * step(0.82, band) * 0.6;
-outgoingLight = mix(outgoingLight, vec3(0.95, 0.98, 1.0), smoothstep(0.25, 0.9, vFoam + 0.15 * sin(uTime * 2.0 + vWorld.x * 3.0)));
+      .replace('#include <opaque_fragment>', `float band = sin(vWorld.z * 5.0 + sin(vWorld.x * 1.7 + uTime * 0.7) * 1.6 + uTime * 0.9);
+float brk = sin(vWorld.x * 3.1 - uTime * 0.6 + vWorld.z * 0.7);
+outgoingLight += vec3(0.5, 0.6, 0.65) * step(0.93, band) * step(-0.2, brk) * 0.55;
+outgoingLight = mix(outgoingLight, vec3(0.92, 0.97, 1.0), 0.8 * smoothstep(0.35, 0.95, vFoam + 0.12 * sin(uTime * 2.0 + vWorld.x * 3.0 + vWorld.z * 2.0)));
 #include <opaque_fragment>`);
   };
   m.customProgramCacheKey = () => 'r3d-water';
@@ -177,7 +178,7 @@ if (vAlphaI < 0.995 && r3dBayer(gl_FragCoord.xy) > vAlphaI) discard;`)
       .replace('#include <opaque_fragment>', `outgoingLight = mix(outgoingLight, diffuseColor.rgb * 1.2, vEmis);
 float r3dRim = 1.0 - max(dot(normal, normalize(vViewPosition)), 0.0);
 outgoingLight += uRim * step(0.62, r3dRim) * 0.07;
-outgoingLight += vGlowAdd * (0.35 + 0.65 * r3dRim);
+outgoingLight += vGlowAdd * (0.12 + 0.88 * r3dRim * r3dRim);
 outgoingLight = mix(outgoingLight, vec3(1.0), vFlash);
 #include <opaque_fragment>`);
   };

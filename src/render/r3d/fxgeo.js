@@ -64,8 +64,8 @@ export function slashArc(arc, r0, seg = 20) {
     const a = u * arc;
     const taper = Math.sin(Math.min(1, u * 1.15) * Math.PI * 0.5) * (u > 0.92 ? 1 - (u - 0.92) / 0.08 * 0.7 : 1);
     const inner = 1 - (1 - r0) * taper;
-    const alpha = Math.pow(u, 1.4);
-    const rows = [[inner, 0], [inner + (1 - inner) * 0.55, alpha * 0.75], [1, alpha], [1.03, alpha * 0.3]];
+    const alpha = Math.pow(u, 0.8);
+    const rows = [[inner, 0], [inner + (1 - inner) * 0.45, alpha * 0.9], [1, alpha], [1.04, alpha * 0.35]];
     for (const [r, al] of rows) {
       pos.push(Math.cos(a) * r, Math.sin(a) * r, 0);
       col.push(1, 1, 1, al);

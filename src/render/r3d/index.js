@@ -213,7 +213,7 @@ export function create() {
     else if (meta.glowAll) { glowC.set(meta.glowAll); glowAmt = 0.45; gC = glowC; }
     if (P.glow > 0) {
       if (!gC) { glowC.set(meta.glow || '#ffe680'); gC = glowC; }
-      glowAmt += P.glow * 0.5;
+      glowAmt += P.glow * 0.6;
     }
     let tAmt = 0;
     if (e.tint) { tintE.set(e.tint); tAmt = 0.55; }
@@ -308,7 +308,7 @@ export function create() {
     for (let i = 0; i < emitters.length; i++) {
       const e = emitters[i];
       if (e.x < rect.x0 - 2 || e.x > rect.x1 + 2 || e.y < rect.y0 - 2 || e.y > rect.y1 + 3) continue;
-      em.set(e.color);
+      if (e.type !== 'shadow') em.set(e.color);
       const sd = i * 1.37;
       switch (e.type) {
         case 'lamp':
@@ -355,6 +355,9 @@ export function create() {
             const u = (t * 0.25 + j / 3 + sd) % 1;
             fx.ball('puff', e.x + u * 0.3, e.y - u * 0.15, e.h + u * 1.0, 0.09 + u * 0.12, em, 0.8 * (1 - u));
           }
+          break;
+        case 'shadow':
+          fx.shadow(e.x, e.y, e.r, 0.32);
           break;
         case 'rune':
           fx.glowAt(e.x, e.y + 0.1, e.h, 0.9 + 0.1 * Math.sin(t * 3 + sd), em, 0.35);

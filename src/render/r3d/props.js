@@ -38,7 +38,7 @@ function tree(k, L, w, d, rnd) {
   k.color(trunk).add(T.cyl(0.75, 1, 7), [0, 0.32 * sc, 0], [0.13, 0.64 * sc, 0.13]);
   k.color(mul(trunk, 0.8)).add(T.cyl(1, 1, 7), [0, 0.04, 0], [0.18, 0.08, 0.18]);
   const blobs = [[0, 1.12, 0, 0.5], [0.24, 0.98, 0.08, 0.36], [-0.25, 1.0, -0.02, 0.37], [0.04, 1.45, -0.04, 0.36]];
-  blobs.forEach(([x, y, z, r], i) => k.color(i === 3 ? lighten(leaves, 0.12) : i % 2 ? mul(leaves, 0.9) : leaves).add(T.ico(1), [x * sc, y * sc, z * sc], r * sc, [rnd(), rnd(), 0]));
+  blobs.forEach(([x, y, z, r], i) => k.color(i === 3 ? mix(leaves, '#b8e878', 0.25) : i % 2 ? mul(leaves, 0.9) : leaves).add(T.ico(1), [x * sc, y * sc, z * sc], r * sc, [rnd(), rnd(), 0]));
   if (rnd() < 0.35) for (let i = 0; i < 3; i++) k.color('#ff6b6b').add(T.sphere(6, 4), [(rnd() - 0.5) * 0.7, (1.0 + rnd() * 0.5) * sc, 0.32], 0.05);
 }
 
@@ -712,6 +712,11 @@ const BUILDERS = {
   chair, bed, cauldron, chalkboard, rug, chest: chestProp,
 };
 
+/** Blob-shadow radius per model (drawn by the fx shadow batch). */
+const SHADOW = { tree: 0.62, pine: 0.5, bush: 0.5, rock: 0.48, stump: 0.38, log: 0.5, mushroom_big: 0.55, crystal: 0.42, lamp: 0.22,
+  sign: 0.22, bench: 0.55, well: 0.75, statue: 0.45, barrel: 0.36, crate: 0.42, stall: 0.9, cart: 0.6, tent: 0.95, banner: 0.18,
+  cauldron: 0.38, chest: 0.4, table: 0.6, desk: 0.6, chair: 0.25, bed: 0.5, bookshelf: 0.55, chalkboard: 0.5 };
+
 /** Approximate top height per model (for the debug notes / tests). */
 export const PROP_HEIGHT = { tree: 1.85, pine: 1.9, house: 2.3, shop: 2.3, tower: 3.0, academy: 3.6, gate_arch: 2.0, lamp: 1.7, banner: 1.8 };
 
@@ -731,6 +736,8 @@ export function buildProp(k, p, unknown) {
   k.tf(cx, 0, cz);
   const em = fn(k, p.look || {}, w, h, rnd) || [];
   k.pop();
+  const sh = SHADOW[model];
+  if (sh) em.push({ type: 'shadow', x: 0, y: 0, h: 0, r: sh * Math.max(1, Math.min(w, h) * 0.8), color: '#000000' });
   for (const e of em) { e.x += cx; e.y += cz; }
   return em;
 }

@@ -15,6 +15,7 @@ import { SPINNERS, ROUND } from './models.js';
 
 const GROUND_FX = { telegraph_circle: 1, telegraph_line: 1, telegraph_cone: 1, ground_fire: 1, ground_frost: 1, zone_ring: 1, portal: 1 };
 const TOP_FX = { barrier: 1, shield_bubble: 1, smoke: 1, decoy_puff: 1 };
+const TAG_TINT = { burn: '#ff7a2a', frost: '#9fe6ff', venom: '#8ae04a', frenzy: '#ff2a3a', shadow: '#3a1a5a' };
 const BOB = { gold: 1, heart: 1, item: 1, xp_orb: 1 };
 const FXTAGS = ['burn', 'frost', 'stun', 'shield', 'stealth', 'mark', 'frenzy', 'charge', 'haste', 'rune_fire', 'rune_frost',
   'rune_storm', 'ki', 'shadow', 'summoned', 'wanted', 'sleep', 'levelup_ready', 'venom'];
@@ -440,6 +441,15 @@ export function create() {
     else g.drawImage(s.c, dx, dy, Math.round(s.w * sc), Math.round(s.h * sc));
     drawsN++;
     if (v.tint) { g.globalAlpha = alpha * 0.42; g.drawImage(sprites.tintOf(s, col(v.tint, '#ffffff')), dx, dy, Math.round(s.w * sc), Math.round(s.h * sc)); drawsN++; }
+    if (tags.length && quality > 0) {
+      for (let k = 0; k < tags.length; k++) {
+        const tc = TAG_TINT[tags[k]];
+        if (!tc) continue;
+        g.globalAlpha = alpha * (0.22 + 0.12 * Math.sin(t * (tags[k] === 'burn' ? 17 : 5) + v.id));
+        g.drawImage(sprites.tintOf(s, tc), dx, dy, Math.round(s.w * sc), Math.round(s.h * sc)); drawsN++;
+        break;
+      }
+    }
     if (stealth) { g.globalAlpha = 0.25 + 0.15 * Math.sin(t * 6); g.globalCompositeOperation = 'lighter'; g.drawImage(sprites.tintOf(s, '#6a5aa8'), dx, dy, Math.round(s.w * sc), Math.round(s.h * sc)); g.globalCompositeOperation = 'source-over'; drawsN++; }
     if (v.flash > 0) { g.globalAlpha = Math.min(1, v.flash * 1.3) * alpha; g.drawImage(sprites.flashOf(s), dx, dy, Math.round(s.w * sc), Math.round(s.h * sc)); drawsN++; }
     g.globalAlpha = 1;

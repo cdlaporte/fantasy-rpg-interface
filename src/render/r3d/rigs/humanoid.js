@@ -422,8 +422,8 @@ function buildHair(k, s) {
       // high, receding temples with a central forelock: an M from the front
       cap(-0.78, 0.262, 0.6);
       // widow's peak: a rounded wedge pointing down the middle of the forehead
-      k.color(hc).add(T.sphere(9, 6), [0, hy + 0.17, 0.155], [0.075, 0.075, 0.07], [0.7, 0, 0]);
       k.lineless = true;
+      k.color(hc).add(T.sphere(9, 6), [0, hy + 0.17, 0.155], [0.075, 0.075, 0.07], [0.7, 0, 0]);
       k.color(hc).add(T.cone(6), [0, hy + 0.115, 0.205], [0.055, 0.1, 0.03], [Math.PI + 0.6, 0, 0]);
       k.lineless = false;
       k.color(hc).add(T.sphere(8, 6), [0.2, hy + 0.0, -0.05], [0.07, 0.1, 0.1]);

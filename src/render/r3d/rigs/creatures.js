@@ -221,7 +221,7 @@ function plant(k, s, meta) {
   if (s.f.has('thorns')) {
     for (let i = 0; i < 6; i++) {
       const a = (i / 6) * Math.PI * 2;
-      k.color(lighten(accent, 0.2)).add(T.cone(4), [Math.sin(a) * 0.19, 0.18 + (i % 2) * 0.12, Math.cos(a) * 0.19], [0.03, 0.09, 0.03], [Math.cos(a) * 1.4, 0, -Math.sin(a) * 1.4]);
+      k.color(lighten(accent, 0.2)).add(T.cone(4), [Math.sin(a) * 0.2, 0.16 + (i % 2) * 0.13, Math.cos(a) * 0.2], [0.045, 0.14, 0.045], [Math.cos(a) * 1.4, 0, -Math.sin(a) * 1.4]);
     }
   }
   if (s.f.has('vines')) {
@@ -301,10 +301,8 @@ function golem(k, s, meta) {
     k.color(mul(accent, 0.85)).add(T.sphere(7, 5), [-0.2, 0.7, -0.12], [0.09, 0.05, 0.08]);
   }
   if (s.f.has('crystal')) {
-    k.lineless = true;
-    const cr = [[0.1, 0.82, -0.12, 0.2, 0.3], [-0.12, 0.8, -0.1, 0.16, -0.3], [0, 0.85, -0.2, 0.22, 0]];
-    for (const [x, y, z, h, rz] of cr) k.color(lighten(accent, 0.3), 0.5).add(T.cyl(0, 1, 5), [x, y, z], [0.06, h, 0.06], [-0.3, 0, rz]);
-    k.lineless = false;
+    const cr = [[0.13, 0.86, -0.1, 0.32, 0.35], [-0.14, 0.84, -0.08, 0.26, -0.35], [0, 0.9, -0.18, 0.38, 0], [0.24, 0.6, -0.14, 0.22, 0.9]];
+    cr.forEach(([x, y, z, h, rz], i) => k.color(i % 2 ? mix(accent, '#9fe6ff', 0.5) : mix(accent, '#c9a6ff', 0.4), 0.45).add(T.cyl(0, 1, 5), [x, y, z], [0.085, h, 0.085], [-0.3, 0, rz]));
   }
   // arms (4 / 5)
   for (const side of [1, -1]) {
@@ -353,7 +351,7 @@ function mossback(k, s, meta) {
     k.color(barkD).add(T.box(), [Math.sin(a) * 0.3, 0.62, Math.cos(a) * 0.27], [0.04, 0.55, 0.035], [0, a, 0]);
   }
   // mossy shoulders and belly patches
-  k.color(moss).add(T.sphere(9, 6), [0, 0.98, 0], [0.4, 0.1, 0.34]);
+  for (const sd of [1, -1]) k.color(moss).add(T.sphere(8, 5), [0.27 * sd, 0.98, -0.04], [0.17, 0.09, 0.2]);
   k.color(mul(moss, 0.85)).add(T.sphere(7, 5), [0.22, 0.45, 0.24], [0.1, 0.07, 0.05]);
   k.color(mul(moss, 0.9)).add(T.sphere(7, 5), [-0.2, 0.62, 0.25], [0.08, 0.06, 0.04]);
   // a glowing knot heart
@@ -373,19 +371,22 @@ function mossback(k, s, meta) {
   }
   // head / canopy (part 1)
   k.part(1, 0, 1.05, 0);
-  k.color(bark).add(T.rbox(0.5), [0, 1.15, 0.05], [0.42, 0.3, 0.34]);
-  k.color(barkD).add(T.box(), [0, 1.24, 0.22], [0.3, 0.04, 0.03], [0, 0, 0]);
-  eyes(k, 0, 1.15, 0.22, 0.05, s.eye, 0.1, true);
+  // face pushed forward and tilted up so it reads from the high camera; canopy sits behind it
+  k.push().tf(0, 1.05, 0.14, -0.45, 0, 0).tf(0, -1.05, 0);
+  k.color(bark).add(T.rbox(0.5), [0, 1.15, 0.05], [0.42, 0.3, 0.3]);
+  k.color(barkD).add(T.box(), [0, 1.26, 0.2], [0.3, 0.04, 0.03], [0, 0, 0]);
+  eyes(k, 0, 1.16, 0.2, 0.055, s.eye, 0.1, true);
   k.lineless = true;
-  k.color('#3a2416').add(T.box(), [0, 1.04, 0.22], [0.16, 0.03, 0.02]);
+  k.color('#3a2416').add(T.box(), [0, 1.05, 0.2], [0.16, 0.03, 0.02]);
   k.lineless = false;
-  const canopy = [[0, 1.48, -0.05, 0.36], [0.3, 1.4, -0.1, 0.26], [-0.3, 1.42, -0.08, 0.27], [0.12, 1.62, -0.15, 0.25], [-0.16, 1.6, 0.02, 0.22], [0, 1.38, 0.2, 0.2]];
+  k.pop();
+  const canopy = [[0, 1.55, -0.28, 0.36], [0.3, 1.45, -0.3, 0.26], [-0.3, 1.47, -0.28, 0.27], [0.12, 1.7, -0.38, 0.25], [-0.16, 1.68, -0.22, 0.22]];
   canopy.forEach(([x, y, z, r], i) => k.color(i % 2 ? leaf : mul(leaf, 0.85)).add(T.ico(1), [x, y, z], r));
-  const flowers = [[0.2, 1.62, 0.12], [-0.25, 1.55, 0.18], [0.36, 1.45, 0.1], [-0.05, 1.78, 0.0]];
+  const flowers = [[0.2, 1.7, -0.12], [-0.25, 1.62, -0.08], [0.36, 1.52, -0.15], [-0.05, 1.86, -0.25]];
   for (const [x, y, z] of flowers) {
     k.color('#ff8fc7').add(T.sphere(6, 4), [x, y, z], [0.05, 0.03, 0.05]);
     k.color('#ffe066').add(T.sphere(4, 3), [x, y + 0.02, z], 0.02);
   }
-  antlers(k, 0, 1.65, -0.05, '#c8a070', 1.6);
+  antlers(k, 0, 1.75, -0.3, '#c8a070', 1.6);
   meta.height = 1.9; meta.radius = 0.5; meta.tip = [0.4, 0.3, 0.1]; meta.glowEyes = true;
 }

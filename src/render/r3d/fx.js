@@ -277,6 +277,14 @@ export function createFx(scene, mats, camera, unknown) {
       const id = thick || s === 'sword' ? W : Tn;
       push(id, r.x, h, r.y, qGroundTilt(rot, tilt), R * (thick ? 1.12 : 1), -R * (thick ? 1.12 : 1) * sc, 1, r.color, 0.85 * fade);
       push(Tn, r.x, h + 0.01, r.y, qGroundTilt(rot, tilt), R * (thick ? 1.16 : 1.04), -R * (thick ? 1.16 : 1.04) * sc, 1, WHITE, fade);
+      // leading-edge glints and a faint inner echo arc
+      const tipA = rot + arc * DEG * sc * Math.min(1, sweep * 1.05);
+      const tr = R * (thick ? 1.1 : 1);
+      if (k < 0.7) {
+        bill('star', r.x + Math.cos(tipA) * tr, r.y + Math.sin(tipA) * tr, h + 0.05, k * 6, 0.18 * (1 - k), WHITE, 1 - k);
+        bill('glow', r.x + Math.cos(tipA) * tr, r.y + Math.sin(tipA) * tr, h, 0, 0.35 * (1 - k), r.color, 0.8 * (1 - k));
+      }
+      push(Tn, r.x, h - 0.02, r.y, qGroundTilt(rot - 0.15, tilt), R * 0.72, -R * 0.72 * sc, 1, r.color, 0.35 * fade);
       if (s === 'crescent') {
         push(W, r.x, h - 0.05, r.y, qGroundTilt(rot, tilt), R * 1.3, -R * 1.3 * sc, 1, r.color, 0.45 * fade);
         sparks(r, age, lim(7), 2.2, 0.8, 0.08, 0.35, r.color, 0.45, 1, 'star');

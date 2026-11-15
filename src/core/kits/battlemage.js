@@ -32,8 +32,9 @@ function setElement(game, p, i) {
   W.refresh(game, p);
 }
 
-/** Storm: jump from `from` to up to n other enemies within range for `amount` each (bolt fx between them). */
-function stormChain(game, p, from, amount, n, range) {
+/** Storm: arc from `from` to up to n other enemies within range for `amount` each (bolt fx between them).
+ *  hop: each arc starts from the previous target (a chain); otherwise all arcs fan out from `from`. */
+function stormChain(game, p, from, amount, n, range, hop) {
   chainHit.length = 0;
   chainHit.push(from);
   let fx = from.x, fy = from.y;
@@ -51,7 +52,7 @@ function stormChain(game, p, from, amount, n, range) {
     chainHit.push(best);
     game.fx({ type: 'bolt', x: fx, y: fy, x2: best.x, y2: best.y, color: col });
     game.combat.damage(best, amount, { source: p, type: 'magic', element: 'storm', color: col, tags: TAG_CHAIN, knockback: 0.5 });
-    fx = best.x; fy = best.y;
+    if (hop) { fx = best.x; fy = best.y; }
   }
   return chainHit.length - 1;
 }
@@ -89,8 +90,9 @@ function applyElement(game, p, t, i, dealt) {
     const ov = W.bnums(game, 'elemental_overlap');
     const m = t.data.bmEl;
     if (m && m.el !== i && game.t - m.t <= ov.window) {
-      m.t = -1e9;
-      detonate(game, p, t, m.el, i);
+      const was = m.el;
+      m.el = i; m.t = game.t;       // the new element now rides the target: keep dancing to chain detonations
+      detonate(game, p, t, was, i);
       if (!t.alive || t.removed) return;
     } else if (m) { m.el = i; m.t = game.t; } else t.data.bmEl = { el: i, t: game.t };
   }
@@ -110,7 +112,7 @@ function waveHit(game, t, dealt, proj) {
   if (!proj.data.bmRank4) return;
   const g = N(game).ground;
   if (i === 2) {
-    if (!proj.data.bmChained) { proj.data.bmChained = true; stormChain(game, p, t, dealt * N(game).storm.frac, g.stormChain, 4); }
+    if (!proj.data.bmChained) { proj.data.bmChained = true; stormChain(game, p, t, dealt * N(game).storm.frac, g.stormChain, 4, true); }
   } else if ((proj.data.bmZones || 0) < 2) {
     proj.data.bmZones = (proj.data.bmZones || 0) + 1;
     groundZone(game, p, t.x, t.y, i);

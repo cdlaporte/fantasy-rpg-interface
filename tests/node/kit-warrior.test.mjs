@@ -28,11 +28,13 @@ export function mk(o = {}) {
   const at = o.at || CENTER;
   game.physics.teleport(p, at.x, at.y);
   const foes = [];
+  const home = [];
   const n = o.ring ?? 8;
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2;
     const r = o.r ?? 1.5;
     foes.push(dummy(game, at.x + Math.cos(a) * r, at.y + Math.sin(a) * r, o.hp ?? 5000, o.kind, o.ai));
+    home.push([at.x + Math.cos(a) * r, at.y + Math.sin(a) * r]);
   }
   const input = scriptedInput();
   const fx = { types: {}, list: [] };
@@ -40,7 +42,7 @@ export function mk(o = {}) {
   game.fx = (e) => { fx.types[e.type] = (fx.types[e.type] || 0) + 1; if (fx.list.length < 5000) fx.list.push(Object.assign({}, e)); return f0(e); };
   const hits = [];
   let dealt = 0;
-  game.bus.on('hit', (e) => { if (e.source === p && e.target !== p) { dealt += e.amount; hits.push({ t: e.target, amount: e.amount, tags: e.tags, element: e.element, type: e.type, crit: e.crit }); } });
+  game.bus.on('hit', (e) => { if (e.source === p && e.target !== p) { dealt += e.amount; hits.push({ t: e.target, amount: e.amount, tags: e.tags, element: e.element, type: e.type, crit: e.crit, dot: e.dot }); } });
   const casts = [];
   game.bus.on('ability:cast', (e) => { if (e.ent === p) casts.push(e.slot + ':' + e.id); });
   const step = (k = 1, inp) => { if (inp) input.set(inp); for (let i = 0; i < k; i++) game.step(DT, input.sample()); };
@@ -52,8 +54,10 @@ export function mk(o = {}) {
     setRage(v) { game.kits.setResource(p, v); },
     ready(slot) { return game.abilities.ready(p, slot); },
     fxOf(type) { return fx.list.filter((e) => e.type === type); },
-    /** hold the attack toward each ring direction in turn for k steps */
-    swing(k = 120) { for (let i = 0; i < k; i++) step(1, { attackDir: DIRS[Math.floor(i / 20) % 4] }); step(1, { attackDir: -1 }); },
+    /** put the ring dummies back where they started (knockback pushes them away) */
+    regroup() { foes.forEach((f, i) => { if (!f.removed) { game.physics.teleport(f, home[i][0], home[i][1]); f.kx = f.ky = 0; } }); },
+    /** hold the attack toward each ring direction in turn for k steps (the ring is regrouped every second) */
+    swing(k = 120) { for (let i = 0; i < k; i++) { if (i % 60 === 59) g.regroup(); step(1, { attackDir: DIRS[Math.floor(i / 20) % 4] }); } step(1, { attackDir: -1 }); },
     press(slot, inp) { step(1, Object.assign({ pressed: { [slot]: true } }, inp || {})); },
   };
   return g;

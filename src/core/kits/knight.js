@@ -84,7 +84,7 @@ export default {
     if (kn.punchAt > 0 && game.t >= kn.punchAt) {
       kn.punchAt = -1;
       const pn = n.punch;
-      game.abilities.use('melee_arc', p, { angle: kn.punchAngle, arc: pn.arc, range: pn.range, dmg: pn.dmg, knockback: pn.knockback,
+      game.abilities.use('melee_arc', p, { angle: kn.punchAngle, arc: pn.arc, range: pn.range, dmg: pn.dmg, knockback: pn.knockback, lunge: pn.lunge,
         status: { stun: pn.stun }, tags: TAG_BASIC, style: 'fist', color: col.gold, hitStop: 0.05,
         fx: { type: 'slash', arc: pn.arc, r: pn.range, color: col.gold, style: 'fist' } });
       W.fx(game, 'burst', p.x + Math.cos(kn.punchAngle) * 0.7, p.y + Math.sin(kn.punchAngle) * 0.7, 0.5, col.steel, 8);
@@ -105,9 +105,10 @@ export default {
     const kn = p.data.kit.kn;
     const n = N(game), col = C(game);
     kn.cleaves++;
+    const setup = kn.cleaves % n.punch.every === 0;   // the swing before the punch keeps the target close
     game.abilities.use('melee_arc', p, { angle: ctx.angle, arc: n.cleave.arc, range: n.cleave.range, dmg: n.cleave.dmg,
-      knockback: n.cleave.knockback, tags: TAG_BASIC, style: 'sword', color: col.light });
-    if (kn.cleaves % n.punch.every === 0) { kn.punchAt = game.t + n.punch.delay; kn.punchAngle = ctx.angle; }
+      knockback: setup ? n.punch.setupKnockback : n.cleave.knockback, tags: TAG_BASIC, style: 'sword', color: col.light });
+    if (setup) { kn.punchAt = game.t + n.punch.delay; kn.punchAngle = ctx.angle; }
     if (ctx.rank >= 4 && kn.cleaves % n.crescent.every === 0) {
       game.abilities.use('projectile', p, { angle: ctx.angle, model: 'crescent', color: col.light, glow: col.gold, size: 1.4,
         speed: n.crescent.speed, range: n.crescent.range, dmg: n.crescent.dmg, radius: n.crescent.radius, pierce: true,

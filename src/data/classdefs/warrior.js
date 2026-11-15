@@ -34,9 +34,9 @@ export default {
     companion: {
       npc: 'bram', name: 'Bram', mult: 0.7, brain: 'ally_melee',
       stats: { hp: 44, hpPerLevel: 9, power: 5, powerPerLevel: 1.3, speed: 3.4 },
-      basic: { use: 'melee_arc', name: 'Sword Arc', arc: 100, range: 1.2, dmg: 1.0, knockback: 5, cd: 0.6, windup: 0.1,
+      basic: { use: 'melee_arc', name: 'Sword Arc', arc: 100, range: 1.2, dmg: 0.46, knockback: 5, cd: 0.6, windup: 0.1,
         style: 'sword', color: '#e8eef5' },
-      ability: { use: 'dash', name: 'Shield Bash', dist: 2.5, speed: 14, dmg: 1.5, status: { stun: 0.8 }, knockback: 8,
+      ability: { use: 'dash', name: 'Shield Bash', dist: 2.5, speed: 14, dmg: 0.7, status: { stun: 0.8 }, knockback: 8,
         stopOnHit: true, cd: 5, range: 3, minRange: 1.3, windup: 0.15, color: '#e2503c' },
       barks: {
         levelup: ['WOO! Level up, buddy!', 'Look at you go!', 'Bigger muscles! Probably!'],

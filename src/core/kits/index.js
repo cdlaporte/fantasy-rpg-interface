@@ -49,6 +49,9 @@ export default {
       const top = layers[layers.length - 1];
       let basicKit = null;
       for (let i = layers.length - 1; i >= 0; i--) if (layers[i].basic) { basicKit = layers[i]; break; }
+      // integration: a class kit without a basic yet (stub kits until the class packages land) keeps the
+      // novice stick instead of leaving the player unable to attack.
+      if (!basicKit) basicKit = novice;
       const abilities = {};
       for (const s of ABILITY_SLOTS) {
         abilities[s] = null;

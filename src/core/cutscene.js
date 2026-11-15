@@ -569,6 +569,20 @@ export default {
       skip() {
         if (!run || run.def.skippable === false) return false;
         run.skipping = true;
+        // integration: Narrative's `onSkip: [ops]` runs INSTEAD of the remaining steps when the scene is skipped
+        // (a trailing ['cutscene', id] in it still chains).
+        if (Array.isArray(run.def.onSkip) && !run.onSkipped) {
+          run.onSkipped = true;
+          for (const th of run.threads) {
+            if (th.wait && th.wait.kind === 'say' && game.sys.dialogue.cancel) game.sys.dialogue.cancel(th.wait.p);
+            if (th === run.main) continue;
+            th.done = true; th.wait = null;
+            if (th.d) { th.d.resolve(); th.d = null; }
+          }
+          run.main.wait = null;
+          run.main.frames.length = 0;
+          run.main.frames.push({ steps: run.def.onSkip, i: 0, def: run.def, id: run.id });
+        }
         tick(0);
         return true;
       },

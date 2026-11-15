@@ -378,6 +378,10 @@ export default {
         const owner = killer ? ownerOf(killer) : null;
         if (owner && owner.team === 'player' && !opts.noReward) reward(target, owner);
         const od = target.def && target.def.onDeath;
+        // integration: Narrative's onDeath.do ops (Mossback -> forest_boss_outro); only for real defeats
+        if (od && Array.isArray(od.do) && od.do.length && !opts.noSpawn && game.ops && game.ops.run) {
+          game.ops.run(od.do, { self: target, killer });
+        }
         if (od && od.spawn && !opts.noSpawn) {
           const n = od.n || 1;
           for (let i = 0; i < n; i++) {

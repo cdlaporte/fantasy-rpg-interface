@@ -34,7 +34,9 @@ export default {
     function dist(a, b) { const dx = b.x - a.x, dy = b.y - a.y; return Math.sqrt(dx * dx + dy * dy); }
 
     function attach(e, aiDef, attacksOverride) {
-      const cfg = aiDef || {};
+      let cfg = aiDef || {};
+      // integration: Narrative puts regeneration on the enemy def (stats.regen, training dummy)
+      if (cfg.regen == null && e.stats && e.stats.regen) cfg = Object.assign({}, cfg, { regen: e.stats.regen });
       let list = attacksOverride || (e.def && e.def.attacks) || [];
       if (!list.length && (cfg.brain === 'guard')) list = GUARD_ATTACK;
       const attacks = [];
@@ -121,6 +123,8 @@ export default {
     }
     function attackByRef(ai, ref) {
       if (typeof ref === 'number') return ai.attacks[ref] || null;
+      // integration: Narrative boss patterns list attack ids (attacks[].id)
+      for (const a of ai.attacks) if (a.def.id === ref) return a;
       for (const a of ai.attacks) if (a.name === ref || a.def.use === ref) return a;
       return null;
     }
@@ -128,22 +132,24 @@ export default {
       const r = (a.def.range != null ? a.def.range : 1) + (t ? t.radius : 0);
       return d <= r && d >= (a.def.minRange || 0);
     }
+    /** Narrative addition: `ifHpBelow` (fraction) makes an attack usable only below that hp fraction. */
+    function usable(e, a) { return a.def.ifHpBelow == null || (e.hpMax > 0 && e.hp / e.hpMax < a.def.ifHpBelow); }
     function chooseAttack(e, ai, t, d) {
       const pat = ai.thresholds || (e.def && e.def.boss) ? phasePattern(e, ai) : null;
       if (pat && pat.length) {
         const a = attackByRef(ai, pat[ai.patternI % pat.length]);
-        if (!a) { ai.patternI++; return null; }
+        if (!a || !usable(e, a)) { ai.patternI++; return null; }
         if (game.t >= a.cdUntil && inRange(a, d, t)) { ai.patternI++; ai.waitT = 0; return a; }
         ai.waitT += 0.1;
         if (ai.waitT > 3) { ai.patternI++; ai.waitT = 0; }
         return null;
       }
       let total = 0;
-      for (const a of ai.attacks) if (game.t >= a.cdUntil && inRange(a, d, t)) total += a.def.weight != null ? a.def.weight : 1;
+      for (const a of ai.attacks) if (game.t >= a.cdUntil && inRange(a, d, t) && usable(e, a)) total += a.def.weight != null ? a.def.weight : 1;
       if (total <= 0) return null;
       let r = rng.next() * total;
       for (const a of ai.attacks) {
-        if (!(game.t >= a.cdUntil && inRange(a, d, t))) continue;
+        if (!(game.t >= a.cdUntil && inRange(a, d, t) && usable(e, a))) continue;
         r -= a.def.weight != null ? a.def.weight : 1;
         if (r <= 0) return a;
       }
@@ -204,7 +210,10 @@ export default {
       if (ai.shielded) p.mult = 0.5; else if (a.def.mult == null) p.mult = 0;
       if (e.anim === ANIM.CHARGE) { e.anim = ANIM.IDLE; e.data.animUntil = undefined; }
       game.abilities.use(use, e, p);
-      a.cdUntil = game.t + (a.def.cd != null ? a.def.cd : 1.5) * (ai.shielded ? 2 : 1);
+      // integration: boss.phases[].cdMul scales cooldowns per phase (Narrative)
+      const bph = e.def && e.def.boss && e.def.boss.phases ? e.def.boss.phases[ai.phase] : null;
+      const cdMul = bph && bph.cdMul > 0 ? bph.cdMul : 1;
+      a.cdUntil = game.t + (a.def.cd != null ? a.def.cd : 1.5) * cdMul * (ai.shielded ? 2 : 1);
       ai.recoverT = a.def.recover != null ? a.def.recover : use === 'dash' ? 0.7 : 0.3;
       game.bus.emit('ai:attack', { ent: e, attack: a.def });
     }

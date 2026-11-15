@@ -75,6 +75,15 @@ export default {
       /** Instant line. {angle, range=7, w=0.5, dmg, pierce=true (false: first target only), stopAtWall=true, color,
        *  knockback=2, status, element, onHit} -> hits[] */
       beam(c, p) {
+        // integration: Narrative's sweeping beam {sweep (deg), dur (s), tick (s)}: one beam every `tick` seconds,
+        // rotating across `sweep` degrees centred on the aim, advanced in abilities.update.
+        if (p.sweep > 0 && p.dur > 0 && !p._sweepTick) {
+          const a0 = p.angle != null ? p.angle : c.angle, half = (p.sweep * Math.PI / 180) / 2;
+          const dirn = game.rng.chance(0.5) ? 1 : -1;
+          c.data.sweep = { from: a0 - half * dirn, to: a0 + half * dirn, t: 0, dur: p.dur, tick: p.tick || 0.25, next: 0,
+            p: Object.assign({}, p, { _sweepTick: true }) };
+          return [];
+        }
         const a = p.angle != null ? p.angle : c.angle;
         const range = p.range || 7;
         const len = p.stopAtWall === false ? range : game.world.raycast(c.x, c.y, a, range, true);
@@ -407,6 +416,18 @@ export default {
         const d = c.data;
         if (d.dash) updateDash(c, dt);
         if (d.leap) updateLeap(c, dt);
+        if (d.sweep) {
+          const sw = d.sweep;
+          if (c.status.stun > 0 || c.data.scripted) { d.sweep = null; continue; }
+          sw.t += dt;
+          if (sw.t >= sw.next) {
+            sw.next += sw.tick;
+            sw.p.angle = sw.from + (sw.to - sw.from) * Math.min(1, sw.t / sw.dur);
+            c.angle = sw.p.angle;
+            api.use('beam', c, sw.p);
+          }
+          if (sw.t >= sw.dur) d.sweep = null;
+        }
         if (d.guard && d.guard.until <= game.t) api.unguard(c);
         if (d.fxUntil) {
           for (const k in d.fxUntil) if (d.fxUntil[k] && game.t >= d.fxUntil[k]) { d.fxUntil[k] = 0; ents.setFxTag(c, k, false); }

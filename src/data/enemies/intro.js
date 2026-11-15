@@ -24,14 +24,16 @@ export default {
   // L2 elite. The tutorial's first "boss": telegraphed lunge, tail swipe when crowded.
   giant_rat: {
     id: 'giant_rat', name: 'Sir Squeaks-a-Lot', level: 2, tags: ['beast', 'rat', 'elite'],
-    stats: { hp: 30, power: 3, defense: 0, speed: 2.6, radius: 0.45, xp: 33 },   // integration feel pass: was hp 40 power 5 (downed an L2 novice)
+    // integration feel pass: was hp 40 / power 5 with bite 1.0 + lunge 1.2 (downed an L2 novice every time);
+    // now within the balance sheet's 25% band with softer attack coefficients.
+    stats: { hp: 32, power: 4, defense: 0, speed: 2.6, radius: 0.45, xp: 33 },
     flying: false,
     ai: { brain: 'charger', aggro: 6, leash: 12 },
     attacks: [
-      { id: 'bite', use: 'melee_arc', arc: 90, range: 0.9, dmg: 1, cd: 1.5, windup: 0.4, telegraph: null, weight: 2 },
-      { id: 'lunge', use: 'dash', dist: 3, speed: 9, dmg: 1.2, knockback: 4, cd: 4, windup: 0.8, range: 4, minRange: 1.5,
+      { id: 'bite', use: 'melee_arc', arc: 90, range: 0.9, dmg: 0.75, cd: 1.5, windup: 0.4, telegraph: null, weight: 2 },
+      { id: 'lunge', use: 'dash', dist: 3, speed: 9, dmg: 0.9, knockback: 4, cd: 4, windup: 0.8, range: 4, minRange: 1.5,
         telegraph: 'line', weight: 2 },
-      { id: 'tail_swipe', use: 'aoe_ring', r: 1.4, dmg: 0.8, knockback: 3, cd: 6, windup: 0.6, range: 1.3,
+      { id: 'tail_swipe', use: 'aoe_ring', r: 1.4, dmg: 0.6, knockback: 3, cd: 6, windup: 0.6, range: 1.3,
         telegraph: 'circle', weight: 1 },
     ],
     onDeath: null,

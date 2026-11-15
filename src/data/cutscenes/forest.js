@@ -6,7 +6,9 @@ const DOWN = 2;
 export default {
   forest_boss_intro: {
     id: 'forest_boss_intro', skippable: true,
-    onSkip: [['spawn', 'old_mossback', 'boss_arena', { tag: 'boss' }], ['sfx', 'boss']],
+    // integration: the forest zone keeps Old Mossback as a `spawns` entry (present whenever he is undefeated, also
+    // after a defeat-and-return), so this scene only spawns him when he is missing.
+    onSkip: [['if', [['not', ['near', '@boss', 'boss_arena', 40]]], [['spawn', 'old_mossback', 'boss_spawn', { tag: 'boss' }]]], ['sfx', 'boss']],
     steps: [
       ['lockInput'],
       ['letterbox', true],
@@ -17,7 +19,7 @@ export default {
       ['wait', 0.6],
       ['camera', { shake: 0.7 }],
       ['fx', { type: 'shockwave', at: 'boss_arena', r: 4, color: '#5fb548' }],
-      ['spawn', 'old_mossback', 'boss_arena', { tag: 'boss' }],
+      ['if', [['not', ['near', '@boss', 'boss_arena', 40]]], [['spawn', 'old_mossback', 'boss_spawn', { tag: 'boss' }]]],
       ['anim', 'old_mossback', 'charge', 1.2],
       ['fx', { type: 'burst', at: 'boss_arena', n: 30, r: 3, color: '#7cc95a' }],
       ['sfx', 'boss'],

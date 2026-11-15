@@ -115,8 +115,10 @@ export function createBot(game, opts = {}) {
     if (goalMoved || game.t - pathT > 0.7 || !path) {
       const direct = game.world.walkable && game.world.walkable(p.x, p.y, x, y, p.radius * 1.05, false);
       if (direct) { path = null; } else {
-        game.world.findPath(p.x, p.y, x, y, pathBuf);
-        path = pathBuf; pathI = 0;
+        // the game's own A* (<= 400 nodes) for local routes; a full-grid BFS for long detours it gives up on
+        if (game.world.findPath(p.x, p.y, x, y, pathBuf)) path = pathBuf;
+        else path = bfsRoute(p.x, p.y, x, y);
+        pathI = 0;
       }
       pathGoal = { x, y }; pathT = game.t;
     }
@@ -132,6 +134,38 @@ export function createBot(game, opts = {}) {
     input.set({ moveX: dx / d, moveY: dy / d });
     return false;
   };
+
+  /** Unbounded 8-dir BFS over zone.solid (no corner cutting); waypoints are tile centers. Goal may be solid. */
+  function bfsRoute(x0, y0, x1, y1) {
+    const z = game.zone, W = z.w, H = z.h, solid = z.solid;
+    const s0 = Math.floor(y0) * W + Math.floor(x0), g = Math.floor(y1) * W + Math.floor(x1);
+    const prev = new Int32Array(W * H).fill(-1);
+    const q = new Int32Array(W * H);
+    let qh = 0, qt = 0; q[qt++] = s0; prev[s0] = s0;
+    const goalOk = (i) => i === g || (solid[g] && Math.abs((i % W) - (g % W)) <= 1 && Math.abs(((i / W) | 0) - ((g / W) | 0)) <= 1);
+    let found = -1;
+    while (qh < qt) {
+      const c = q[qh++];
+      if (goalOk(c)) { found = c; break; }
+      const cx = c % W, cy = (c / W) | 0;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        if (!dx && !dy) continue;
+        const nx = cx + dx, ny = cy + dy;
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+        const n = ny * W + nx;
+        if (prev[n] >= 0 || solid[n]) continue;
+        if (dx && dy && (solid[cy * W + nx] || solid[ny * W + cx])) continue;
+        prev[n] = c; q[qt++] = n;
+      }
+    }
+    if (found < 0) return null;
+    const out = [];
+    for (let c = found; c !== s0; c = prev[c]) out.push((c % W) + 0.5, ((c / W) | 0) + 0.5);
+    const r = [];
+    for (let i = out.length - 2; i >= 0; i -= 2) r.push(out[i], out[i + 1]);
+    return r;
+  }
+  bot.route = bfsRoute;
 
   /** Walk to a marker / point / entity until within r tiles. */
   bot.walkTo = async (target, o = {}) => {
@@ -236,6 +270,37 @@ export function createBot(game, opts = {}) {
   /** Advance dialogue lines until no modal is open (does not pick options). */
   bot.finishDialogue = async (o = {}) => bot.until(() => !game.modal, { timeout: o.timeout ?? 60, what: 'dialogue to close' });
 
+  /** Walk into an exit (marker in the current zone) until the zone changes to `toZone`; waits for the fade. */
+  bot.travelVia = async (exitMarker, toZone, o = {}) => {
+    const t0 = game.t;
+    const m = game.world.marker(exitMarker);
+    await bot.until(() => game.zone.id === toZone, {
+      timeout: o.timeout ?? 120, what: 'travel via ' + exitMarker + ' to ' + toZone,
+      each: async () => { if (game.zone.id !== toZone) bot.steer(m.x, m.y, 0.05); },
+    });
+    bot.idle();
+    await bot.until(() => !game.freeze.has('transition') && !game.world.traveling, { timeout: 10, what: 'fade in' });
+    return game.t - t0;
+  };
+  /** Walk up to an entity (npc kind / sid / '@tag') and press E; returns once a modal opened (or after 1 s). */
+  bot.talkTo = async (who, o = {}) => {
+    const e = typeof who === 'object' ? who : game.ents.find(who);
+    if (!e) throw new Error('talkTo: no ' + who + ' in ' + game.zone.id);
+    await bot.walkTo(e, { r: o.r ?? 1.0, timeout: o.timeout ?? 90 });
+    await bot.until(() => game.player.data.target === e || (o.any && game.player.data.target), { timeout: 3, what: 'target ' + who, each: async () => bot.steer(e.x, e.y, 0.5) });
+    bot.idle();
+    await bot.interact();
+    await bot.until(() => game.modal, { timeout: 2, modal: false, what: 'modal after talking to ' + who });
+    return game.modal;
+  };
+  /** The interact anchor entity of a prop (by prop id), e.g. 'lesson_desk_1', 'potions', 'quest_board'. */
+  bot.anchor = (propId) => game.ents.all.find((e) => e.data && e.data.anchor && e.data.propId === propId && !e.removed) || null;
+  /** Walk to a prop's interact point and press E. */
+  bot.useProp = async (propId, o = {}) => {
+    const a = bot.anchor(propId);
+    if (!a) throw new Error('useProp: no prop ' + propId + ' in ' + game.zone.id);
+    return bot.talkTo(a, Object.assign({ r: 0.7 }, o));
+  };
   bot.questStep = (id) => (game.quests.state(id) === 'active' ? game.quests.step(id) : game.quests.state(id));
   return bot;
 }

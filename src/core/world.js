@@ -341,6 +341,8 @@ export default {
       const s = sp.def;
       if (s.if && game.ops && game.ops.test && !game.ops.test(s.if, {})) return null;
       let rect = s.area;
+      // integration (World notes): {at, w, h} is a tile rect centered on the marker tile; {at, r} a square of radius r
+      if (!rect && s.at && (s.w || s.h)) { const r = api.rectOf(s, s.w || 1, s.h || 1); if (r) rect = [r.x, r.y, r.w, r.h]; }
       if (!rect && s.at) { const m = api.marker(s.at); const r = s.r || 2; if (m) rect = [m.x - r, m.y - r, 2 * r, 2 * r]; }
       if (!rect) return null;
       const pt = api.randomPoint(rect, minDist) || (minDist > 0 ? null : { x: rect[0] + rect[2] / 2, y: rect[1] + rect[3] / 2 });

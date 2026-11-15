@@ -40,7 +40,12 @@ export default {
     function clearTransient() {
       if (game.modal) game.closeModal(undefined);
       const cs = S('cutscene');
-      if (cs.active && cs.skip) { try { cs.skip(); } catch { /* stub */ } }
+      // integration: stop (not skip) the running scene and drop queued ones: skipping would run onSkip ops
+      // (travel, chained scenes) and unskippable scenes (intro_wake) would keep running into the next scenario.
+      if (cs.active || cs.queued) {
+        try { if (cs.stop) cs.stop({ all: true }); else if (cs.skip) cs.skip(); } catch { /* stub */ }
+      }
+      if (cs.setTutorial) { try { cs.setTutorial(null); } catch { /* ignore */ } }
       game.freeze.delete('pause');
     }
 

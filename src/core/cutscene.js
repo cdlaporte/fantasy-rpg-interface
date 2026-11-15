@@ -587,7 +587,11 @@ export default {
         return true;
       },
       /** Stop the running cutscene now (cleanup only; remaining steps are dropped). */
-      stop() { if (run) end(); },
+      stop(opts) {
+        // integration: {all: true} also drops queued/chained scenes (debug scenarios, reset)
+        if (opts && opts.all) { for (const q of queue.splice(0)) q.d.resolve(); }
+        if (run) end();
+      },
       setTutorial,
     };
 

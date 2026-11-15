@@ -289,6 +289,8 @@ canvas.icon-xl { width: 48px; height: 48px; }
 .lb-top { top: 0; } .lb-bot { bottom: 0; }
 #hud.letterboxed .letterbox { height: 58px; }
 #hud.letterboxed #tutorial { bottom: 72px; }
+.skip-hint { position: absolute; right: 16px; bottom: 18px; z-index: 5; font-size: 11px; color: #f4ecd8; opacity: 0.85;
+  background: rgba(18, 13, 22, 0.7); padding: 6px 10px; border-radius: 4px; pointer-events: none; }
 .zone-fade { position: absolute; inset: 0; background: #1b1420; opacity: 0; transition: opacity 0.55s ease; z-index: 8; pointer-events: none; }
 .zone-fade.on { opacity: 1; transition: opacity 0.22s ease; }
 .zone-fade.instant { transition: none; }

@@ -26,8 +26,13 @@ test('every scenario returns without throwing and reports missing content', () =
     for (let i = 0; i < 30; i++) d.step(1);
     assert.deepEqual(d.errors(), [], id);
   }
-  // the content does not exist yet in this worktree: zones fall back to test
-  assert.ok(d.scenario('forest').missing.includes('zone:forest'));
+  // integration: the real content is merged, so every scenario must find everything it needs
+  for (const id of SCENARIOS) {
+    const r = d.scenario(id);
+    assert.equal(r.ok, true, id + ' missing ' + JSON.stringify(r.missing));
+    for (let i = 0; i < 10; i++) d.step(1);
+  }
+  assert.ok(d.scenario('forest').zone === 'forest');
   assert.equal(d.scenario('nope').ok, false);
 });
 
@@ -124,6 +129,6 @@ test('save / load / reset', async () => {
   assert.equal(s.level, 1);
   assert.equal(s.gold, 0);
   assert.deepEqual(s.flags, {});
-  assert.equal(s.zone, 'test');
+  assert.equal(s.zone, game.config.startZone, 'reset goes to the real start zone (intro)');
   await flush();
 });

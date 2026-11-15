@@ -24,14 +24,16 @@ export default {
   // L2 elite. The tutorial's first "boss": telegraphed lunge, tail swipe when crowded.
   giant_rat: {
     id: 'giant_rat', name: 'Sir Squeaks-a-Lot', level: 2, tags: ['beast', 'rat', 'elite'],
-    stats: { hp: 40, power: 5, defense: 0, speed: 2.6, radius: 0.45, xp: 33 },
+    // integration feel pass: was hp 40 / power 5 with bite 1.0 + lunge 1.2 (downed an L2 novice every time);
+    // now within the balance sheet's 25% band with softer attack coefficients.
+    stats: { hp: 32, power: 4, defense: 0, speed: 2.6, radius: 0.45, xp: 33 },
     flying: false,
     ai: { brain: 'charger', aggro: 6, leash: 12 },
     attacks: [
-      { id: 'bite', use: 'melee_arc', arc: 90, range: 0.9, dmg: 1, cd: 1.5, windup: 0.4, telegraph: null, weight: 2 },
-      { id: 'lunge', use: 'dash', dist: 3, speed: 9, dmg: 1.2, knockback: 4, cd: 4, windup: 0.8, range: 4, minRange: 1.5,
+      { id: 'bite', use: 'melee_arc', arc: 90, range: 0.9, dmg: 0.75, cd: 1.5, windup: 0.4, telegraph: null, weight: 2 },
+      { id: 'lunge', use: 'dash', dist: 3, speed: 9, dmg: 0.9, knockback: 4, cd: 4, windup: 0.8, range: 4, minRange: 1.5,
         telegraph: 'line', weight: 2 },
-      { id: 'tail_swipe', use: 'aoe_ring', r: 1.4, dmg: 0.8, knockback: 3, cd: 6, windup: 0.6, range: 1.3,
+      { id: 'tail_swipe', use: 'aoe_ring', r: 1.4, dmg: 0.6, knockback: 3, cd: 6, windup: 0.6, range: 1.3,
         telegraph: 'circle', weight: 1 },
     ],
     onDeath: null,
@@ -41,6 +43,8 @@ export default {
     boss: null,
   },
 
+  // integration feel pass: the ambush ended in ~6 s against the bot (an L3 novice standing and swinging), so the
+  // hexguard and Malgrim attack coefficients were scaled by ~0.6 and theatrics lowered (+140% -> +60% power).
   // Ambush minion. Guards the clearing (barrier r 4). Tuned with Malgrim so a level 3 novice (35 hp, floor 1)
   // goes down in roughly 10-20 s: ~3 damage per hit, slow swings, a telegraphed shield rush.
   hexguard: {
@@ -49,8 +53,8 @@ export default {
     flying: false,
     ai: { brain: 'guard', aggro: 8, leash: 4.5 },
     attacks: [
-      { id: 'hex_slash', use: 'melee_arc', arc: 100, range: 1.1, dmg: 1, cd: 2.0, windup: 0.5, telegraph: 'cone', weight: 3 },
-      { id: 'shield_rush', use: 'dash', dist: 2.5, speed: 8, dmg: 0.8, knockback: 3, cd: 5, windup: 0.7, range: 3,
+      { id: 'hex_slash', use: 'melee_arc', arc: 100, range: 1.1, dmg: 0.6, cd: 2.0, windup: 0.5, telegraph: 'cone', weight: 3 },
+      { id: 'shield_rush', use: 'dash', dist: 2.5, speed: 8, dmg: 0.5, knockback: 3, cd: 5, windup: 0.7, range: 3,
         minRange: 1.2, telegraph: 'line', weight: 1 },
     ],
     onDeath: null,
@@ -67,14 +71,14 @@ export default {
     flying: false,
     ai: { brain: 'skirmisher', aggro: 12, leash: 5, keepRange: 3.5, blinkCd: 5 },
     attacks: [
-      { id: 'hex_bolt', use: 'projectile', speed: 7, range: 8, dmg: 0.8, radius: 0.3, homing: 0.6, pierce: false,
+      { id: 'hex_bolt', use: 'projectile', speed: 7, range: 8, dmg: 0.5, radius: 0.3, homing: 0.6, pierce: false,
         look: proj('orb', '#c86bff', '#ffffff'), cd: 2.4, windup: 0.5, telegraph: 'line', weight: 3 },
-      { id: 'seal_burst', use: 'ground_target', range: 7, r: 1.6, dmg: 1.6, delay: 1.2, zone: null,
+      { id: 'seal_burst', use: 'ground_target', range: 7, r: 1.6, dmg: 1.0, delay: 1.2, zone: null,
         cd: 5, windup: 1.0, telegraph: 'circle', weight: 2 },
-      { id: 'grand_hex', use: 'aoe_ring', r: 3.5, dmg: 2.2, knockback: 5, cd: 9, windup: 1.6, range: 3,
+      { id: 'grand_hex', use: 'aoe_ring', r: 3.5, dmg: 1.4, knockback: 5, cd: 9, windup: 1.6, range: 3,
         telegraph: 'circle', weight: 2 },
       { id: 'flourish', use: 'blink', dist: 4, cd: 5, windup: 0.3, range: 2, telegraph: null, weight: 1 },
-      { id: 'theatrics', use: 'buff_self', mods: { power: 1.4 }, dur: 30, cd: 7, windup: 0.6, telegraph: null, weight: 1 },
+      { id: 'theatrics', use: 'buff_self', mods: { power: 0.6 }, dur: 30, cd: 7, windup: 0.6, telegraph: null, weight: 1 },
     ],
     onDeath: null,
     look: MALGRIM_LOOK,

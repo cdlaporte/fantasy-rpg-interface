@@ -307,10 +307,9 @@ test('player down: respawn marker, infirmary, wanted fine, revive gate cooldown,
     game.inventory.addGold(105);
     game.player.hp = 0;
     game.bus.emit('player:down', {});
-    game.step(DT);
-    await flush();
+    await steps(game, 30);   // the real world.travel fades over 24 steps
     assert.equal(game.zone.id, 'academy');
-    assert.equal(game.player.x, 30.5);
+    assert.ok(Math.abs(game.player.x - 30.5) < 0.6, 'at the infirmary marker (physics may nudge it out of a wall)');
     assert.equal(game.inventory.gold, 95);
     assert.equal(game.flags.wanted, false);
     assert.equal(of('player:revived')[0].where, 'infirmary');

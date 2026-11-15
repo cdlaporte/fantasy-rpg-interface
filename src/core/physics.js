@@ -76,6 +76,9 @@ export default {
     }
 
     function steer(e, mt, dt) {
+      // integration: a data.moveTo written by someone else (Story's fallback mover, tests) lacks the
+      // physics bookkeeping; leave such movers alone instead of crashing.
+      if (!mt.path) { e.vx = 0; e.vy = 0; return; }
       const dxT = mt.x - e.x, dyT = mt.y - e.y;
       const distT = Math.sqrt(dxT * dxT + dyT * dyT);
       if (distT <= mt.stopAt) {

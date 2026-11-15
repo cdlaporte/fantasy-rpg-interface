@@ -326,7 +326,7 @@ export default {
         if (dealt > 0) applyStatuses(target, opts.status, src);
         if (opts.lifesteal > 0 && src && dealt > 0) heal(src, Math.max(1, Math.round(dealt * opts.lifesteal)), { silent: true });
         if (src && info.fromStealth && !opts.keepStealth && !opts.dot) breakStealth(src);
-        if (src && dealt > 0 && target.team === 'town' && ownerOf(src) === game.player) game.bus.emit('crime', { victim: target });
+        // integration: 'crime' is emitted once, by Story's npc system (from the 'hit' event, same rule).
         if (src) { src.data.lastTarget = target.id; src.data.lastHitT = game.t; }
         target.data.lastHitBy = src ? src.id : null; target.data.lastHurtT = game.t;
         // Down / death.
@@ -378,6 +378,10 @@ export default {
         const owner = killer ? ownerOf(killer) : null;
         if (owner && owner.team === 'player' && !opts.noReward) reward(target, owner);
         const od = target.def && target.def.onDeath;
+        // integration: Narrative's onDeath.do ops (Mossback -> forest_boss_outro); only for real defeats
+        if (od && Array.isArray(od.do) && od.do.length && !opts.noSpawn && game.ops && game.ops.run) {
+          game.ops.run(od.do, { self: target, killer });
+        }
         if (od && od.spawn && !opts.noSpawn) {
           const n = od.n || 1;
           for (let i = 0; i < n; i++) {

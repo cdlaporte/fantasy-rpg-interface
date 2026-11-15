@@ -238,6 +238,17 @@ export default {
       c.shown = null;
       game.bus.emit('dialogue:choice', { id: c.id, node: c.nodeId, index: i, text: o.text });
       const opt = o.opt;
+      // integration: an option with `end: true` and a `do` closes the conversation FIRST, then runs its ops
+      // (Narrative: "Show me your potions" -> shop, "You wanted to see me?" -> spec_ceremony). Running a cutscene
+      // while the dialogue modal still froze the world deadlocked its camera/wait steps.
+      if (opt.end && opt.do && opt.do.length) {
+        runOps(c, c.node.after, () => {
+          const ctx = c.ctx;
+          finish(c);
+          ops.run(opt.do, ctx);
+        });
+        return true;
+      }
       runOps(c, c.node.after, () => runOps(c, opt.do, () => go(c, opt.goto, opt.end)));
       return true;
     }

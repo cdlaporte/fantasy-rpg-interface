@@ -341,6 +341,8 @@ export default {
       const s = sp.def;
       if (s.if && game.ops && game.ops.test && !game.ops.test(s.if, {})) return null;
       let rect = s.area;
+      // integration (World notes): {at, w, h} is a tile rect centered on the marker tile; {at, r} a square of radius r
+      if (!rect && s.at && (s.w || s.h)) { const r = api.rectOf(s, s.w || 1, s.h || 1); if (r) rect = [r.x, r.y, r.w, r.h]; }
       if (!rect && s.at) { const m = api.marker(s.at); const r = s.r || 2; if (m) rect = [m.x - r, m.y - r, 2 * r, 2 * r]; }
       if (!rect) return null;
       const pt = api.randomPoint(rect, minDist) || (minDist > 0 ? null : { x: rect[0] + rect[2] / 2, y: rect[1] + rect[3] / 2 });
@@ -403,7 +405,14 @@ export default {
       }
       for (const p of z.props) {
         if (!p.interact) continue;
-        const ax = p.footless ? p.x + 0.5 : p.x + p.w / 2, ay = p.footless ? p.y + 0.5 : p.y + p.h;
+        // integration (World notes): `interact.at` is the tile the player stands on; buildings default to their
+        // door step (x + def.door, y + h); other props to the south-center of the footprint / the tile center.
+        let ax, ay;
+        const at = p.interact.at;
+        if (Array.isArray(at)) { ax = at[0] + 0.5; ay = at[1] + 0.5; }
+        else if (typeof at === 'string' && z.markers[at]) { ax = z.markers[at][0] + 0.5; ay = z.markers[at][1] + 0.5; }
+        else if (!p.footless && p.def && typeof p.def.door === 'number') { ax = p.x + p.def.door + 0.5; ay = p.y + p.h + 0.5; }
+        else { ax = p.footless ? p.x + 0.5 : p.x + p.w / 2; ay = p.footless ? p.y + 0.5 : p.y + p.h; }
         const e = game.ents.create({
           kind: 'anchor', type: 'effect', team: 'neutral', name: p.interact.name || '', x: ax, y: ay, solid: false,
           look: null, asleep: true, interact: Object.assign({ range: 1.3 }, p.interact),
@@ -420,6 +429,20 @@ export default {
       if (!sp || ent.data.spawnZone !== game.zone || game.zone.unloading) return;
       sp.alive = Math.max(0, sp.alive - 1);
       if (sp.def.respawn > 0) sp.timers.push(game.t + sp.def.respawn);
+    });
+    // integration (World request): spawn `if` is re-evaluated when flags change; spawned entities whose condition
+    // no longer holds poof away (saplings after mossback_defeated), unless they are mid-fight.
+    game.bus.on('flag', () => {
+      const z = game.zone;
+      if (!z || !z.spawners || !game.ops || !game.ops.test) return;
+      for (const sp of z.spawners) {
+        if (!sp.def.if || !sp.alive || game.ops.test(sp.def.if, {})) continue;
+        for (const e of game.ents.all) {
+          if (e.removed || e.data.spawner !== sp || (e.ai && e.ai.target != null) || e.tags.includes('boss')) continue;
+          game.fx({ type: 'poof', x: e.x, y: e.y });
+          game.ents.remove(e);
+        }
+      }
     });
     game.bus.on('flag', ({ key, value }) => {
       if (!value || typeof key !== 'string' || key.indexOf('chest_') !== 0) return;
@@ -441,6 +464,8 @@ export default {
       ops.register('gate.open', (g, a) => api.openGate(a[1]));
       ops.register('spawn', (g, a) => {
         const kind = a[1], at = api.resolve(a[2]), o = a[3] || {};
+        // integration: opts.unique = do nothing when a live entity of that kind already exists (zone-spawned bosses)
+        if (o.unique && game.ents.all.some((e) => e.kind === kind && !e.removed && e.alive !== false)) return undefined;
         const n = o.n || 1, spread = o.spread != null ? o.spread : (n > 1 ? 1 : 0);
         let last = null;
         for (let i = 0; i < n; i++) {

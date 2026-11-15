@@ -3,7 +3,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame } from '../../src/core/game.js';
-import data from '../../src/data/index.js';
+import baseData from '../../src/data/index.js';
+// integration: fixtures go into a private copy, never into the shared data module (other test files, such as the
+// content validators and the bot, run in the same process and must see only real content)
+const data = Object.assign({}, baseData, { zones: Object.assign({}, baseData.zones), enemies: Object.assign({}, baseData.enemies),
+  npcs: Object.assign({}, baseData.npcs) });
 import { scriptedInput } from '../../src/platform/input.js';
 import { DT } from '../../src/contracts.js';
 
@@ -87,12 +91,13 @@ test('chests: entities with the chest op; opened chests from flags', () => {
   assert.equal(again.interact, null);
 });
 
-test('prop interact anchor at the south-center of the footprint', () => {
+test('prop interact anchor on the door step of a building (World: x + def.door, y + h)', () => {
   const { game, input, step, p } = mk();
   const a = game.zone.anchors[0];
-  assert.equal(a.x, 32); assert.equal(a.y, 23);
+  const door = game.data.props.shop.door;
+  assert.equal(a.x, 30 + door + 0.5); assert.equal(a.y, 20 + game.data.props.shop.footprint[1] + 0.5);
   assert.ok(a.asleep, 'anchors are invisible (never in FrameState)');
-  game.physics.teleport(p, 32, 23.5);
+  game.physics.teleport(p, a.x, a.y + 0.3);
   step(4);
   assert.equal(game.hudState().prompt.text, 'Enter');
   input.set({ pressed: { interact: true } });
@@ -167,8 +172,12 @@ test('moveTo walks through the doorway and emits ent:arrived; findPath is bounde
   for (let i = 0; i < out.length; i += 2) if (Math.floor(out[i]) === 20) crosses.push(Math.floor(out[i + 1]));
   assert.ok(crosses.length && crosses.every((y) => y === 11 || y === 12), 'path uses the doorway');
   assert.equal(game.world.findPath(2, 2, 2.5, 2.5, out), true);
-  assert.equal(game.world.findPath(5, 5, 55, 25, out), false, 'too far for 400 nodes');
+  // integration: with an octile heuristic the doorway route is found well within 400 nodes, so the bound is
+  // checked with the doorway blocked (the search must give up and still return a partial path).
+  game.world.block(20, 11, 1, 2, +1);
+  assert.equal(game.world.findPath(5, 5, 55, 25, out), false, 'unreachable: gives up after 400 nodes');
   assert.ok(out.length > 0, 'partial path toward the goal');
+  game.world.block(20, 11, 1, 2, -1);
   const npc = game.ents.spawn('rat', 15.5, 5.5, { noAi: true });
   let arrived = 0;
   game.bus.on('ent:arrived', (e) => { if (e.ent === npc) arrived++; });

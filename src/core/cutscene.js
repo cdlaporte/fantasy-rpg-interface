@@ -277,6 +277,16 @@ export default {
         case 'cutscene': {
           const def = (game.data.cutscenes || {})[step[1]];
           if (!def) { warn('unknown nested cutscene "' + step[1] + '"'); return null; }
+          // integration: a `cutscene` step that is the LAST step of the main thread chains: the next cutscene
+          // starts right after this one ends (own id, own skippable, own cleanup), as Narrative's content
+          // assumes. An HP floor set by `control` carries over until the player is healed to full.
+          const top = th.frames[th.frames.length - 1];
+          if (th === run.main && th.frames.length === 1 && top && top.i >= top.steps.length) {
+            if (!(def.once && game.flags['cs_' + step[1]])) {
+              queue.unshift({ def, id: step[1], d: deferred(), ctx: run.ctx, carryMinHp: run.minHp && game.player ? game.player.data.minHp : null });
+            }
+            return null;
+          }
           th.frames.push({ steps: Array.isArray(def.steps) ? def.steps : [], i: 0, def, id: step[1], nested: true });
           game.bus.emit('cutscene:start', { id: step[1], nested: true });
           return null;
@@ -469,6 +479,9 @@ export default {
 
     function tick(dt) {
       if (!run) return;
+      if (run.carriedMinHp && game.player && game.player.hp >= game.player.hpMax) {
+        delete game.player.data.minHp; run.carriedMinHp = false; run.minHp = false;
+      }
       if (run.bgCam && tweenCam(run.bgCam, run.skipping ? Infinity : (frozen() ? 0 : dt))) run.bgCam = null;
       for (let i = 0; i < run.threads.length && run; i++) {
         const th = run.threads[i];
@@ -480,7 +493,7 @@ export default {
       if (all) end();
     }
 
-    function startRun(def, id, d, ctx) {
+    function startRun(def, id, d, ctx, carryMinHp) {
       run = {
         id, def, d, ctx: Object.assign({}, ctx || {}, { cutscene: id }), threads: [], main: null, locks: 0, released: 0,
         unscripted: null, letterbox: false, scripted: new Set(), minHp: false, cam: null, bgCam: null, skipping: false,
@@ -488,6 +501,7 @@ export default {
       };
       run.main = newThread(def.steps, def, id);
       run.threads.push(run.main);
+      if (carryMinHp != null && game.player) { game.player.data.minHp = carryMinHp; run.minHp = true; run.carriedMinHp = true; }
       game.bus.emit('cutscene:start', { id });
       tick(0);
     }
@@ -512,7 +526,12 @@ export default {
       if (r.id && typeof r.id === 'string') game.setFlag('cs_' + r.id, true);
       game.bus.emit('cutscene:end', { id: r.id });
       r.d.resolve();
-      if (queue.length) { const q = queue.shift(); startRun(q.def, q.id, q.d, q.ctx); }
+      if (queue.length) {
+        const q = queue.shift();
+        const ctx = q.ctx ? Object.assign({}, q.ctx) : q.ctx;
+        if (ctx) delete ctx.cutscene;
+        startRun(q.def, q.id, q.d, ctx, q.carryMinHp);
+      }
     }
 
     const api = {
@@ -550,14 +569,34 @@ export default {
       skip() {
         if (!run || run.def.skippable === false) return false;
         run.skipping = true;
+        // integration: Narrative's `onSkip: [ops]` runs INSTEAD of the remaining steps when the scene is skipped
+        // (a trailing ['cutscene', id] in it still chains).
+        if (Array.isArray(run.def.onSkip) && !run.onSkipped) {
+          run.onSkipped = true;
+          for (const th of run.threads) {
+            if (th.wait && th.wait.kind === 'say' && game.sys.dialogue.cancel) game.sys.dialogue.cancel(th.wait.p);
+            if (th === run.main) continue;
+            th.done = true; th.wait = null;
+            if (th.d) { th.d.resolve(); th.d = null; }
+          }
+          run.main.wait = null;
+          run.main.frames.length = 0;
+          run.main.frames.push({ steps: run.def.onSkip, i: 0, def: run.def, id: run.id });
+        }
         tick(0);
         return true;
       },
       /** Stop the running cutscene now (cleanup only; remaining steps are dropped). */
-      stop() { if (run) end(); },
+      stop(opts) {
+        // integration: {all: true} also drops queued/chained scenes (debug scenarios, reset)
+        if (opts && opts.all) { for (const q of queue.splice(0)) q.d.resolve(); }
+        if (run) end();
+      },
       setTutorial,
     };
 
+    // integration: UI command (Escape during a skippable cutscene; see src/ui/index.js)
+    game.commands.skipCutscene = () => api.skip();
     ops.register('cutscene', (g, a, ctx) => api.play(a[1], { nested: !!(ctx && ctx.cutscene && run) }));
     ops.register('tutorial', (g, a) => { setTutorial(a[1], a[2], a[3]); });
     ops.register('bubble', (g, a, ctx) => {

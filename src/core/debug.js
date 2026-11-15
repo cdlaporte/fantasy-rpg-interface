@@ -40,7 +40,12 @@ export default {
     function clearTransient() {
       if (game.modal) game.closeModal(undefined);
       const cs = S('cutscene');
-      if (cs.active && cs.skip) { try { cs.skip(); } catch { /* stub */ } }
+      // integration: stop (not skip) the running scene and drop queued ones: skipping would run onSkip ops
+      // (travel, chained scenes) and unskippable scenes (intro_wake) would keep running into the next scenario.
+      if (cs.active || cs.queued) {
+        try { if (cs.stop) cs.stop({ all: true }); else if (cs.skip) cs.skip(); } catch { /* stub */ }
+      }
+      if (cs.setTutorial) { try { cs.setTutorial(null); } catch { /* ignore */ } }
       game.freeze.delete('pause');
     }
 
@@ -282,7 +287,7 @@ export default {
           pendingSpec: !!pr.pendingSpec, gold: inv.gold || 0, items: Object.assign({}, inv.items || {}),
           hotbar: inv.hotbar ? inv.hotbar.slice() : [], question: g.pending ? g.pending() : null,
           quest: S('quests').tracked || null, hour: S('clock').hour, god,
-          cutscene: S('cutscene').active ? (S('cutscene').active.id || true) : null,
+          cutscene: S('cutscene').active ? (S('cutscene').active.id || S('cutscene').active) : null,
         };
       },
       input(partial) { sticky.set(partial || {}); return api; },

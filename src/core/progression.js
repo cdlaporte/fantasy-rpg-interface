@@ -295,7 +295,7 @@ function shuffle(arr, rng) {
 
 function normAbilities(x) {
   if (!x) return [];
-  const list = Array.isArray(x) ? x : Object.keys(x).map((slot) => Object.assign({ slot }, x[slot]));
+  const list = Array.isArray(x) ? x : Object.keys(x).filter((slot) => x[slot]).map((slot) => Object.assign({ slot }, x[slot]));
   return list.filter(Boolean).map((a) => ({
     slot: a.slot, id: a.id || a.slot, name: a.name || a.id || '', icon: a.icon || 'star',
     unlock: typeof a.unlock === 'number' ? a.unlock : 1, desc: a.desc || '',
@@ -832,7 +832,10 @@ export default {
       game.fx({ type: 'sparkle', x: p.x, y: p.y, n: 14, r: 1, color: '#ffffff' });
       let text;
       if (where === 'here') text = 'Mr. Laporte: "Correct. Up you get. Try not to make a habit of it."';
-      else if (where === 'infirmary') text = 'Nurse Pemberton: "There we are, good as new. Do try to duck next time, dear."';
+      else if (where === 'infirmary') {
+        const nurse = (data().npcs && data().npcs.marigold && data().npcs.marigold.name) || 'Nurse Marigold';
+        text = nurse + ': "There we are, good as new. Do try to duck next time, dear."';
+      }
       else text = 'Mr. Laporte (from somewhere): "Up. Again. Watch your step this time."';
       if (extra) text += ' ' + extra;
       game.toast(text, where === 'here' ? 'good' : 'info');

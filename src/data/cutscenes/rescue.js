@@ -76,11 +76,13 @@ export default {
       ['move', 'laporte', 'clearing', { speed: 2, stopAt: 1.3 }],
       ['face', 'laporte', DOWN],
       ['say', 'laporte', 'You look terrible. Here.', { mood: 'calm' }],
-      ['give', 'potion_small', 1],
+      ['give', 'potion_small', 1, { slot: 0 }],   // slot 0 = key 1, even if rat cheese is already there
       ['sfx', 'pickup'],
       ['letterbox', false],
       ['tutorial', 'Press 1 to drink the potion.', ['1']],
-      ['control', { until: ['not', ['hasItem', 'potion_small', 1]] }],
+      // integration: "drank it" = HP rose above the ambush floor (the giant rat may have dropped a second potion,
+      // so "no potion left" could never become true)
+      ['control', { until: ['hp', 'player', '>', 1] }],
       ['tutorial', null],
       ['lockInput'],
       ['letterbox', true],

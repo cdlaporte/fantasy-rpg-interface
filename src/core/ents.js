@@ -149,15 +149,15 @@ export default {
             name: def.name || '', x, y, z: flying ? 0.5 : 0,
             look: clone(def.look || { rig: 'humanoid' }),
             radius: s.radius || (enemyDef ? 0.35 : isEffect ? 0.4 : 0.32), solid: !isEffect,
-            pushable: !def.immovable && !isEffect && !s.anchored,
+            pushable: !def.immovable && !isEffect && !s.anchored && !def.anchored,
             hp: isEffect ? 0 : hp, hpMax: isEffect ? 0 : hp, level: lvl, tags: def.tags ? def.tags.slice() : [], stats,
             interact: def.interact ? clone(def.interact) : null,
             data: { flying, home: { x, y } },
           };
           // Enemy-def additions (Narrative): stats.anchored = never moves / knocked back; stats.immortal = never
           // dies (hp floor 1; ai regen refills it).
-          if (s.anchored) { fields.data.kbResist = 1; fields.data.anchored = true; fields.data.mass = 1e6; fields.stats.speed = 0; }
-          if (s.immortal) fields.data.minHp = 1;
+          if (s.anchored || def.anchored) { fields.data.kbResist = 1; fields.data.anchored = true; fields.data.mass = 1e6; fields.stats.speed = 0; }
+          if (s.immortal || def.immortal) fields.data.minHp = 1;
         } else if (EFFECT_SET.has(kindId)) {
           fields = { kind: kindId, type: 'effect', team: 'neutral', x, y, solid: false, pushable: false,
             look: { rig: 'effect', model: kindId }, radius: 0.4, data: {} };
@@ -169,7 +169,7 @@ export default {
           const v = opts[k];
           if (v === undefined) continue;
           switch (k) {
-            case 'level': case 'n': case 'spread': case 'noAi': case 'ai': case 'poof': break;
+            case 'level': case 'n': case 'spread': case 'noAi': case 'ai': case 'poof': case 'unique': break;
             case 'offset': if (Array.isArray(v)) { fields.x += v[0] || 0; fields.y += v[1] || 0; if (fields.data.home) { fields.data.home.x = fields.x; fields.data.home.y = fields.y; } } break;
             case 'id': case 'sid': fields.data.sid = v; break;
             case 'tag': fields.tags = (fields.tags || []).concat(v); break;

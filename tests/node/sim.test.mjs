@@ -2,7 +2,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame } from '../../src/core/game.js';
-import data from '../../src/data/index.js';
+import baseData from '../../src/data/index.js';
+// integration: fixtures go into a private copy, never into the shared data module (other test files, such as the
+// content validators and the bot, run in the same process and must see only real content)
+const data = Object.assign({}, baseData, { zones: Object.assign({}, baseData.zones), enemies: Object.assign({}, baseData.enemies),
+  npcs: Object.assign({}, baseData.npcs) });
 import { scriptedInput } from '../../src/platform/input.js';
 import { DT } from '../../src/contracts.js';
 

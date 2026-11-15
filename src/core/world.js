@@ -450,6 +450,8 @@ export default {
       ops.register('gate.open', (g, a) => api.openGate(a[1]));
       ops.register('spawn', (g, a) => {
         const kind = a[1], at = api.resolve(a[2]), o = a[3] || {};
+        // integration: opts.unique = do nothing when a live entity of that kind already exists (zone-spawned bosses)
+        if (o.unique && game.ents.all.some((e) => e.kind === kind && !e.removed && e.alive !== false)) return undefined;
         const n = o.n || 1, spread = o.spread != null ? o.spread : (n > 1 ? 1 : 0);
         let last = null;
         for (let i = 0; i < n; i++) {

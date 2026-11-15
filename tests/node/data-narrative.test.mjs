@@ -40,6 +40,10 @@ const MARKERS = {
   forest: ['entry_town', 'ranger_camp', 'glade', 'meadow', 'brook', 'hollow', 'goblin_camp', 'wisp_pond', 'grove_gate',
     'grove', 'boss_arena', ...range('chest_', 1, 4), 'respawn'],
 };
+// integration: the World package is merged, so every marker this content relies on must exist in the real zones,
+// and the real zones' extra markers (boss_spawn, office_visitor, ...) are valid targets too.
+const STORY_MARKERS = JSON.parse(JSON.stringify(MARKERS));
+for (const z of Object.keys(MARKERS)) MARKERS[z] = [...new Set([...MARKERS[z], ...Object.keys((data.zones[z] && data.zones[z].markers) || {})])];
 const CUTSCENE_ZONE = { intro_wake: 'intro', ambush: 'intro', rescue: 'intro', town_arrival: 'town', class_pick: 'academy',
   spec_ceremony: 'academy', forest_boss_intro: 'forest', forest_boss_outro: 'forest' };
 
@@ -510,4 +514,13 @@ test('every line fits (<= 110 chars)', () => {
   assert.ok(lines.length > 300, `collected ${lines.length} lines`);
   for (const [w, t] of lines) if (t.length > MAX_LINE) fail(w, `${t.length} chars: ${t}`);
   flush('lines');
+});
+
+test('integration: every marker the content needs exists in World\'s zones', () => {
+  const missing = [];
+  for (const [z, list] of Object.entries(STORY_MARKERS)) {
+    const zm = (data.zones[z] && data.zones[z].markers) || {};
+    for (const m of list) if (!zm[m]) missing.push(z + '.' + m);
+  }
+  assert.deepEqual(missing, []);
 });

@@ -200,7 +200,7 @@ export function validateZone(id, d = data) {
   (def.spawns || []).forEach((s, k) => {
     const tag = `spawn #${k} (${s.kind})`;
     if (!ENEMY_IDS.includes(s.kind)) E(`${tag}: kind not in the STORY.md enemy list`);
-    else if (d.enemies && Object.keys(d.enemies).length && !d.enemies[s.kind]) W(`${tag}: no enemy def yet in data.enemies`);
+    else if (!d.enemies || !d.enemies[s.kind]) E(`${tag}: no enemy def in data.enemies`);   // integration: content is merged
     const r = s.area || furnitureRect(s, markers);
     if (!r) { E(`${tag}: no area`); return; }
     const ts = rectTiles(r, w, h);
@@ -233,7 +233,12 @@ export function validateZone(id, d = data) {
     if (!t.id) E(`${tag}: missing id`); else if (tids.has(t.id)) E(`${tag}: duplicate id`); else tids.add(t.id);
     const r = t.area || furnitureRect(t, markers);
     if (!r || !anyReach(r)) E(`${tag}: area missing or unreachable`);
-    walkOps(t.do, (n) => { if (!OPS.includes(n)) E(`${tag}: unknown op '${n}'`); }, tag);
+    walkOps(t.do, (n, op) => {
+      if (!OPS.includes(n)) E(`${tag}: unknown op '${n}'`);
+      // integration: Narrative content is merged; referenced ids must exist
+      if (n === 'cutscene' && (!d.cutscenes || !d.cutscenes[op[1]])) E(`${tag}: cutscene '${op[1]}' not defined`);
+      if (n === 'dialogue' && (!d.dialogues || !d.dialogues[op[1]])) E(`${tag}: dialogue '${op[1]}' not defined`);
+    }, tag);
     if (t.if) walkConds(t.if, (n) => { if (!CONDS.includes(n)) E(`${tag}: unknown condition '${n}'`); }, tag);
   });
   // chests: walkable, reachable, and a solid chest entity must not cut anything off
@@ -245,6 +250,7 @@ export function validateZone(id, d = data) {
     const tag = `chest ${c.id}`;
     if (cids.has(c.id)) E(`${tag}: duplicate id`); cids.add(c.id);
     if (!LOOT_IDS.includes(c.loot)) E(`${tag}: loot '${c.loot}' not in STORY.md loot tables`);
+    else if (!d.loot || !d.loot[c.loot]) E(`${tag}: loot table '${c.loot}' missing from data.loot`);
     const m = markers[c.at];
     if (!m) { E(`${tag}: marker '${c.at}' missing`); continue; }
     const i = m[1] * w + m[0];
@@ -299,7 +305,8 @@ export function validateZone(id, d = data) {
         if (!OPS.includes(n)) E(`${tag}: unknown op '${n}'`);
         if (n === 'shop' && !SHOP_IDS.includes(op[1])) E(`${tag}: shop '${op[1]}' not in STORY.md`);
         if (n === 'lesson' && !LESSON_IDS.includes(op[1])) E(`${tag}: lesson '${op[1]}' not in STORY.md`);
-        if (n === 'dialogue' && d.dialogues && Object.keys(d.dialogues).length && !d.dialogues[op[1]]) W(`${tag}: dialogue '${op[1]}' not defined yet`);
+        if (n === 'dialogue' && (!d.dialogues || !d.dialogues[op[1]])) E(`${tag}: dialogue '${op[1]}' not defined`);
+        if (n === 'cutscene' && (!d.cutscenes || !d.cutscenes[op[1]])) E(`${tag}: cutscene '${op[1]}' not defined`);
       }, tag);
       const at = a.interact.at;
       let pts = [];

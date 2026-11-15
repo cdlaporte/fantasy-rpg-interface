@@ -768,10 +768,11 @@ export function createFx(scene, mats, camera, unknown) {
           const u = (t * 0.9 + i / 5 + seed) % 1;
           const a = i * 1.3;
           const xx = x + Math.cos(a) * R * 0.8, yy = y + Math.sin(a) * R * 0.6;
-          push('ringN', xx, 0.15 + u * H, yy, qBill(0), 0.07 + 0.03 * u, 0.07 + 0.03 * u, 1, tc('#7cf07c'), 1 - u);
-          bill('dotN', xx, yy, 0.15 + u * H, 0, 0.04, tc('#4fdc4f'), 0.7 * (1 - u));
+          push('ringN', xx, 0.15 + u * H, yy, qBill(0), 0.1 + 0.05 * u, 0.1 + 0.05 * u, 1, tc('#5ce05c'), 1 - u);
+          bill('dotN', xx, yy, 0.15 + u * H, 0, 0.07, tc('#9cff7c'), 0.6 * (1 - u));
         }
-        ground('glowN', x, y, 0.035, 0, R * 1.5, R * 1.5, tc('#4fdc4f'), 0.35);
+        ground('glowN', x, y, 0.035, 0, R * 1.8, R * 1.8, tc('#3fc83f'), 0.5);
+        if (((t * 1.3 + seed) % 1) < 0.5) bill('dotN', x + 0.12, y + 0.05, H * 0.4 - ((t * 1.3 + seed) % 1) * 0.5, 0, 0.05, tc('#5ce05c'), 0.9);
         break;
       default:
         unknown.add('fxTag:' + tg);

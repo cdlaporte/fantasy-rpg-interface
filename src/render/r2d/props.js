@@ -335,10 +335,21 @@ const PAINTERS = {
     const { R } = tools(ctx);
     const wood = col(ctx.L.wood, '#c98c50'), rail = col(ctx.L.rail, '#8a5a33');
     const W = ctx.W, H = ctx.H;
-    for (let x = 0; x < W; x += 4) { const c = (x >> 2) % 3 === 0 ? dark(wood, 0.1) : wood; R(x, 2, 4, H - 4, c); R(x + 3, 2, 1, H - 4, dark(wood, 0.3)); R(x, 2, 4, 1, light(wood, 0.3)); }
-    R(0, 0, W, 3, rail); R(0, 0, W, 1, light(rail, 0.3));
-    R(0, H - 3, W, 3, rail); R(0, H - 1, W, 1, dark(rail, 0.35));
-    for (let x = 0; x < W; x += 12) { R(x, -2, 3, 5, rail); R(x, H - 5, 3, 5, rail); }
+    if (ctx.w >= ctx.h) {
+      // walked north-south: boards run east-west, rails on the west and east sides
+      for (let y = 0; y < H; y += 4) {
+        const c = (y >> 2) % 3 === 0 ? dark(wood, 0.1) : (y >> 2) % 3 === 1 ? light(wood, 0.06) : wood;
+        R(3, y, W - 6, 4, c); R(3, y + 3, W - 6, 1, dark(wood, 0.32)); R(3, y, W - 6, 1, light(wood, 0.25));
+        R(6 + ((y * 7) % (W - 14)), y + 1, 1, 1, dark(wood, 0.45));
+      }
+      R(0, -2, 4, H + 2, rail); R(W - 4, -2, 4, H + 2, rail); R(0, -2, 1, H + 2, light(rail, 0.3)); R(W - 1, -2, 1, H + 2, dark(rail, 0.35));
+      for (let y = -2; y < H; y += 10) { R(0, y, 4, 3, dark(rail, 0.2)); R(W - 4, y, 4, 3, dark(rail, 0.2)); }
+    } else {
+      for (let x = 0; x < W; x += 4) { const c = (x >> 2) % 3 === 0 ? dark(wood, 0.1) : wood; R(x, 3, 4, H - 6, c); R(x + 3, 3, 1, H - 6, dark(wood, 0.3)); R(x, 3, 4, 1, light(wood, 0.3)); }
+      R(0, 0, W, 3, rail); R(0, 0, W, 1, light(rail, 0.3));
+      R(0, H - 3, W, 3, rail); R(0, H - 1, W, 1, dark(rail, 0.35));
+      for (let x = 0; x < W; x += 12) { R(x, -2, 3, 5, rail); R(x, H - 5, 3, 5, rail); }
+    }
   },
   banner(ctx) {
     const { R, PL, S } = tools(ctx);
@@ -517,9 +528,7 @@ function building(ctx, kind) {
     const wx = doorX - 22 > 4 ? doorX - 22 : doorX + 14;
     window_(ctx, wx, winY, 18, 11, trim, false);
     for (let i = 0; i < 4; i++) { const c = [L.wall, '#ffd24a', '#7cd96a'][i % 3]; R(wx + 1 + i * 4, winY + 8, 3, 2, col(c, '#ffd24a')); }
-    const awX = Math.max(2, wx - 2), awW = 22;
-    for (let i = 0; i < awW; i += 4) PL([awX + i, winY - 2, awX + i + 4, winY - 2, awX + i + 4, winY - 7, awX + i, winY - 7], (i >> 2) % 2 ? '#ffffff' : roof);
-    for (let i = 0; i < awW; i += 4) R(awX + i + 1, winY - 2, 2, 1, (i >> 2) % 2 ? roof : '#ffffff');
+    ctx.awning = { x: Math.max(2, wx - 2), w: 24, y: winY };
     for (const x of winXs) if (x + 10 < wx - 1 || x > wx + 19) window_(ctx, x, winY, 8, 9, trim, true);
   } else {
     for (const x of winXs) { window_(ctx, x, winY, 8, 9, trim, true); flowerBox(ctx, x - 1, winY + 11, 10); }
@@ -541,6 +550,13 @@ function building(ctx, kind) {
   PL([gx - 15, eave + 2, gx - 12, eave + 2, gx, eave - 19, gx, eave - 23], trim);
   PL([gx + 15, eave + 2, gx + 12, eave + 2, gx, eave - 19, gx, eave - 23], dark(trim, 0.2));
   R(gx - 3, eave - 10, 6, 6, trim); R(gx - 2, eave - 9, 4, 4, '#9fd0f0'); S(gx - 2, eave - 9, '#ffffff'); R(gx - 1, eave - 11, 2, 1, trim);
+  // shop awning (over the roof eave)
+  if (ctx.awning) {
+    const { x: awX, w: awW, y: wy } = ctx.awning;
+    for (let i = 0; i < awW; i += 4) PL([awX + i, wy - 1, awX + i + 4, wy - 1, awX + i + 4, wy - 7, awX + i, wy - 7], (i >> 2) % 2 ? '#ffffff' : roof);
+    for (let i = 0; i < awW; i += 4) { R(awX + i, wy - 1, 4, 1, (i >> 2) % 2 ? dark('#ffffff', 0.15) : rLo); R(awX + i + 1, wy, 2, 1, (i >> 2) % 2 ? '#ffffff' : roof); }
+    R(awX, wy - 7, awW, 1, rLo);
+  }
   // sign
   if (sign !== 'none') {
     const sx = doorX + doorW + 4 <= W - 12 ? doorX + doorW + 4 : doorX - 13;

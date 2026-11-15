@@ -30,6 +30,7 @@ const DRAW_BUDGET = 300;
         const z = await page.evaluate(() => { const g = window.__gallery; const r = g.renderer.viewRect({}); return r; });
         const zoom = n === 4 ? 1.5 : 2;
         const vw = 1366 / (48 * zoom), vh = 657 / (48 * zoom);
+        z.x0 = Math.max(0, z.x0); z.y0 = Math.max(0, z.y0);
         const W = z.x1 - z.x0, Hh = z.y1 - z.y0;
         const cols = QUICK ? 1 : Math.ceil(W / vw), rows = QUICK ? 1 : Math.ceil(Hh / vh);
         let k = 0, maxDraws = 0, maxMs = 0;

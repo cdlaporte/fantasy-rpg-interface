@@ -6,7 +6,7 @@ import { Pix } from './pix.js';
 import { dark, light, mix, col, OUTLINE } from './color.js';
 import { LAPORTE } from '../../data/palettes.js';
 
-export const HW = 44, HH = 56, HAX = 22, HAY = 47;
+export const HW = 52, HH = 58, HAX = 26, HAY = 49;
 
 const KNOWN = {
   hair: ['short', 'long', 'bun', 'ponytail', 'curly', 'spiky', 'bald', 'braids', 'm_hairline'],
@@ -196,7 +196,7 @@ export function paintHumanoid(look0, dirView, anim, frame) {
       hand = [[armR0 + 1, -11], [3, -16], [-2, -16]][f]; wdir = [[1, -1], [0, -1], [-1, -1]][f]; heldBehind = true;
     }
   } else if (arm === 'cast') {
-    if (dir === 1) { hand = [5 + bx, -17 + by]; wdir = [1, -1]; }
+    if (dir === 1) { hand = [5 + bx, -17 + by]; wdir = longW ? [0, -1] : [1, -1]; }
     else if (dir === 2) { hand = [armL0 - 1, -17 + by]; wdir = [0, -1]; }
     else { hand = [armR0 + 2, -17 + by]; wdir = [0, -1]; }
   } else if (arm === 'charge') {
@@ -727,8 +727,11 @@ export function paintHumanoid(look0, dirView, anim, frame) {
       R(-7, -22, -7, -15, hl, ox, oy); R(-4, -25, 1, -25, hh, ox, oy); R(0, -21, 0, -15, hl, ox, oy);
     } else {
       headMask(ox, oy, hc); R(-7, -21, 6, -14, hc, ox, oy); R(-6, -25, 5, -24, hc, ox, oy); R(-3, -26, 2, -26, hc, ox, oy);
-      R(-1, -22, 0, -15, hl, ox, oy); R(6, -21, 6, -14, hl, ox, oy); R(-6, -24, -3, -23, hh, ox, oy);
-      R(-6, -13, 5, -11, hc, ox, oy); R(-6, -11, 5, -11, hl, ox, oy);
+      // hood tip falls down the back, shoulders draped
+      p.poly([AX + ox - 3, AY + oy - 16, AX + ox + 3, AY + oy - 16, AX + ox + 0.5, AY + oy - 7], hc);
+      R(-8, -14, 7, -12, hc, ox, oy); R(-8, -12, 7, -12, hl, ox, oy);
+      R(-1, -22, 0, -16, hl, ox, oy); S(-1, -15, hl, ox, oy); S(0, -14, hl, ox, oy); S(0, -12, hl, ox, oy); S(0, -10, hl, ox, oy);
+      R(6, -21, 6, -14, hl, ox, oy); R(-6, -24, -3, -23, hh, ox, oy); R(-7, -21, -7, -16, hh, ox, oy);
     }
   }
 
@@ -1010,10 +1013,12 @@ export function paintHumanoid(look0, dirView, anim, frame) {
         const m = col(c0, '#c8ccd8');
         const one = (sx, sy, flip) => {
           const ddx = flip ? -dx : dx;
-          for (let t = -1; t <= 6; t++) p.set(sx + ddx * t, sy + dy * t, '#7a4e2c');
           const ppx = -dy * (flip ? -1 : 1), ppy = ddx * (flip ? -1 : 1);
-          for (let t = 4; t <= 7; t++) for (let w = 1; w <= (t === 4 || t === 7 ? 2 : 3); w++) p.set(sx + ddx * t + ppx * w, sy + dy * t + ppy * w, w === 3 || t === 7 ? light(m, 0.5) : m);
-          p.set(sx + ddx * 7, sy + dy * 7, dark(m, 0.3));
+          const n = Math.hypot(ppx, ppy) || 1;
+          const hx3 = sx + ddx * 5.5 + ppx / n * 2.2, hy3 = sy + dy * 5.5 + ppy / n * 2.2;
+          p.ellipse(hx3 + 0.5, hy3 + 0.5, 2.6, 2.6, m);
+          p.ellipse(hx3 + 0.5 + ppx / n * 0.9, hy3 + 0.5 + ppy / n * 0.9, 1.6, 1.6, light(m, 0.45));
+          for (let t = -1; t <= 7; t++) p.set(sx + ddx * t, sy + dy * t, t > 5 ? dark(m, 0.3) : '#7a4e2c');
         };
         one(hx0, hy0, false);
         if (dir !== 1 && offHand && arm !== 'attack') one(AX + Math.round(offHand[0]), AY + Math.round(offHand[1] - 1), true);

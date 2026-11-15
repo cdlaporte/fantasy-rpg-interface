@@ -9,6 +9,7 @@ import { dark, light, mix, col } from './color.js';
 export const CH = 16;           // tiles per chunk side
 export const TP = 16;           // art px per tile
 export const CPX = CH * TP;     // art px per chunk side
+const VOID = { id: 'void', pattern: 'void', block: false, water: false, pit: false, h: 0, hpx: 0, a: '#2a3a4a', b: '#2a3a4a', side: '#2a3a4a', prio: -1 };
 
 const PRIO = { water: 0, shallows: 1, starfloor: 1, wet_sand: 2, sand: 3, cloud: 3, dirt: 4, path: 5, cobble: 6, stone: 7, planks: 7, carpet: 7, grass: 9, flowers: 9, tallgrass: 9 };
 const GROUP = { grass: 'g', flowers: 'g', tallgrass: 'g' };
@@ -50,7 +51,8 @@ export function buildChunk(zv, info, cx, cy, frame, extras) {
   const W = zv.w, Hh = zv.h;
   const x0 = cx * CH, y0 = cy * CH;
   const tileAt = (tx, ty) => {
-    if (tx < 0) tx = 0; if (ty < 0) ty = 0; if (tx >= W) tx = W - 1; if (ty >= Hh) ty = Hh - 1;
+    if (tx < 0) tx = 0; if (ty < 0) ty = 0; if (tx >= W) tx = W - 1;
+    if (ty >= Hh) return VOID; // below the map: open, so the last row of blocks shows its south face
     return info[zv.tiles[ty * W + tx]];
   };
   // 1. ground for every visible tile (blocks get the ground of the pattern beneath: a darker base)
@@ -59,7 +61,7 @@ export function buildChunk(zv, info, cx, cy, frame, extras) {
     if (tx >= W || ty >= Hh) { p.rect(ox, oy, TP, TP, '#2a3a4a'); continue; }
     const t = info[zv.tiles[ty * W + tx]];
     const v = zv.variant[ty * W + tx];
-    if (t.block) { p.rect(ox, oy, TP, TP, dark(t.side, 0.3)); continue; }
+    if (t.block) { p.rect(ox, oy, TP, TP, dark(t.pattern === 'trees' || t.pattern === 'hedge' ? t.b : t.side, 0.4)); continue; }
     ground(p, ox, oy, tx, ty, t, v, frame);
   }
   // 2. transitions
@@ -355,6 +357,20 @@ function transitions(p, ox, oy, tx, ty, t, tileAt, frame) {
         for (let d = 0; d < depth; d++) setSide(p, ox, oy, side, i, d, bank);
         if (fo) setSide(p, ox, oy, side, i, depth, foam);
         if ((i + frame) % 3 === 0) setSide(p, ox, oy, side, i, depth + 1, mix(t.a, foam, 0.4));
+      }
+    }
+    // round the convex corners where land wraps around two sides
+    const land = (n) => !n.water && !n.block;
+    const corners = [[N, Wt, 0, 0], [N, E, 1, 0], [S, Wt, 0, 1], [S, E, 1, 1]];
+    for (const [n1, n2, cxs, cys] of corners) {
+      if (!land(n1) || !land(n2)) continue;
+      const lc = n1.a, rr = 5;
+      for (let y = 0; y < rr; y++) for (let x = 0; x < rr; x++) {
+        const d = Math.hypot(rr - x - 0.5, rr - y - 0.5);
+        const px = cxs ? ox + TP - 1 - x : ox + x, py = cys ? oy + TP - 1 - y : oy + y;
+        if (d > rr + 0.2) p.set(px, py, lc);
+        else if (d > rr - 0.9) p.set(px, py, dark(lc, 0.25));
+        else if (d > rr - 1.9) p.set(px, py, '#f0fbff');
       }
     }
     return;

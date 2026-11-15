@@ -279,10 +279,10 @@ export function runeCircle() {
     glyphs.push(i % 2 ? [p(-0.05, -0.06), p(0.05, -0.06), p(0.02, 0.07), p(-0.02, 0.07)] : [p(0, -0.07), p(0.06, 0), p(0, 0.07), p(-0.06, 0)]);
   }
   parts.push(polys(glyphs, 0.9));
-  // star lines
+  // hexagon lattice (neutral: no five-pointed star)
   const lines = [];
-  for (let i = 0; i < 5; i++) {
-    const a0 = (i / 5) * Math.PI * 2 + Math.PI / 2, a1 = ((i + 2) / 5) * Math.PI * 2 + Math.PI / 2;
+  for (let i = 0; i < 6; i++) {
+    const a0 = (i / 6) * Math.PI * 2, a1 = ((i + 1) / 6) * Math.PI * 2;
     const x0 = Math.cos(a0) * 0.6, y0 = Math.sin(a0) * 0.6, x1 = Math.cos(a1) * 0.6, y1 = Math.sin(a1) * 0.6;
     const nx = -(y1 - y0), ny = x1 - x0, l = Math.hypot(nx, ny) / 0.015;
     lines.push([[x0 + nx / l, y0 + ny / l], [x1 + nx / l, y1 + ny / l], [x1 - nx / l, y1 - ny / l], [x0 - nx / l, y0 - ny / l]]);

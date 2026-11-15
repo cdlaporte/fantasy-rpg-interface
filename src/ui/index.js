@@ -99,6 +99,7 @@ export function createUI(rootEl, opts = {}) {
     minimap.update(hud, game);
     feedback.update(hud, game);
     feedback.skippable(canSkip());
+    feedback.reconcileLetterbox(game);
     modals.poll(game);
     if (params.perf) perfUi = performance.now() - t0;
   }

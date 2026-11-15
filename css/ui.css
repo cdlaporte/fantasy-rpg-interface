@@ -296,7 +296,7 @@ canvas.icon-xl { width: 48px; height: 48px; }
 .zone-fade.instant { transition: none; }
 .zone-card { position: absolute; left: 50%; top: 32%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 8px;
   opacity: 0; pointer-events: none; z-index: 9; }
-.zone-card.show { animation: zone-card 2.8s ease forwards; }
+.zone-card.show { animation: zone-card 2.4s ease forwards; }
 .zone-card-name { font-size: 26px; color: #fff6df; text-shadow: 3px 3px 0 #000, -2px 0 0 #000, 0 -2px 0 #000, 2px 0 0 #000; white-space: nowrap; }
 .zone-card-sub { font-size: 18px; font-weight: 600; color: var(--gold); text-shadow: 2px 2px 0 #000; }
 .zone-card-orn { width: 220px; height: 6px; background: linear-gradient(90deg, transparent, var(--gold) 20%, var(--gold) 80%, transparent); box-shadow: 0 3px 0 rgba(0, 0, 0, 0.6); }

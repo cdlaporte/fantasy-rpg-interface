@@ -395,3 +395,59 @@ function accents(k, t, tx, ty, v, defAt, decor) {
   }
 }
 function i2(c0) { return lighten(c0, 0.04); }
+
+/**
+ * Everything beyond the map bounds: one big ground plane plus a border ring that reads as intentional.
+ * Outdoor zones: a dense canopy of round tree blobs in the zone's tree/hedge colors; the academy (interior):
+ * a dark wall block ring. Returns a geometry for the chunk material (or null).
+ */
+export function buildBorder(zd) {
+  const zv = zd.zv, W = zv.w, H = zv.h;
+  const pal = zv.palette || {};
+  const interior = zv.id === 'academy' || pal.id === 'academy';
+  const k = new Kit({ skin: false, line: false });
+  const bg = C(pal.bg || '#2a3a4a');
+  const EXT = 60, RING = interior ? 10 : 8;
+  const gc = interior ? mul(bg, 0.8) : mul(mix(bg, '#1f3a28', 0.5), 0.9);
+  topQuad(k, -EXT, -EXT, W + EXT, H + EXT, -0.02, gc, gc, gc, gc);
+  if (interior) {
+    const wall = mix(bg, '#4a4a6e', 0.35), cap = mix(bg, '#6a6a90', 0.5);
+    const hgt = 3.2;
+    const slabs = [[-RING, -RING, W + RING, 0], [-RING, H, W + RING, H + RING], [-RING, 0, 0, H], [W, 0, W + RING, H]];
+    for (const [x0, y0, x1, y1] of slabs) {
+      k.color(wall).add(T.box(), [(x0 + x1) / 2, hgt / 2, (y0 + y1) / 2], [x1 - x0, hgt, y1 - y0]);
+      k.color(cap).add(T.box(), [(x0 + x1) / 2, hgt + 0.05, (y0 + y1) / 2], [x1 - x0 - 0.01, 0.1, y1 - y0 - 0.01]);
+    }
+    // a skirting stripe on the inner faces so the wall reads as a room edge
+    const sk = mul(wall, 0.65);
+    k.color(sk).add(T.box(), [W / 2, 0.3, -0.04], [W, 0.6, 0.08]);
+    k.color(sk).add(T.box(), [W / 2, 0.3, H + 0.04], [W, 0.6, 0.08]);
+    k.color(sk).add(T.box(), [-0.04, 0.3, H / 2], [0.08, 0.6, H]);
+    k.color(sk).add(T.box(), [W + 0.04, 0.3, H / 2], [0.08, 0.6, H]);
+  } else {
+    const find = (p) => zd.defs.find((d) => d.pattern === p);
+    const src = find('trees') || find('hedge');
+    const ca = src ? src.a : mix(bg, '#3f9a4a', 0.6), cb = src ? src.b : mix(bg, '#2f7a3a', 0.5);
+    const trunk = src ? src.side : C('#5a4030');
+    const h = (x, y, s) => hash2(Math.floor(x * 7), Math.floor(y * 7), s);
+    const blob = (x, y) => {
+      const r1 = h(x, y, 1), r2 = h(x, y, 2), r3 = h(x, y, 3);
+      const R = 0.85 + r1 * 0.5;
+      k.color(mix(ca, cb, r2)).add(T.sphere(6, 4), [x, 0.9 + r3 * 0.5, y], [R, R * 0.8, R], [0, r2 * 3, 0]);
+    };
+    const STEP = 1.5;
+    for (let y = -RING; y < H + RING; y += STEP) {
+      for (let x = -RING; x < W + RING; x += STEP) {
+        if (x > -0.2 && x < W + 0.2 && y > -0.2 && y < H + 0.2) continue;
+        const jx = x + (hash2(Math.round(x * 3), Math.round(y * 3), 11) - 0.5) * 0.7, jy = y + (hash2(Math.round(x * 3), Math.round(y * 3), 12) - 0.5) * 0.7;
+        if (jx > -0.3 && jx < W + 0.3 && jy > -0.3 && jy < H + 0.3) continue;
+        blob(jx, jy);
+      }
+    }
+    // a lighter second layer on the inner edge, so the border does not read as a flat dark band
+    for (let x = -0.5; x < W + 1; x += STEP) { blob(x, -0.5); blob(x, H + 0.6); }
+    for (let y = -0.5; y < H + 1; y += STEP) { blob(-0.5, y); blob(W + 0.6, y); }
+    void trunk;
+  }
+  return k.vertexCount ? k.build() : null;
+}

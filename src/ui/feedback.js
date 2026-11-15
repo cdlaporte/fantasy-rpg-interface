@@ -4,25 +4,36 @@ import { el, add, setText, setStyle, setClass, show, clear, keycap } from './dom
 import { iconCanvas } from './icons.js';
 import { roman, frac, howTo, keyLabel } from './format.js';
 
-const BANNER_MS = 2700;
+const BANNER_MS = 2300;
 
 export function createFeedback(hudEl, viewEl, ctx) {
   // --- banners
   const bannerHost = el('div', 'banner-host');
   hudEl.appendChild(bannerHost);
+  // One queue for every centered announcement (zone card, level up, ability, rank, quest): only one shows at a time.
+  // Lower prio shows first (zone card 0, level 1, ability 2, rank 3, quest 4); a backlog shortens each item's time.
   const queue = [];
-  let bannerUntil = 0, bannerEl = null;
+  let curUntil = 0, cur = null;
 
-  function pushBanner(build, ms = BANNER_MS, sfx) { queue.push({ build, ms, sfx }); if (queue.length > 6) queue.shift(); }
+  function enqueue(item) {
+    queue.push(item);
+    if (queue.length > 8) queue.pop();
+    let i = queue.length - 1;           // stable insertion by prio
+    while (i > 0 && queue[i - 1].prio > item.prio) { queue[i] = queue[i - 1]; i--; }
+    queue[i] = item;
+  }
+  function pushBanner(build, ms = BANNER_MS, sfx, prio = 4) {
+    enqueue({ prio, ms, sfx, start: () => { const e = build(); bannerHost.appendChild(e); return () => { e.classList.add('out'); setTimeout(() => e.remove(), 300); }; } });
+  }
 
   function nextBanner(now) {
-    if (bannerEl && now < bannerUntil) return;
-    if (bannerEl) { const b = bannerEl; b.classList.add('out'); setTimeout(() => b.remove(), 300); bannerEl = null; }
+    if (cur && now < curUntil) return;
+    if (cur) { cur(); cur = null; }
     const nx = queue.shift();
     if (!nx) return;
-    bannerEl = nx.build();
-    bannerHost.appendChild(bannerEl);
-    bannerUntil = now + nx.ms;
+    cur = nx.start();
+    const ms = queue.length >= 2 ? Math.min(nx.ms, 1500) : queue.length === 1 ? Math.min(nx.ms, 2000) : nx.ms;
+    curUntil = now + ms;
     if (nx.sfx) ctx.sfx(nx.sfx);
   }
 
@@ -85,13 +96,12 @@ export function createFeedback(hudEl, viewEl, ctx) {
   hudEl.prepend(vignette, lbTop, lbBot);
   hudEl.append(skipHint);
   hudEl.append(fade, card);
-  let cardTimer = 0;
-
+  
   let lastHp = -1;
   let lastBasic = '';
 
   const api = {
-    tick(now) { if (queue.length || bannerEl) nextBanner(now); },
+    tick(now) { if (queue.length || cur) nextBanner(now); },
 
     update(hud) {
       // boss
@@ -136,7 +146,7 @@ export function createFeedback(hudEl, viewEl, ctx) {
     },
 
     levelup(e) {
-      pushBanner(banner('banner-level', 'LEVEL UP!', `Level ${e.level}`, e.gained > 1 ? `+${e.gained} levels! Fully healed.` : 'Fully healed. You feel stronger!', iconCanvas('up', 'icon-xl')), BANNER_MS, null);
+      pushBanner(banner('banner-level', 'LEVEL UP!', `Level ${e.level}`, e.gained > 1 ? `+${e.gained} levels! Fully healed.` : 'Fully healed. You feel stronger!', iconCanvas('up', 'icon-xl')), BANNER_MS, null, 1);
     },
     abilityUnlocked(e, hud) {
       const a = hud && hud.abilities ? hud.abilities.find((x) => x.slot === e.slot) || {} : {};
@@ -145,13 +155,13 @@ export function createFeedback(hudEl, viewEl, ctx) {
       add(sub, el('span', null, howTo(Object.assign({ key }, a))));
       const icon = el('div', 'banner-ab');
       add(icon, iconCanvas(a.icon || 'star', 'icon-xl'), keycap(keyLabel(key), 'big'));
-      pushBanner(banner('banner-ability', 'NEW ABILITY', a.name || e.id || 'New ability', sub, icon), 3600);
+      pushBanner(banner('banner-ability', 'NEW ABILITY', a.name || e.id || 'New ability', sub, icon), 3000, null, 2);
     },
     rankUp(e, hud) {
       const oldName = e.from || lastBasic;
       const newName = hud && hud.basic ? hud.basic.name : '';
       const sub = oldName && newName && oldName !== newName ? `${oldName} → ${newName}` : (newName || 'Your basic attack grows stronger!');
-      pushBanner(banner('banner-rank', 'ATTACK RANK ' + roman(e.rank || 1), newName || 'Rank up!', sub, iconCanvas((hud && hud.basic && hud.basic.icon) || 'sword', 'icon-xl')), 3200);
+      pushBanner(banner('banner-rank', 'ATTACK RANK ' + roman(e.rank || 1), newName || 'Rank up!', sub, iconCanvas((hud && hud.basic && hud.basic.icon) || 'sword', 'icon-xl')), 2600, null, 3);
       if (newName) lastBasic = newName;
     },
     quest(kind, name, extra) {
@@ -160,6 +170,12 @@ export function createFeedback(hudEl, viewEl, ctx) {
       else pushBanner(banner('banner-quest small', 'QUEST UPDATED', name, extra || '', null), 2000);
     },
     letterbox(on) { setClass(hudEl, 'letterboxed', !!on); },
+    /** Truth check each poll: bars follow the cutscene runner, not only the event. */
+    reconcileLetterbox(game) {
+      const cs = game && game.cutscene;
+      const on = !!(cs && cs.letterbox && cs.active);
+      if (hudEl.classList.contains('letterboxed') !== on) setClass(hudEl, 'letterboxed', on);
+    },
     /** Show the skip hint while a skippable cutscene runs. */
     skippable(on) { if (skipHint.hidden === !!on) skipHint.hidden = !on; },
     transition(phase) {
@@ -170,9 +186,11 @@ export function createFeedback(hudEl, viewEl, ctx) {
       if (!name) return;
       setText(cardName, name);
       setText(cardSub, sub || '');
-      card.classList.remove('show'); void card.offsetWidth; card.classList.add('show');
-      clearTimeout(cardTimer);
-      cardTimer = setTimeout(() => card.classList.remove('show'), 2800);
+      for (let i = queue.length - 1; i >= 0; i--) if (queue[i].zone) queue.splice(i, 1);   // only the latest zone card
+      enqueue({ prio: 0, ms: 2400, zone: true, start: () => {
+        card.classList.remove('show'); void card.offsetWidth; card.classList.add('show');
+        return () => card.classList.remove('show');
+      } });
     },
     dispose() { for (const n of [bannerHost, boss, tut, prompt, lbTop, lbBot, fade, card, vignette, skipHint]) n.remove(); },
   };

@@ -29,10 +29,10 @@ export function createLive(fx) {
     switch (m) {
       case 'telegraph_circle': {
         const pulse = 0.5 + 0.5 * Math.sin(t * 14);
-        g.globalAlpha = 0.16 + 0.08 * pulse; g.fillStyle = c; g.beginPath(); g.arc(X, Y, r, 0, TAU); g.fill();
+        g.globalAlpha = 0.24 + 0.1 * pulse; g.fillStyle = c; g.beginPath(); g.arc(X, Y, r, 0, TAU); g.fill();
         const pr = Math.min(1, at / 0.8);
-        g.globalAlpha = 0.28; g.beginPath(); g.arc(X, Y, Math.max(1, r * pr), 0, TAU); g.fill();
-        g.globalAlpha = 0.9; g.strokeStyle = c; g.lineWidth = 1; g.beginPath(); g.arc(X, Y, r - 0.5, 0, TAU); g.stroke();
+        g.globalAlpha = 0.38; g.fillStyle = light(c, 0.15); g.beginPath(); g.arc(X, Y, Math.max(1, r * pr), 0, TAU); g.fill();
+        g.globalAlpha = 1; g.strokeStyle = c; g.lineWidth = 2; g.beginPath(); g.arc(X, Y, r - 1, 0, TAU); g.stroke();
         g.globalAlpha = 0.5 + 0.5 * pulse; g.strokeStyle = '#ffffff'; g.beginPath(); g.arc(X, Y, Math.max(1, r * pr - 0.5), 0, TAU); g.stroke();
         // corner ticks
         g.globalAlpha = 0.9; g.fillStyle = light(c, 0.4);
@@ -44,9 +44,9 @@ export function createLive(fx) {
         const len = Math.max(0.3, look.len || 2) * 16, w = Math.max(0.2, look.w || 0.6) * 16;
         const pr = Math.min(1, at / 0.8), pulse = 0.5 + 0.5 * Math.sin(t * 14);
         g.save(); g.translate(X, Y); g.rotate(v.angle || 0);
-        g.globalAlpha = 0.16 + 0.08 * pulse; g.fillStyle = c; g.fillRect(0, -w / 2, len, w);
-        g.globalAlpha = 0.3; g.fillRect(0, -w / 2, len * pr, w);
-        g.globalAlpha = 0.9; g.strokeStyle = c; g.lineWidth = 1; g.strokeRect(0.5, -w / 2 + 0.5, len - 1, w - 1);
+        g.globalAlpha = 0.24 + 0.1 * pulse; g.fillStyle = c; g.fillRect(0, -w / 2, len, w);
+        g.globalAlpha = 0.38; g.fillStyle = light(c, 0.15); g.fillRect(0, -w / 2, len * pr, w);
+        g.globalAlpha = 1; g.strokeStyle = c; g.lineWidth = 1; g.strokeRect(0.5, -w / 2 + 0.5, len - 1, w - 1);
         g.globalAlpha = 0.6 + 0.4 * pulse; g.fillStyle = '#ffffff';
         for (let i = 1; i <= 3; i++) { const ax = ((len * (i / 4) + t * 30) % len); g.fillRect(ax, -1, 3, 1); g.fillRect(ax + 1, -2, 1, 3); }
         g.restore(); g.globalAlpha = 1;
@@ -55,9 +55,9 @@ export function createLive(fx) {
       case 'telegraph_cone': {
         const len = Math.max(0.3, look.len || 1.8) * 16, arc = (look.arc || 90) * Math.PI / 180, a = v.angle || 0;
         const pr = Math.min(1, at / 0.8), pulse = 0.5 + 0.5 * Math.sin(t * 14);
-        g.globalAlpha = 0.16 + 0.08 * pulse; g.fillStyle = c;
+        g.globalAlpha = 0.24 + 0.1 * pulse; g.fillStyle = c;
         g.beginPath(); g.moveTo(X, Y); g.arc(X, Y, len, a - arc / 2, a + arc / 2); g.closePath(); g.fill();
-        g.globalAlpha = 0.3; g.beginPath(); g.moveTo(X, Y); g.arc(X, Y, Math.max(1, len * pr), a - arc / 2, a + arc / 2); g.closePath(); g.fill();
+        g.globalAlpha = 0.38; g.fillStyle = light(c, 0.15); g.beginPath(); g.moveTo(X, Y); g.arc(X, Y, Math.max(1, len * pr), a - arc / 2, a + arc / 2); g.closePath(); g.fill();
         g.globalAlpha = 0.9; g.strokeStyle = c; g.lineWidth = 1; g.beginPath(); g.moveTo(X, Y); g.arc(X, Y, len - 0.5, a - arc / 2, a + arc / 2); g.closePath(); g.stroke();
         g.globalAlpha = 1;
         return true;
@@ -93,9 +93,11 @@ export function createLive(fx) {
         for (let i = 0; i < n; i++) {
           const a = i * 2.39996 + v.id, d = Math.sqrt((i + 0.5) / n) * r * 0.85;
           const x0 = Math.round(X + Math.cos(a) * d), y0 = Math.round(Y + Math.sin(a) * d);
-          const h = 3 + (i % 3);
-          g.fillStyle = '#1e1a22'; g.fillRect(x0 - 1, y0 - h - 1, 3, h + 2);
-          g.fillStyle = cc; g.fillRect(x0, y0 - h, 1, h); g.fillStyle = '#ffffff'; g.fillRect(x0, y0 - h, 1, 1);
+          const h = 2 + (i % 3);
+          g.fillStyle = dark(cc, 0.35); g.fillRect(x0 - 1, y0, 3, 1);
+          g.fillStyle = light(cc, 0.3); g.fillRect(x0 - 1, y0 - h + 1, 1, h - 1); g.fillRect(x0 + 1, y0 - h + 2, 1, h - 2);
+          g.fillStyle = cc; g.fillRect(x0, y0 - h, 1, h);
+          g.fillStyle = '#ffffff'; g.fillRect(x0, y0 - h, 1, 1);
         }
         for (let i = every(r * 0.25, v.id * 0.53); i > 0; i--) { const a = R() * TAU, d = Math.sqrt(R()) * r; fx.emit(PK.STAR, wx + Math.cos(a) * d, wy + Math.sin(a) * d - 3, 0, -8, 0.7, '#ffffff', 1, 0, O(0, 0, 0, 0, true)); }
         return true;
@@ -207,10 +209,15 @@ export function createLive(fx) {
     g.globalAlpha = 0.25; g.fillStyle = c; g.beginPath(); g.arc(X, cy, r, 0, TAU); g.fill();
     g.globalAlpha = 1; g.strokeStyle = c; g.lineWidth = 2; g.beginPath(); g.arc(X, cy, r - 1, 0, TAU); g.stroke();
     g.strokeStyle = '#ffffff'; g.lineWidth = 1; g.beginPath(); g.arc(X, cy, r * 0.72, 0, TAU); g.stroke();
-    // rotating star
-    g.strokeStyle = light(c, 0.4); g.beginPath();
-    for (let i = 0; i <= 5; i++) { const a = -Math.PI / 2 + i * (TAU * 2 / 5) + t * 0.5; const px = X + Math.cos(a) * r * 0.7, py = cy + Math.sin(a) * r * 0.7; if (i) g.lineTo(px, py); else g.moveTo(px, py); }
-    g.stroke();
+    // two counter-rotating squares and a keyhole: a "sealed" sign
+    g.strokeStyle = light(c, 0.4);
+    for (let k = 0; k < 2; k++) {
+      g.beginPath();
+      for (let i = 0; i <= 4; i++) { const a = i * Math.PI / 2 + (k ? -t * 0.4 : t * 0.4 + Math.PI / 4); const px = X + Math.cos(a) * r * 0.62, py = cy + Math.sin(a) * r * 0.62; if (i) g.lineTo(px, py); else g.moveTo(px, py); }
+      g.stroke();
+    }
+    g.fillStyle = '#ffffff'; g.beginPath(); g.arc(X, cy - 2, 2.5, 0, TAU); g.fill(); g.fillRect(Math.round(X) - 1, Math.round(cy - 1), 3, 5);
+    g.fillStyle = dark(c, 0.3); g.fillRect(Math.round(X), Math.round(cy - 2), 1, 4);
     // rune glyphs around the rim
     g.fillStyle = '#ffffff';
     for (let i = 0; i < 8; i++) { const a = i / 8 * TAU - t * 0.6; const px = Math.round(X + Math.cos(a) * r * 0.86), py = Math.round(cy + Math.sin(a) * r * 0.86); g.fillRect(px - 1, py - 1, 2, 3); g.fillRect(px, py - 2, 1, 1); }

@@ -5,7 +5,7 @@
 // block-tile occluders -> top fx (particles, translucent volumes, emitters) -> ambience tint -> screen flash.
 import { VIEW } from '../../contracts.js';
 import { makeCanvas } from './pix.js';
-import { col, rgba } from './color.js';
+import { col, rgba, light } from './color.js';
 import { CH, TP, CPX, prepareTiles, buildChunk, chunkAnimated, blockRegion } from './tiles.js';
 import { buildProp, propKey, propUnknown, FLAT_MODELS } from './props.js';
 import { createSpriteFactory } from './spriteFactory.js';
@@ -473,11 +473,11 @@ export function create() {
     if (look.trail) {
       const ca = Math.cos(v.angle || 0), sa = Math.sin(v.angle || 0);
       g.globalCompositeOperation = 'source-over';
-      for (let i = 1; i <= 5; i++) {
-        g.globalAlpha = 0.6 * (1 - i / 6);
-        const si = Math.max(1, Math.round((4 - i * 0.5) * sc));
-        g.fillStyle = i < 3 ? '#ffffff' : gc;
-        g.fillRect(Math.round(X - ca * i * 3.2 - si / 2), Math.round(Y - sa * i * 3.2 - si / 2), si, si);
+      for (let i = 1; i <= 6; i++) {
+        g.globalAlpha = 0.9 * (1 - i / 7);
+        const si = Math.max(1, Math.round((3.6 - i * 0.45) * sc));
+        g.fillStyle = i < 2 ? '#ffffff' : i < 4 ? light(gc, 0.3) : gc;
+        g.fillRect(Math.round(X - ca * i * 3 - si / 2 + Math.sin(t * 30 + i) * 0.6), Math.round(Y - sa * i * 3 - si / 2), si, si);
         fillsN++;
       }
       g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;

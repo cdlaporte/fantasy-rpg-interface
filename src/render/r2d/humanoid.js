@@ -179,7 +179,7 @@ export function paintHumanoid(look0, dirView, anim, frame) {
     hand = [armR0 + 1 + (longW ? 1 : 0), -7 + by]; wdir = longW ? [0, -1] : [1, -1]; heldBehind = true;
     offHand = [armL0, -7 + by];
   } else {
-    hand = [1 + bx, -8 + by]; wdir = longW ? [0, -1] : [1, -1];
+    hand = longW ? [7 + bx, -9 + by] : [1 + bx, -8 + by]; wdir = longW ? [0, -1] : [1, -1];
     offHand = [-3 + bx, -8 + by];
   }
   // pose-driven arm/hand overrides
@@ -584,6 +584,12 @@ export function paintHumanoid(look0, dirView, anim, frame) {
       return;
     }
     if (C.style === 'cloak') { if (!far && held) drawHandAt(hand[0], hand[1]); return; }
+    if (!far && longW && held && (arm === 'rest' || arm === 'swingF' || arm === 'swingB')) {
+      p.thick(AX + x, AY + y0, AX + hand[0] - 1, AY + hand[1] - 1, 2, c);
+      p.line(AX + x - 1, AY + y0 + 1, AX + hand[0] - 2, AY + hand[1], dark(sc, 0.45));
+      drawHandAt(hand[0], hand[1]);
+      return;
+    }
     let sw = 0;
     if (arm === 'swingF') sw = far ? -2 : 2;
     if (arm === 'swingB') sw = far ? 2 : -2;
@@ -594,7 +600,7 @@ export function paintHumanoid(look0, dirView, anim, frame) {
     if (!far) { S(x, y0, light(sc, 0.2)); if (C.style === 'quarterzip') { S(x, y0 + 3, C.s); S(x + 1, y0 + 3, C.s); } }
     if (!far && C.style === 'robe') R(hx2 - 1, hy2 - 2, hx2 + 1, hy2 - 2, C.a);
     drawHandAt(hx2, hy2, true, far);
-    if (!far) { hand = hand || [hx2, hy2]; if (arm === 'rest' || arm === 'swingF' || arm === 'swingB') hand = [hx2 + 0.5, hy2 + 0.5]; }
+    if (!far) { hand = hand || [hx2, hy2]; if (!longW && (arm === 'rest' || arm === 'swingF' || arm === 'swingB')) hand = [hx2 + 0.5, hy2 + 0.5]; }
   }
 
   function drawHandAt(x, y, small, far) {
@@ -1041,7 +1047,7 @@ export function paintHumanoid(look0, dirView, anim, frame) {
       }
       case 'staff': case 'spear': case 'broom': {
         const wood = s === 'staff' ? (c0 && c0 !== '#b0b8c8' ? col(c0, '#8a5a33') : '#8a5a33') : '#a0703c';
-        const len = s === 'staff' ? 17 : s === 'spear' ? 16 : 15;
+        const len = dy > 0 ? 8 : s === 'staff' ? 17 : s === 'spear' ? 16 : 15;
         seg(-5, len, wood); if (!diag) seg(-4, len - 1, dark(wood, 0.3), 1); else { dot(0, 1, light(wood, 0.25)); dot(-3, 1, light(wood, 0.25)); }
         if (s === 'staff') {
           const gc = g || col(c0, '#9fe6ff');

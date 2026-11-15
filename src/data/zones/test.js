@@ -1,5 +1,6 @@
-// STUB: replaced by the Content package (starter test zone by the skeleton)
-// 40x30 hand-authored test zone used by tests and the skeleton boot (fallback when 'intro' is missing).
+// 40x30 hand-authored test zone used by tests, debug scenarios and the skeleton boot (fallback when 'intro' is missing).
+// Markers: dummy_ring = open center for a ring of training dummies (radius <= 3); gallery_row = west end of a clear
+// east-west row (x 21..38 at y 13) for lining up entities.
 export default {
   test: {
     id: 'test', name: 'Test Meadow', palette: 'default', music: 'none', levelRange: [1, 2], seed: 4242,
@@ -39,7 +40,8 @@ export default {
       legend: { '#': 'hedge', '.': 'grass', '=': 'path', '~': 'water', ',': 'shallows', 's': 'sand', '*': 'flowers',
         't': 'tallgrass', 'c': 'cobble', 'T': 'trees', 'd': 'dirt' },
     },
-    markers: { start: [5, 15], far: [35, 25], house_door: [10, 7], pond: [31, 6] },
+    markers: { start: [5, 15], far: [35, 25], house_door: [10, 7], pond: [31, 6], dummy_ring: [34, 24], gallery_row: [21, 13] },
+    freeMarkers: ['pond'],   // pond center is water (fx target), not a standing spot
     exits: [],
     props: [
       { kind: 'house', x: 8, y: 4, id: 'test_house' },

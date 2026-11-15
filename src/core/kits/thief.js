@@ -20,7 +20,7 @@ const TAG_HEIST = Object.freeze(['thief_heist']);
 const TAG_COIN = Object.freeze(['thief_coin']);
 const COIN_LOOK = { rig: 'projectile', model: 'coin', color: '#f2c94c', glow: '#fff1a8', size: 1, trail: true };
 /** Shared interact used while a town NPC can be pickpocketed (the original is restored afterwards). */
-export const PICK_INTERACT = Object.freeze({ prompt: 'Pickpocket', range: 1.6, do: Object.freeze([]) });
+export const PICK_INTERACT = Object.freeze({ prompt: 'Pickpocket', range: 1.6, do: Object.freeze([]), noQuest: true });
 const SUBS = new WeakMap();   // p -> [unsubscribe fns] (kept out of p.data.kit so kit state stays plain data)
 const LABEL_STEALTH = 'Stealth: Backstab ready';
 const LABEL_HEIST = 'Grand Heist!';

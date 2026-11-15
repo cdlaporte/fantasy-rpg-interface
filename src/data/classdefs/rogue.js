@@ -23,7 +23,7 @@ export default {
     ranks: { 1: 'Twin Daggers', 2: 'Lunge' },
     kit: {
       // Balance knob: CLASSES coefficients x dmgScale = the balance-sheet DPS band (measured, docs/notes/kit-rogue.md).
-      dmgScale: 0.21,
+      dmgScale: 0.23,
       colors: { main: '#58d68d', teal: '#2bb39a', shadow: '#2a2f3a', steel: '#e6f2ea', crit: '#b8ffcf', venom: '#7bdc3a' },
       combo: { max: 5, resetAfter: 6 },
       // Basic I: double slash (two arcs, one combo pip per attack that connects).

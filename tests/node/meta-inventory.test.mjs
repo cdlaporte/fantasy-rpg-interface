@@ -3,9 +3,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame } from '../../src/core/game.js';
 import baseData from '../../src/data/index.js';
+import { config } from '../../src/config.js';
 import { createQuestions } from '../../src/questions/index.js';
 import { DT, makeInputState } from '../../src/contracts.js';
 
+const NS = config.numberScale;   // absolute health amounts in item data are base numbers, scaled where used
 const flush = () => new Promise((r) => setImmediate(r));
 async function steps(game, n, input) {
   for (let i = 0; i < n; i++) { game.step(DT, input); if (i % 4 === 0) await flush(); }
@@ -102,7 +104,7 @@ test('useSlot: heal, cooldown, refuse at full; hotbar keys', async () => {
   assert.equal(inv.count('potion_small'), 3);
   p.hp = 5;
   assert.equal(inv.useSlot(0), true);
-  assert.equal(p.hp, 15);
+  assert.equal(p.hp, 5 + 10 * NS);
   assert.equal(inv.count('potion_small'), 2);
   assert.deepEqual(of('item:used'), [{ id: 'potion_small' }]);
   assert.equal(inv.useSlot(0), false, 'cooldown');
@@ -114,7 +116,7 @@ test('useSlot: heal, cooldown, refuse at full; hotbar keys', async () => {
   input.pressed.item1 = true;
   game.step(DT, input);
   assert.equal(inv.count('potion_small'), 1);
-  assert.equal(p.hp, 25);
+  assert.equal(p.hp, Math.min(p.hpMax, 5 + 20 * NS));
   assert.ok(fxTypes(game).includes('heal'));
 });
 
@@ -134,7 +136,7 @@ test('every item effect', async () => {
   p.hp = 1;
   assert.ok(use('bread'));
   await steps(game, 60 * 4 + 2);
-  assert.ok(p.hp >= 8 && p.hp <= 9, 'healed about 8 over 4 s: ' + p.hp);
+  assert.ok(p.hp >= 8 * NS && p.hp <= 8 * NS + 1, 'healed about 8 x scale over 4 s: ' + p.hp);
   // bomb through combat.aoe with a telegraph
   p.angle = 0;
   assert.ok(use('bomb'));
@@ -154,7 +156,7 @@ test('every item effect', async () => {
   assert.ok(!p.fxTags.includes('haste'));
   // shield
   assert.ok(use('shield_charm'));
-  assert.deepEqual(statuses.at(-1), ['shield', 5, 12]);
+  assert.deepEqual(statuses.at(-1), ['shield', 5, 12 * NS]);
   // cure
   p.status.burn = 3; p.status.slow = 2; p.fxTags.push('burn');
   assert.ok(use('antidote'));

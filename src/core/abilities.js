@@ -9,7 +9,7 @@ export default {
   init(game) {
     const ents = game.ents;
     const warned = new Set();
-    const scratch = [];
+    const scratch = [], dashScratch = [];
     const C = () => game.combat;
 
     function cdRec(ent, slot) {
@@ -73,7 +73,7 @@ export default {
         return out;
       },
       /** Instant line. {angle, range=7, w=0.5, dmg, pierce=true (false: first target only), stopAtWall=true, color,
-       *  knockback=2, status, element, onHit} -> hits[] */
+       *  knockback=2, status, element, onHit, anim ('cast'; a name, or false = leave the caster's animation alone)} -> hits[] */
       beam(c, p) {
         // integration: Narrative's sweeping beam {sweep (deg), dur (s), tick (s)}: one beam every `tick` seconds,
         // rotating across `sweep` degrees centred on the aim, advanced in abilities.update.
@@ -87,14 +87,15 @@ export default {
         const a = p.angle != null ? p.angle : c.angle;
         const range = p.range || 7;
         const len = p.stopAtWall === false ? range : game.world.raycast(c.x, c.y, a, range, true);
-        setCast(c, p.anim || ANIM.CAST, 0.25);
+        if (p.anim !== false) setCast(c, p.anim || ANIM.CAST, 0.25);
         game.bus.emit('sfx', { id: 'spell' });
         return C().aoe(c, Object.assign({ fx: 'beam', knockback: 2, type: 'magic' }, p, {
           shape: 'line', x: c.x, y: c.y, angle: a, len, w: p.w || 0.5, maxTargets: p.pierce === false ? 1 : p.maxTargets, delay: 0,
         }));
       },
       /** Dash. {angle, dist=2.5, speed=14, invuln (s, or true = whole dash), dmg (contact, 0 = none), hitRadius=0.5,
-       *  stopOnHit, maxHits, knockback=6, status, through (pass through bodies), trail=true, color, onHit, onEnd} -> true */
+       *  stopOnHit, maxHits, knockback=6, status, tags, exclude (entity ids not to hit), through (pass through bodies),
+       *  trail=true, color, onHit, onEnd} -> true */
       dash(c, p) {
         const a = p.angle != null ? p.angle : c.angle;
         const dist = p.dist != null ? p.dist : 2.5, speed = p.speed || 14;
@@ -230,7 +231,8 @@ export default {
         return true;
       },
       /** Chain lightning. {target | x,y, range=4 (first pick and each jump), jumps=3 (targets total), dmg, falloff=0.8,
-       *  color, status, element='storm', onHit, fx='bolt'} -> hits (new array) */
+       *  color, status, element='storm', exclude (entity ids or entities never hit, e.g. the starting target), onHit,
+       *  fx='bolt'} -> hits (new array) */
       chain(c, p) {
         const hits = [];
         const range = p.range || 4;
@@ -240,13 +242,15 @@ export default {
         const total = p.jumps != null ? p.jumps : 3;
         const amount0 = (p.dmg != null ? p.dmg : 1) * C().powerOf(c);
         const color = p.color || '#ffe14d';
+        const ex = p.exclude || null;
         for (let i = 0; i < total; i++) {
+          if (t && ex && (ex.indexOf(t.id) >= 0 || ex.indexOf(t) >= 0)) t = null;
           if (!t || !C().targetable(t) || hits.indexOf(t) >= 0) {
             t = null;
             let bd = range * range;
             const list = ents.inRadius(fromX, fromY, range, null, scratch);
             for (const e of list) {
-              if (hits.indexOf(e) >= 0 || !C().canHit(c, e)) continue;
+              if (hits.indexOf(e) >= 0 || (ex && (ex.indexOf(e.id) >= 0 || ex.indexOf(e) >= 0)) || !C().canHit(c, e)) continue;
               const d = (e.x - fromX) * (e.x - fromX) + (e.y - fromY) * (e.y - fromY);
               if (d < bd) { bd = d; t = e; }
             }
@@ -320,16 +324,18 @@ export default {
       const moved = Math.sqrt(mx * mx + my * my);
       d.lx = c.x; d.ly = c.y;
       d.t += dt;
-      if (d.t > dt * 1.5) { d.remain -= moved; if (moved < d.speed * dt * 0.2) d.stall++; else d.stall = 0; }
+      // Hit-stop freezes the dasher in physics: that is not a stall, and it must not eat the dash's time budget.
+      if (c.data.hitStop > 0) { d.stall = 0; d.maxT += dt; }
+      else if (d.t > dt * 1.5) { d.remain -= moved; if (moved < d.speed * dt * 0.2) d.stall++; else d.stall = 0; }
       if (p.dmg) {
-        const list = ents.inRadius(c.x, c.y, c.radius + (p.hitRadius || 0.5) + 0.5, null, scratch);
+        const list = ents.inRadius(c.x, c.y, c.radius + (p.hitRadius || 0.5) + 0.5, null, dashScratch);
         for (const t of list) {
-          if (d.hits.indexOf(t) >= 0 || !C().canHit(c, t)) continue;
+          if (d.hits.indexOf(t) >= 0 || (p.exclude && p.exclude.indexOf(t.id) >= 0) || !C().canHit(c, t)) continue;
           const dx = t.x - c.x, dy = t.y - c.y, rr = c.radius + t.radius + (p.hitRadius || 0.5) - 0.3;
           if (dx * dx + dy * dy > rr * rr) continue;
           d.hits.push(t);
           const dealt = C().damage(t, p.dmg * C().powerOf(c), { source: c, type: p.type || 'melee', knockback: p.knockback != null ? p.knockback : 6,
-            kbAngle: d.angle, status: p.status, element: p.element, crit: p.crit, critChance: p.critChance, hitStop: p.hitStop, shake: p.shake, color: p.color });
+            kbAngle: d.angle, status: p.status, element: p.element, crit: p.crit, critChance: p.critChance, hitStop: p.hitStop, shake: p.shake, color: p.color, tags: p.tags || null });
           if (p.onHit) p.onHit(game, t, dealt, c);
           if (p.stopOnHit || (p.maxHits && d.hits.length >= p.maxHits)) { endDash(c); return; }
         }

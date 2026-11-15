@@ -137,6 +137,10 @@ export default {
             power = power * dmgCurve(lvl) / dmgCurve(lvl0);
             xp = Math.round(xp * xpCurve(lvl) / xpCurve(lvl0));
           }
+          // Number scale: data keeps the readable base numbers; health and power (hence all damage) scale here.
+          const ns = game.config.numberScale || 1;
+          hp = Math.max(1, Math.round(hp * ns));
+          power *= ns;
           const stats = Object.assign({}, s, { hp, power, defense: s.defense || 0, speed: s.speed != null ? s.speed : 2.2, xp });
           const flying = !!def.flying;
           // integration: Narrative's helper defs in data.npcs may carry their own `type` (stick_pickup and

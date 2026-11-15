@@ -55,9 +55,10 @@ export default {
       const mult = cc.mult != null ? cc.mult : 0.7;
       const hp0 = s.hp != null ? s.hp : d.hp[0], hp1 = s.hpPerLevel != null ? s.hpPerLevel : d.hp[1];
       const p0 = s.power != null ? s.power : d.power[0], p1 = s.powerPerLevel != null ? s.powerPerLevel : d.power[1];
+      const ns = game.config.numberScale || 1;      // number scale (class tables are the readable base numbers)
       return {
-        hp: Math.max(1, Math.round((hp0 + hp1 * lvl) * mult)),
-        power: (p0 + p1 * lvl) * mult,
+        hp: Math.max(1, Math.round((hp0 + hp1 * lvl) * mult * ns)),
+        power: (p0 + p1 * lvl) * mult * ns,
         speed: cc.speed || s.speed || d.speed,
       };
     }

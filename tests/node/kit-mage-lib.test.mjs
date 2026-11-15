@@ -3,6 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame } from '../../src/core/game.js';
+import { config } from '../../src/config.js';
 import data from '../../src/data/index.js';
 import { scriptedInput } from '../../src/platform/input.js';
 import { DT, FX_TAGS } from '../../src/contracts.js';
@@ -164,7 +165,7 @@ export function mixedFight(spec, level, boons = [], cap = 45, seed = 21) {
   const ctx = mk(spec, level, boons, { marker: 'start', seed });
   const { game, p, input } = ctx;
   game.companions && game.companions.set([]);
-  const base = 6 * Math.pow(level, 1.4);
+  const base = 6 * Math.pow(level, 1.4) * config.numberScale;   // the sheet's hp, x number scale
   const foes = [];
   const t = game.ents.spawn('boar', p.x + 7, p.y, { level, ai: { aggro: 12, leash: 0 } });
   t.hpMax = t.hp = Math.round(base * 2.5);

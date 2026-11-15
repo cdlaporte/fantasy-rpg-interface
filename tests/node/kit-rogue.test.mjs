@@ -5,6 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame } from '../../src/core/game.js';
+import { config } from '../../src/config.js';
 import data from '../../src/data/index.js';
 import { scriptedInput } from '../../src/platform/input.js';
 import { DT } from '../../src/contracts.js';
@@ -41,7 +42,7 @@ function mk({ spec = null, level = 3, boons = [], seed = 5, at = [CX, CY] } = {}
   return { game, pr, p, fx, fxLog, dealt, input, step, press, setPips };
 }
 /** A ring of tough, brainless rats around (x, y). */
-function ring(game, n = 6, r = 1.6, hp = 600, x = CX, y = CY, opts = {}) {
+function ring(game, n = 6, r = 1.6, hp = 600 * config.numberScale, x = CX, y = CY, opts = {}) {
   const out = [];
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2;

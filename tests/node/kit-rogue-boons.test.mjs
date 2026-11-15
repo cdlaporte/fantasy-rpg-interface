@@ -3,6 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame } from '../../src/core/game.js';
+import { config } from '../../src/config.js';
 import data from '../../src/data/index.js';
 import { scriptedInput } from '../../src/platform/input.js';
 import { DT } from '../../src/contracts.js';
@@ -209,7 +210,7 @@ test('Coin Toss: picking up gold flings coins at the nearest enemy', () => {
 
 test('Vanishing Act: a defeat from stealth resets Smoke Vanish', () => {
   const [a, b] = both({ spec: 'thief' }, 'vanishing_act', (env) => {
-    const r = env.rat(CX + 0.9, CY, { hp: 2 });
+    const r = env.rat(CX + 0.9, CY, { hp: 2 * config.numberScale });
     env.input.set({ pressed: { f: true } }); env.step(2);
     env.attack(1, 1); env.step(2);
     return { dead: r.removed || !r.alive, ready: env.game.abilities.ready(env.p, 'f') };

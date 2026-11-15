@@ -216,6 +216,9 @@ export default {
       if (b.kind === 'focus') setMod('focus', null);
     }
 
+    // Number scale: item numbers in data are the readable base values; absolute health amounts scale where they are used.
+    const NS = () => game.config.numberScale || 1;
+
     function heal(n) {
       const p = game.player;
       if (!p || n <= 0) return 0;
@@ -264,7 +267,7 @@ export default {
       switch (u.effect) {
         case 'heal': {
           if (p.hp >= p.hpMax) { game.toast('You are already at full health.', 'info'); return false; }
-          const n = Math.round((u.amount || 0) + (u.frac || 0) * p.hpMax) || 10;
+          const n = Math.round((u.amount || 0) * NS() + (u.frac || 0) * p.hpMax) || 10 * NS();
           heal(n);
           game.fx({ type: 'heal', x: p.x, y: p.y });
           game.fx({ type: 'text', x: p.x, y: p.y, text: '+' + n, style: 'heal', ent: p.id });
@@ -272,7 +275,7 @@ export default {
         }
         case 'heal_over_time': {
           const dur = u.dur || 8;
-          const total = (u.amount || 0) + (u.frac || 0) * p.hpMax || 10;
+          const total = (u.amount || 0) * NS() + (u.frac || 0) * p.hpMax || 10 * NS();
           addBuff('hot', dur, { rate: total / dur });
           game.fx({ type: 'heal', x: p.x, y: p.y });
           return true;
@@ -296,7 +299,7 @@ export default {
           return true;
         }
         case 'shield': {
-          const amount = Math.round((u.amount || 0) + (u.frac || 0) * p.hpMax) || 10;
+          const amount = Math.round((u.amount || 0) * NS() + (u.frac || 0) * p.hpMax) || 10 * NS();
           const dur = u.dur || 8;
           if (c && typeof c.status === 'function') c.status(p, 'shield', dur, amount);
           if (!(p.status.shield > 0)) { p.status.shield = dur; p.statusPower.shield = amount; }
@@ -334,7 +337,7 @@ export default {
           const pet = ents.spawn(kind, p.x + Math.cos(ang) * 0.9, p.y + Math.sin(ang) * 0.9, {
             type: 'summon', team: 'player', owner: p.id, ttl: u.dur || 30, name: u.name || (known && known.name) || 'Pet',
             look: u.look || (known && known.look) || DEFAULT_PET_LOOK, tags: ['pet', 'summoned'], fxTags: ['summoned'],
-            hp: u.hp || 30, hpMax: u.hp || 30,
+            hp: (u.hp || 30) * NS(), hpMax: (u.hp || 30) * NS(),
             stats: { power: Math.max(1, (p.stats.power || 2) * (u.powerFrac || 0.5)), defense: 0, speed: u.speed || 4, radius: 0.3 },
             ai: { brain: u.brain || 'chaser', aggro: 6, leash: 8 },
           });

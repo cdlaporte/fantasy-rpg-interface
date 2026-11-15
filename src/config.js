@@ -19,6 +19,7 @@ export const config = {
   defaultQuality: 1,           // 0 low | 1 medium | 2 high
   testSeed: 12345,
   questions: {
+    retrySeconds: 3,           // integration (Meta request): wait before a blocking question is asked again
     contexts: {
       levelup: { enabled: true, blocking: false },
       boon: { enabled: true, blocking: true },

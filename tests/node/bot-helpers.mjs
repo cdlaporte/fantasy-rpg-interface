@@ -19,7 +19,15 @@ import { scriptedInput } from '../../src/platform/input.js';
 import { DT } from '../../src/contracts.js';
 
 export { DT };
-const flush = () => new Promise((r) => setImmediate(r));
+// Let promise continuations run between steps. Node: setImmediate; browsers (tests/e2e/smoke.cjs loads this module
+// into the page): a MessageChannel macrotask (no 4 ms setTimeout clamp).
+const flush = (() => {
+  if (typeof setImmediate === 'function') return () => new Promise((r) => setImmediate(r));
+  const ch = new MessageChannel();
+  const q = [];
+  ch.port1.onmessage = () => { const r = q.shift(); if (r) r(); };
+  return () => new Promise((r) => { q.push(r); ch.port2.postMessage(0); });
+})();
 const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 
 /** createGame for a new game (or a save), quiet, in test mode. */
@@ -45,6 +53,8 @@ export function createBot(game, opts = {}) {
     /** Default modal handling while walking/fighting: advance plain dialogue lines (never picks options). */
     autoDialogue: true,
     stuck: 0,
+    /** When true, until() throws {modal: true} as soon as a modal it cannot handle opens (e2e: keys answer it). */
+    stopOnModal: false,
   };
   for (const evt of opts.record || []) game.bus.on(evt, (p) => events.push([game.t, evt, p]));
 
@@ -93,6 +103,7 @@ export function createBot(game, opts = {}) {
         throw new Error(`bot.until timed out after ${timeout}s: ${o.what || cond.toString()} | ` + bot.describe());
       }
       if (!(o.modal === false) && game.modal && (await bot.handleModal())) continue;
+      if (game.modal && bot.stopOnModal && o.modal !== false) throw Object.assign(new Error('modal ' + game.modal.type), { modal: true });
       if (o.each) await o.each();
       await bot.step(1);
     }

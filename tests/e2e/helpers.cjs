@@ -97,4 +97,46 @@ async function webglInfo(page) {
   });
 }
 
-module.exports = { ROOT, WEBGL_ARGS, VIEWPORT, startServer, launch, newPage, collectErrors, openGame, openGallery, shot, webglInfo };
+// ---- integration additions: drive the real game from Playwright ----
+
+/**
+ * Load tests/node/bot-helpers.mjs into the page and attach a bot to the running game (window.__bot). The bot steps
+ * the game itself (game.step + scripted input), so this works with test=1. Plain dialogue lines are NOT advanced
+ * by the bot here: the e2e script answers every modal by keyboard.
+ */
+async function attachBot(page) {
+  await page.evaluate(async () => {
+    const m = await import('/tests/node/bot-helpers.mjs');
+    window.__bot = m.createBot(window.__game.game);
+    window.__bot.autoDialogue = false;
+    window.__bot.stopOnModal = true;
+  });
+}
+
+/**
+ * Run `body` (a string: the async body of a function with `bot`, `game` in scope) in the page until it returns a
+ * truthy value or a modal opens; returns {done, modal, state}. Steps run in the page, keys stay with Playwright.
+ */
+async function botRun(page, body, { timeout = 60 } = {}) {
+  return page.evaluate(async ({ body, timeout }) => {
+    const bot = window.__bot, game = bot.game;
+    // eslint-disable-next-line no-new-func
+    const fn = new Function('bot', 'game', 'return (async () => {' + body + '})();');
+    const t0 = game.t;
+    let done = false;
+    while (!game.modal && game.t - t0 < timeout) {
+      try { done = await fn(bot, game); } catch (e) { if (!e.modal) throw e; }
+      if (done) break;
+      await bot.step(2);
+    }
+    return { done: !!done, modal: game.modal ? game.modal.type : null, t: game.t, state: bot.describe() };
+  }, { body, timeout });
+}
+
+/** Wait for two rendered animation frames (the loop renders every frame in test mode). */
+async function frames(page, n = 2) {
+  for (let i = 0; i < n; i++) await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r())));
+}
+
+module.exports = { ROOT, WEBGL_ARGS, VIEWPORT, startServer, launch, newPage, collectErrors, openGame, openGallery, shot, webglInfo,
+  attachBot, botRun, frames };

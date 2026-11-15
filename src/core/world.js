@@ -430,6 +430,20 @@ export default {
       sp.alive = Math.max(0, sp.alive - 1);
       if (sp.def.respawn > 0) sp.timers.push(game.t + sp.def.respawn);
     });
+    // integration (World request): spawn `if` is re-evaluated when flags change; spawned entities whose condition
+    // no longer holds poof away (saplings after mossback_defeated), unless they are mid-fight.
+    game.bus.on('flag', () => {
+      const z = game.zone;
+      if (!z || !z.spawners || !game.ops || !game.ops.test) return;
+      for (const sp of z.spawners) {
+        if (!sp.def.if || !sp.alive || game.ops.test(sp.def.if, {})) continue;
+        for (const e of game.ents.all) {
+          if (e.removed || e.data.spawner !== sp || (e.ai && e.ai.target != null) || e.tags.includes('boss')) continue;
+          game.fx({ type: 'poof', x: e.x, y: e.y });
+          game.ents.remove(e);
+        }
+      }
+    });
     game.bus.on('flag', ({ key, value }) => {
       if (!value || typeof key !== 'string' || key.indexOf('chest_') !== 0) return;
       for (const e of game.ents.all) {

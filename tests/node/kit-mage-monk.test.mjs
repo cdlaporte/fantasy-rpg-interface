@@ -113,12 +113,14 @@ test('Meditation: standing still 1.5 s meditates (fxTag ki, anim sit, slow hp an
   step(60);
   assert.ok(p.fxTags.includes('ki'), 'meditating');
   assert.equal(p.anim, 'sit');
+  assert.equal(p.look.held.glow, '#3fbf7f', 'fists glow jade');
   step(120);
   assert.ok(game.kits.resource(p).value > 10, 'Ki regen while meditating');
   assert.ok(p.hp > hp0, 'hp regen');
   assert.equal(game.hudState().kitHud.stance, 'Meditating');
   ctx.input.set({ moveX: 1 }); step(2);
   assert.ok(!p.fxTags.includes('ki'), 'moving ends it');
+  assert.equal(p.look.held.glow, '#ffd23f');
   assert.notEqual(p.anim, 'sit');
 });
 

@@ -5,7 +5,7 @@
 // heals you), Shift = Grand Conjuration (a giant spirit guardian stomps shockwaves for 8 s; familiars grow and gain haste).
 // Numbers: data/specs/mage.js `conjurer.kit`. State keys: `cj_*` in p.data.kit.
 import SPECS from '../../data/specs/mage.js';
-import mage, { boon, defer, enemiesNear, nova, projLook, sdata, splitFor, tryManaSurge, N as classN } from './mage.js';
+import mage, { boon, defer, enemiesNear, nova, projLook, sdata, setPatch, splitFor, tryManaSurge, N as classN } from './mage.js';
 
 const DEF = SPECS.conjurer;
 const S = (game) => (sdata(game, 'conjurer') || DEF).kit || DEF.kit;
@@ -207,6 +207,7 @@ function castGrand(game, p) {
     game.fx({ type: 'sparkle', x: list[i].x, y: list[i].y, n: 10, color: s.color, r: 0.6 });
   }
   game.ents.setAnim(p, 'cast', 0.5);
+  setPatch(game, p, 'cj_grand', { held: { glow: '#ffffff' } });   // the orb blazes white while the guardian is out
   game.bus.emit('sfx', { id: 'spell' });
   return undefined;
 }
@@ -217,6 +218,7 @@ function updateGrand(game, p, dt) {
   if (!active) {
     if (k.cj_grandUntil) {
       k.cj_grandUntil = 0;
+      setPatch(game, p, 'cj_grand', null);
       for (let i = 0; i < list.length; i++) if (list[i].data.cjGrown) { list[i].scale = 1; list[i].data.cjGrown = false; }
     }
     return;

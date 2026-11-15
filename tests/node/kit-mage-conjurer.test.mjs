@@ -109,6 +109,7 @@ test('Grand Conjuration: a giant glowing guardian (size 1.8) stomps shockwaves f
   assert.ok(g, 'guardian');
   assert.equal(g.look.rig, 'golem'); assert.equal(g.look.size, 1.8); assert.equal(g.glow, '#3fe0c5');
   assert.ok(ctx.rec.has('screenFlash'));
+  assert.equal(p.look.held.glow, '#ffffff', 'orb blazes during the conjuration');
   for (const f of fams(ctx)) { assert.ok(f.scale > 1.2, 'grown'); assert.ok(f.status.haste > 0, 'haste'); }
   step(240);
   assert.ok(ctx.rec.tagged('grand_stomp').length > 0);
@@ -116,6 +117,7 @@ test('Grand Conjuration: a giant glowing guardian (size 1.8) stomps shockwaves f
   step(300);
   assert.equal(game.combat.summonsOf(p, 'spirit_guardian', []).length, 0, 'gone after 8 s');
   for (const f of fams(ctx)) assert.equal(f.scale, 1, 'back to normal size');
+  assert.equal(p.look.held.glow, '#3fe0c5');
 });
 
 // ---------------------------------------------------------------------------------------------- boons

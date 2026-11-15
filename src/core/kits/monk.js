@@ -7,7 +7,7 @@
 // Palms (2.5 s blur of 12 teleport-strikes, a gold ring, 15% heal). Numbers: data/specs/mage.js `monk.kit`.
 // State keys: `mo_*` in p.data.kit.
 import SPECS from '../../data/specs/mage.js';
-import mage, { boon, defer, enemiesNear, projLook, sdata, tryManaSurge } from './mage.js';
+import mage, { boon, defer, enemiesNear, projLook, sdata, setPatch, tryManaSurge } from './mage.js';
 
 const DEF = SPECS.monk;
 const S = (game) => (sdata(game, 'monk') || DEF).kit || DEF.kit;
@@ -149,6 +149,7 @@ function updateMeditation(game, p, dt) {
       k.mo_med = false;
       game.ents.setFxTag(p, 'ki', false);
       if (p.anim === 'sit') game.ents.setAnim(p, 'idle');
+      setPatch(game, p, 'mo_med', null);
     }
     return;
   }
@@ -158,6 +159,7 @@ function updateMeditation(game, p, dt) {
     k.mo_med = true;
     game.ents.setFxTag(p, 'ki', true);
     game.ents.setAnim(p, 'sit');
+    setPatch(game, p, 'mo_med', { held: { glow: s.jade } });   // fists glow jade while meditating
     game.fx({ type: 'ring', x: p.x, y: p.y, r: 1, color: s.color, dur: 0.6 });
     k.mo_meds = (k.mo_meds || 0) + 1;
   }

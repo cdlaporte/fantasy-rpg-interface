@@ -9,6 +9,7 @@ import { prepareZone, buildChunk, CHUNK } from './terrain.js';
 import { createModels, lookKey } from './models.js';
 import { createFx } from './fx.js';
 import { makePose, pose } from './rigs/pose.js';
+import { C } from './kit.js';
 
 const SCALES = [0.6, 0.8, 1];
 const DAY = {
@@ -209,14 +210,14 @@ export function create() {
     // glow / tint / flash
     let glowAmt = 0;
     let gC = null;
-    if (e.glow) { glowC.set(e.glow); glowAmt = 0.55; gC = glowC; }
-    else if (meta.glowAll) { glowC.set(meta.glowAll); glowAmt = 0.45; gC = glowC; }
+    if (e.glow) { glowC.copy(C(e.glow)); glowAmt = 0.55; gC = glowC; }
+    else if (meta.glowAll) { glowC.copy(C(meta.glowAll)); glowAmt = 0.45; gC = glowC; }
     if (P.glow > 0) {
-      if (!gC) { glowC.set(meta.glow || '#ffe680'); gC = glowC; }
+      if (!gC) { glowC.copy(C(meta.glow || '#ffe680')); gC = glowC; }
       glowAmt += P.glow * 0.6;
     }
     let tAmt = 0;
-    if (e.tint) { tintE.set(e.tint); tAmt = 0.55; }
+    if (e.tint) { tintE.copy(C(e.tint)); tAmt = 0.55; }
     const flash = e.flash > 0 ? Math.min(1, e.flash) : 0;
     const alpha = e.alpha === undefined ? 1 : Math.max(0, Math.min(1, e.alpha));
     models.draw(m, M, P, tAmt ? tintE : null, tAmt, flash, alpha, glowAmt, gC);
@@ -240,10 +241,10 @@ export function create() {
     }
     if (rig === 'humanoid') {
       const spec = meta.s;
-      if (spec.aura && quality >= 0) { auraC.set(spec.aura.color); fx.aura(spec.aura.style, auraC, x, y, H, t, s.seed); }
+      if (spec.aura && quality >= 0) { auraC.copy(C(spec.aura.color)); fx.aura(spec.aura.style, auraC, x, y, H, t, s.seed); }
       if (meta.glowAt && meta.glow) {
         v3.set(meta.glowAt[0], meta.glowAt[1], meta.glowAt[2]).applyMatrix4(M);
-        glowC.set(meta.glow);
+        glowC.copy(C(meta.glow));
         fx.glowAt(v3.x, v3.z, v3.y, 0.2 + 0.03 * Math.sin(t * 5 + s.seed), glowC, 0.55 * alpha);
       }
     } else if (rig === 'effect') {
@@ -252,7 +253,7 @@ export function create() {
       fx.projectile(look, meta, x, y, gy, e.angle || 0, t, s.seed, e.moving);
     } else if (meta.glowAt) {
       v3.set(meta.glowAt[0], meta.glowAt[1], meta.glowAt[2]).applyMatrix4(M);
-      auraC.set((look.colors && look.colors.accent) || '#ffe680');
+      auraC.copy(C((look.colors && look.colors.accent) || '#ffe680'));
       fx.glowAt(v3.x, v3.z, v3.y, 0.35 * size, auraC, 0.6 * alpha);
     }
     if (rig === 'humanoid' || rig === 'quadruped' || rig === 'blob' || rig === 'flyer' || rig === 'plant' || rig === 'golem') {
@@ -290,7 +291,7 @@ export function create() {
       g.mat.elements[12] = f.x; g.mat.elements[14] = f.y;
     }
     copyPose(g.pose, s.pose);
-    try { g.color.set(f.color || '#9fe6ff'); } catch { g.color.set('#9fe6ff'); }
+    g.color.copy(C(f.color || '#9fe6ff'));
   }
 
   function drawGhosts(t) {
@@ -308,7 +309,7 @@ export function create() {
     for (let i = 0; i < emitters.length; i++) {
       const e = emitters[i];
       if (e.x < rect.x0 - 2 || e.x > rect.x1 + 2 || e.y < rect.y0 - 2 || e.y > rect.y1 + 3) continue;
-      if (e.type !== 'shadow') em.set(e.color);
+      if (e.type !== 'shadow') em.copy(C(e.color));
       const sd = i * 1.37;
       switch (e.type) {
         case 'lamp':
@@ -372,7 +373,7 @@ export function create() {
     const amb = frame.ambience || null;
     const dp = DAY[(amb && amb.daypart) || 'day'] || DAY.day;
     let tAmt = 0;
-    if (amb && amb.tint) { try { tintC.set(amb.tint); tAmt = Math.max(0, Math.min(0.35, amb.tintAmount || 0)); } catch { tAmt = 0; } }
+    if (amb && amb.tint) { tintC.copy(C(amb.tint)); tAmt = Math.max(0, Math.min(0.35, amb.tintAmount || 0)); }
     sun.color.copy(dp.sun);
     hemi.color.copy(dp.sky);
     if (tAmt > 0) { sun.color.lerp(tintC, tAmt * 1.6); hemi.color.lerp(tintC, tAmt * 1.2); }

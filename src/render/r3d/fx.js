@@ -5,6 +5,7 @@
 // Particles are stateless: their position is a pure function of (record seed, index, age). No allocation.
 import * as THREE from 'three';
 import * as G from './fxgeo.js';
+import { C } from './kit.js';
 
 const DEG = Math.PI / 180;
 const Y = new THREE.Vector3(0, 1, 0);
@@ -178,7 +179,7 @@ export function createFx(scene, mats, camera, unknown) {
     return r;
   }
 
-  function setColor(c, hex) { try { c.set(hex); } catch { c.set('#ffe066'); } }
+  function setColor(c, hex) { c.copy(C(hex)); }
 
   function update(t) {
     now = t;
@@ -372,8 +373,8 @@ export function createFx(scene, mats, camera, unknown) {
       } else {
         const H = 7;
         _q2.setFromAxisAngle(Y, flick * 1.3);
-        push('bolt', r.x, 0, r.y, _q2, 3 * mir, H, 3, r.color, a);
-        push('bolt', r.x, 0, r.y, _q2, 1.2 * mir, H, 1.2, WHITE, a);
+        push('bolt', r.x, 0, r.y, _q2, 3.4 * mir, H, 3.4, r.color, a);
+        push('bolt', r.x, 0, r.y, _q2, 1.1 * mir, H, 1.1, WHITE, 0.7 * a);
         bill('glow', r.x, r.y, 0.3, 0, 1.4 * (1 - k * 0.5), r.color, a);
         ground('ring', r.x, r.y, 0.06, 0, 0.3 + 1.0 * easeOut(k), 0.3 + 1.0 * easeOut(k), r.color, 1 - k);
         ground('crack', r.x, r.y, 0.035, r.seed, 0.6, 0.6, BLACK, 0.35 * (1 - k));
@@ -400,8 +401,8 @@ export function createFx(scene, mats, camera, unknown) {
       const grow = easeOut(clamp01(age / 0.18));
       const fade = k < 0.6 ? 1 : 1 - (k - 0.6) / 0.4;
       const H = 5 * grow;
-      push('pillar', r.x, 0, r.y, qUp(age * 2), R * (1 + 0.15 * Math.sin(age * 30)) * (1 - 0.3 * k), H, R, r.color, fade);
-      push('pillar', r.x, 0, r.y, qUp(-age * 3), R * 0.45, H * 1.1, R * 0.45, WHITE, 0.55 * fade);
+      push('pillar', r.x, 0, r.y, qUp(age * 2), R * (1 + 0.15 * Math.sin(age * 30)) * (1 - 0.3 * k), H, R, r.color, 0.6 * fade);
+      push('pillar', r.x, 0, r.y, qUp(-age * 3), R * 0.4, H * 1.1, R * 0.4, WHITE, 0.3 * fade);
       ground('glow', r.x, r.y, 0.05, 0, R * 2.2, R * 2.2, r.color, 0.8 * fade);
       ground('ring', r.x, r.y, 0.07, 0, R * (1 + 1.4 * easeOut(k)), R * (1 + 1.4 * easeOut(k)), r.color, fade * (1 - k));
       for (let i = 0; i < lim(10); i++) {
@@ -514,7 +515,7 @@ export function createFx(scene, mats, camera, unknown) {
     },
     screenFlash(r, age, k) {
       screenColor.copy(r.color);
-      screenAlpha = Math.max(screenAlpha, 0.75 * (1 - k));
+      screenAlpha = Math.max(screenAlpha, 0.55 * (1 - k) * (1 - k));
     },
   };
   const PILLAR_TMP = { r: 0, color: null, seed: 0, x: 0, y: 0, z: 0, dur: 1 };
@@ -771,7 +772,7 @@ export function createFx(scene, mats, camera, unknown) {
 
   /** Effect-rig visuals (the translucent parts). look: effect look; ex, ey: position, ez: height. */
   function effect(look, meta, x, y, z, angle, t, seed, alpha) {
-    const c = C1.set(look.color || '#ffe066');
+    const c = C1.copy(C(look.color || '#ffe066'));
     const r = look.r || 0.5;
     const a = alpha;
     switch (meta.model) {
@@ -944,8 +945,8 @@ export function createFx(scene, mats, camera, unknown) {
 
   /** Projectile visuals: glow + trail. */
   function projectile(look, meta, x, y, h, angle, t, seed, moving) {
-    const c = C1.set(look.color || '#ffe066');
-    const g = look.glow ? C2.set(look.glow) : C2.copy(c).lerp(WHITE, 0.5);
+    const c = C1.copy(C(look.color || '#ffe066'));
+    const g = look.glow ? C2.copy(C(look.glow)) : C2.copy(c).lerp(WHITE, 0.5);
     const s = look.size || 1;
     const bx = -Math.cos(angle), by = -Math.sin(angle);
     const trail = meta.trail;

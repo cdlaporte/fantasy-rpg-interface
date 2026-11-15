@@ -68,6 +68,20 @@ for (const y of [4, 9, 14, 20, 26, 32, 37]) for (const x of [9, 22, 33]) ZOOMS.p
       });
     }
 
+    if (!ONLY || ONLY === 'gallery') {
+      await check('context loss is reported, not thrown', async () => {
+        await H.openGallery(page, { base: server.url, renderer: '3d', page: 2 });
+        const got = await page.evaluate(() => new Promise((resolve) => {
+          const host = document.getElementById('view');
+          host.addEventListener('r3d:contextlost', () => resolve(true), { once: true });
+          window.__gallery.renderer.webgl.forceContextLoss();
+          setTimeout(() => resolve(false), 2000);
+        }));
+        assert.ok(got, 'r3d:contextlost event');
+        await page.waitForTimeout(200);
+      });
+    }
+
     if (!ONLY || ONLY === 'busy') {
       // budgets are measured at the Chromebook play-view size (1366 - 280 px panel) x 657
       const big = await H.newPage(browser, { viewport: { width: 1086, height: 657 } });
@@ -110,6 +124,10 @@ for (const y of [4, 9, 14, 20, 26, 32, 37]) for (const x of [9, 22, 33]) ZOOMS.p
         rows.push({ what: 'game test', draws: s.draws, tris: s.tris, programs: s.programs });
         assert.deepStrictEqual(s.unknown, [], 'no unknown look values');
         assert.ok(s.draws <= BUDGET.draws && s.tris <= BUDGET.tris, 'budgets in the test zone');
+        // a tile change rebuilds its chunk
+        await page.evaluate(() => { const g = window.__game.game; const p = g.player; g.world.setTile(Math.floor(p.x) + 2, Math.floor(p.y) + 1, g.data.tiles.index.water); g.world.setTile(Math.floor(p.x) - 2, Math.floor(p.y), g.data.tiles.index.brick); });
+        await page.evaluate(() => window.__game.step(2, { moveX: 0, moveY: 0 }));
+        await H.shot(page, path.join(OUT, 'r3d-game-test-tile.png'));
         // hot swap to 2d and back, then dispose cleanly
         await page.evaluate(() => window.__game.setRenderer('2d'));
         await page.evaluate(() => window.__game.setRenderer('3d'));

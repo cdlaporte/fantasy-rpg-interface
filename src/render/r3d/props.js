@@ -186,7 +186,7 @@ function well(k, L, w) {
   k.color(water, 0.25).add(T.cyl(1, 1, 14), [0, 0.45, 0], [R * 0.82, 0.02, R * 0.82]);
   for (const s of [-1, 1]) k.color('#8a5a33').add(T.box(), [s * R * 0.9, 0.95, 0], [0.08, 0.85, 0.08]);
   k.color('#8a5a33').add(T.cyl(1, 1, 6), [0, 1.18, 0], [0.04, R * 1.8, 0.04], [0, 0, Math.PI / 2]);
-  k.color(roof).add(roofPrism(), [0, 1.3, 0], [R * 2.6, 0.5, R * 1.7]);
+  gableRoof(k, 0, 1.22, 0, R * 1.9, R * 1.2, 0.42, roof, C('#8a5a33'), mul(roof, 0.75), false);
   k.color('#8a5a33').add(T.cyl(0.85, 1, 7), [0.15, 0.85, 0.05], [0.1, 0.14, 0.1]);
 }
 
@@ -442,15 +442,16 @@ function i2(c0) { return mul(c0, 0.8); }
 
 function tower(k, L, w, d) {
   const wall = c(L, 'wall', '#d8dae4'), roof = c(L, 'roof', '#7a5ad9'), trim = c(L, 'trim', '#ffe066'), door = c(L, 'door', '#6b4423');
-  const R = Math.min(w, d) * 0.4, H = 1.75;
+  const R = Math.min(w, d) * 0.38, H = 1.7;
   k.color('#a3a7b8').add(T.cyl(1, 1, 14), [0, 0.08, 0], [R + 0.1, 0.16, R + 0.1]);
   k.color(wall).add(T.cyl(0.92, 1, 14), [0, 0.16 + H / 2, 0], [R, H, R]);
-  for (const y of [0.7, 1.35]) k.color(trim).add(T.torus(0.12, 4, 18), [0, y, 0], [R * 0.97, R * 0.97, R * 0.9], [Math.PI / 2, 0, 0]);
+  for (const y of [0.7, 1.35]) k.color(trim).add(T.torus(0.06, 4, 18), [0, y, 0], [R * 0.97, R * 0.97, R * 0.9], [Math.PI / 2, 0, 0]);
   k.color(trim).add(T.cyl(1, 1, 14), [0, 0.16 + H, 0], [R + 0.08, 0.1, R + 0.08]);
-  k.color(roof).add(T.cone(14), [0, 0.16 + H + 0.55, 0], [R + 0.25, 1.1, R + 0.25]);
-  k.color(trim).add(T.sphere(6, 5), [0, 0.16 + H + 1.13, 0], 0.07);
-  k.color('#8a5a33').add(T.cyl(1, 1, 4), [0, 0.16 + H + 1.3, 0], [0.015, 0.35, 0.015]);
-  k.color(trim).add(T.box(), [0.12, 0.16 + H + 1.4, 0], [0.22, 0.13, 0.01]);
+  k.color(roof).add(T.cone(14), [0, 0.16 + H + 0.75, 0], [R + 0.2, 1.5, R + 0.2]);
+  k.color(mul(roof, 0.8)).add(T.cyl(1, 1, 14), [0, 0.16 + H + 0.03, 0], [R + 0.22, 0.06, R + 0.22]);
+  k.color(trim).add(T.sphere(6, 5), [0, 0.16 + H + 1.52, 0], 0.07);
+  k.color('#8a5a33').add(T.cyl(1, 1, 4), [0, 0.16 + H + 1.7, 0], [0.015, 0.35, 0.015]);
+  k.color(trim).add(T.box(), [0.12, 0.16 + H + 1.8, 0], [0.22, 0.13, 0.01]);
   doorAt(k, 0, R * 0.95, 0.44, 0.7, door, trim);
   for (const [a, y] of [[0.75, 1.05], [-0.75, 1.05], [0, 1.6]]) {
     k.push().tf(Math.sin(a) * R * 0.93, 0, Math.cos(a) * R * 0.93, 0, a, 0);

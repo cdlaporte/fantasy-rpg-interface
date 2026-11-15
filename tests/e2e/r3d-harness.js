@@ -136,6 +136,7 @@ const fired = new Set();
 
 function fill(time) {
   frame.t = time; frame.alpha = 1;
+  if (q.has('daypart')) { frame.ambience.daypart = q.get('daypart'); frame.ambience.tint = q.get('tint') || '#ff9a5a'; frame.ambience.tintAmount = Number(q.get('amt') || 0.2); }
   frame.camera.x = cam[0]; frame.camera.y = cam[1]; frame.camera.zoom = q.has('zoom') ? Number(q.get('zoom')) : cam[2]; frame.camera.shake = 0;
   let n = 0;
   for (const e of ents) {

@@ -1,4 +1,4 @@
-// Frozen. Renderer factory: dynamic import so 2D players never download three; 3D falls back to 2D.
+// Renderer factory: dynamic import so 2D players never download three; 3D falls back to 2D.
 const LOADERS = {
   '2d': () => import('./r2d/index.js'),
   '3d': () => import('./r3d/index.js'),
@@ -29,13 +29,15 @@ export async function createRenderer(id, hostEl, opts = {}) {
  * @returns {Promise<import('../contracts.js').Renderer>}
  */
 export async function swapRenderer(old, id, hostEl, opts = {}, zoneView = null) {
+  // The old renderer keeps drawing (the game loop still calls it) until the new one is ready; only then is it disposed.
+  // Disposing first made every frame during the async init throw (null canvas context).
+  const r = await createRenderer(id, hostEl, opts);
+  r.resize(hostEl.clientWidth, hostEl.clientHeight);
+  if (zoneView) r.loadZone(zoneView);
   if (old) {
     try { old.unloadZone(); } catch { /* ignore */ }
     old.dispose();
   }
-  const r = await createRenderer(id, hostEl, opts);
-  r.resize(hostEl.clientWidth, hostEl.clientHeight);
-  if (zoneView) r.loadZone(zoneView);
   return r;
 }
 

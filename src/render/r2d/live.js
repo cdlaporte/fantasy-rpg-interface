@@ -364,7 +364,7 @@ export function createLive(fx) {
         for (let i = every(5 * k, v.id * 0.19); i > 0; i--) fx.emit(PK.SQ, wx + (R() - 0.5) * 20, wy - R() * 6, 0, -22, 0.9, light(c, 0.3), 1, 0, O(0, 0, 0, 0, true));
         break;
       case 'shadow':
-        for (let i = every(14 * k, v.id * 0.19); i > 0; i--) fx.emit(PK.PUFF, wx + (R() - 0.5) * 18, wy - R() * hgt * 0.8, 0, -16, 0.7, R() < 0.5 ? c : dark(c, 0.4), 2, 4, O(0, 0, 0, 0, false));
+        for (let i = every(8 * k, v.id * 0.19); i > 0; i--) fx.emit(PK.PUFF, wx + (R() - 0.5) * 20, wy - R() * hgt * 0.9, 0, -14, 0.6, R() < 0.5 ? light(c, 0.15) : dark(c, 0.2), 2, 3, O(0, 0, 0, 0, false));
         break;
       case 'frost':
         for (let i = every(8 * k, v.id * 0.19); i > 0; i--) { const a = R() * TAU; fx.emit(PK.SNOW, wx + Math.cos(a) * 12, wy - hgt * 0.5 + Math.sin(a) * hgt * 0.5, -Math.cos(a) * 4, 8, 0.9, R() < 0.5 ? '#ffffff' : c, 1, 1, O(0, 0, 0, 0, true)); }

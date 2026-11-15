@@ -50,10 +50,11 @@ export default {
       ['control', { until: ['quest', 'main_enroll', 'step', 5] }],
 
       ['tutorial', 'Well done! The road to Flinkerton continues north.', ['W']],
-      ['flag.set', 'tutorial_done', true],
-      ['save'],
       ['wait', 2.5],
       ['tutorial', null],
+      // Set last: the ambush trigger at `clearing` requires it, so it can never fire while this cutscene runs.
+      ['flag.set', 'tutorial_done', true],
+      ['save'],
     ],
   },
 };

@@ -1,6 +1,6 @@
 // Flinkerton dialogues: one tree per townsfolk, plus quest_board, cafe_door and library_door (prop interacts).
 // Pattern: `hub` greets and lists topics; topic nodes `goto: 'more'`, which lists the same topics again with a short
-// "anything else?" line. Options with `if` change what you can ask as flags, class, level, quests and `rel` change.
+// "anything else?" line. Speaker 'narrator' = no name and no portrait (notice board, doors). Options with `if` change what you can ask as flags, class, level, quests and `rel` change.
 const S = (who, text, mood = 'calm') => ({ who, mood, text });
 const P = (text, mood = 'calm') => ({ who: 'player', mood, text });
 const bye = (text = 'See you around!') => ({ text, end: true });

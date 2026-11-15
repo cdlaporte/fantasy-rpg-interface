@@ -258,6 +258,7 @@ export default {
           ops.warnOnce('dlg:' + id, 'dialogue: unknown or empty dialogue "' + id + '"');
           const d = deferred(); d.resolve(); return d.promise;
         }
+        if (opts.npc != null && typeof opts.npc !== 'object') opts = Object.assign({}, opts, { npc: ops.resolveWho(opts.npc, opts.ctx) });
         const conv = makeConv(def, id, opts);
         const t = top();
         if (!t || t.busy) begin(conv);       // nothing showing, or opened from inside another one's ops

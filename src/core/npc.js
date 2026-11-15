@@ -330,13 +330,15 @@ export default {
         if (s && s.type === 'npc' && isGuard(s)) st.lastGuardHitT = game.t;
         return;
       }
-      if (t.team !== 'town' || !t.data || !t.data.npc) return;
+      if (t.team !== 'town') return;
       if (ownerOf(h.source) !== p) return;
       game.bus.emit('crime', { victim: t });
       setWanted(true);
-      if (t.hp <= (t.data.minHp || 1) || h.killed) knockOut(t);
-      else react(t);
-      for (const g of live) if (g !== t && isGuard(g) && g.data.npc.ko <= 0) g.data.npc.chase = 1;
+      if (t.data && t.data.npc) {
+        if (t.hp <= (t.data.minHp || 1) || h.killed) knockOut(t);
+        else react(t);
+      }
+      for (const g of live) if (g !== t && isGuard(g) && g.data.npc.ko <= 0 && g.data.npc.chase <= 0) { g.data.npc.chase = 1; g.data.npc.tmr = 0; }
     });
     game.bus.on('death', (d) => {
       const e = d && d.ent;

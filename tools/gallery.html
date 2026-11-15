@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Renderer gallery</title>
+  <script type="importmap">
+    { "imports": { "three": "../vendor/three/three.module.min.js" } }
+  </script>
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #111; color: #eee; font: 12px system-ui, sans-serif; }
+    #view { position: fixed; inset: 0; }
+    #view > canvas { position: absolute; left: 0; top: 0; display: block; }
+    #labels { z-index: 2; pointer-events: none; }
+    #bar { position: fixed; left: 8px; top: 8px; z-index: 3; background: rgba(0,0,0,.6); padding: 4px 8px; border-radius: 4px; }
+    #bar a { color: #9fe6ff; margin-right: 6px; }
+  </style>
+</head>
+<body>
+  <div id="view"><canvas id="labels"></canvas></div>
+  <div id="bar"></div>
+  <script type="module" src="gallery.js"></script>
+</body>
+</html>

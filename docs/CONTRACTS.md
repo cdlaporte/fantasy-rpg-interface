@@ -709,3 +709,13 @@ Shops (`data/shops.js`): `{id, name, keeper, stock: [{item, req: [conds]}], hagg
 | QA (later stage) | `tests/e2e/smoke.cjs`, `tests/node/bot.test.mjs`, `tests/e2e/out/**` |
 
 Everyone owns `docs/notes/<package>.md`.
+
+## 14. Skeleton interpretations (binding)
+
+`docs/notes/skeleton.md` lists how the skeleton resolved open points (for example: `game.player` is the
+player ENTITY and the player system's API is `game.sys.player`; `hudState()` resets nothing, each system
+nulls its own fields; arrays in FrameState are longer than their counts; `FxEvent.ent` is an entity id).
+Those interpretations are part of this contract. Read that file after this one.
+
+Working trees: each package works in its own git worktree on its own branch and commits there, and only
+there. Never touch `/home/user/fantasy-rpg-interface` (the main tree) or another package's worktree.

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flinkerton Academy</title>
+  <link rel="stylesheet" href="css/ui.css">
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three/three.module.min.js" } }
+  </script>
+</head>
+<body>
+  <div id="app">
+    <aside id="panel"></aside>
+    <main id="view">
+      <canvas id="overlay"></canvas>
+      <div id="hud">
+        <div id="minimap"></div>
+        <div id="toasts"></div>
+        <div id="bossbar"></div>
+        <div id="prompt"></div>
+        <div id="tutorial"></div>
+      </div>
+    </main>
+    <div id="modal-root"></div>
+  </div>
+  <script>
+    if (location.protocol === 'file:') {
+      document.addEventListener('DOMContentLoaded', function () {
+        var n = document.createElement('div');
+        n.id = 'file-note';
+        n.innerHTML = '<h1>Almost there!</h1><p>This game must be opened from a web address, not as a file.</p>' +
+          '<p>Ask your teacher for the link, or run <code>node tools/serve.mjs</code> and open ' +
+          '<code>http://localhost:8080/</code>.</p>';
+        document.body.appendChild(n);
+      });
+    }
+  </script>
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

@@ -6,7 +6,7 @@
 // to the start) and the boons Coin Toss, Vanishing Act, Loaded Dice, Caltrop Trail (the roll part is in rogue.js).
 // Numbers: data.specs.thief.kit + data.boons. State: p.data.kit.th.
 import specdefs from '../../data/specs/rogue.js';
-import { hasBoon, boonData, addPips, spendPips, angleTo } from './rogue.js';
+import { hasBoon, boonData, addPips, spendPips, angleTo, enemyZone } from './rogue.js';
 import { angleDiff } from '../math.js';
 
 const DEF = specdefs.thief;
@@ -98,8 +98,13 @@ function jackpot(game, p, t) {
   const J = tk(game).jackpot, th = p.data.kit.th;
   if (game.t - th.jackpotT < J.icd) return;
   th.jackpotT = game.t;
+  // Coins fly at the nearby enemies first (one each), the rest burst outward in a ring.
+  const near = game.ents.inRadius(t.x, t.y, J.range + 0.5, isEnemy, th.scratch);
+  let k = 0;
   for (let i = 0; i < J.coins; i++) {
-    const a = (i / J.coins) * Math.PI * 2 + game.rng.next() * 0.3;
+    let a = (i / J.coins) * Math.PI * 2 + game.rng.next() * 0.3;
+    while (k < near.length && (near[k] === t || !game.combat.canHit(p, near[k]))) k++;
+    if (k < near.length) { a = angleTo(t.x, t.y, near[k].x, near[k].y); k++; }
     const c = game.combat.projectile(p, { x: t.x, y: t.y, angle: a, speed: J.speed, range: J.range, dmg: J.coef, look: COIN_LOOK, radius: 0.18,
       returns: true, maxHits: 2, knockback: 1, tags: TAG_JACKPOT });
     c.data.proj.hits.push(t.id);
@@ -114,7 +119,7 @@ function smokeVanish(game, p) {
   const S = tk(game).smokeVanish, C = tk(game).colors;
   game.abilities.use('stealth', p, { dur: S.stealthDur, speed: S.speedBonus, smoke: { r: S.r, dur: S.smokeDur, status: { slow: [0.6, S.slow] } } });
   const Ca = S.caltrops;
-  game.combat.zone(p, { x: p.x, y: p.y, r: Ca.r, dur: Ca.dur, tick: Ca.tick, caltrops: true, dmg: Ca.coef, type: 'melee', silent: true,
+  enemyZone(game, p, { x: p.x, y: p.y, r: Ca.r, dur: Ca.dur, tick: Ca.tick, caltrops: true, dmg: Ca.coef, type: 'melee', silent: true,
     status: { slow: [0.6, Ca.slow] }, color: '#9aa4ad', keepStealth: true });
   const ai = game.sys.ai;
   const list = game.ents.inRadius(p.x, p.y, S.r + 0.5, isEnemy, p.data.kit.th.scratch);

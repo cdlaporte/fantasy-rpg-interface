@@ -51,6 +51,29 @@ export function spendPips(game, p) {
 }
 export const pipsFull = (game, p) => { const r = game.kits.resource(p); return r.max > 0 && r.value >= r.max; };
 
+/** Apply a status param ({stun: s} | {slow: [s, p]} | {id, t, p} | array of those) to one target. */
+export function applyStatus(game, t, st, src) {
+  if (!st) return;
+  if (Array.isArray(st)) { for (let i = 0; i < st.length; i++) applyStatus(game, t, st[i], src); return; }
+  if (st.id) { game.combat.status(t, st.id, st.t, st.p, src); return; }
+  for (const k in st) { const v = st[k]; if (Array.isArray(v)) game.combat.status(t, k, v[0], v[1], src); else game.combat.status(t, k, v, undefined, src); }
+}
+/** A lingering zone whose damage and statuses only touch enemies (never town NPCs: no accidental crimes in town). */
+export function enemyZone(game, src, o) {
+  const amount = (o.dmg || 0) * game.combat.powerOf(src);
+  const status = o.status || null, userTick = o.onTick || null;
+  const dopts = { source: src, type: o.type || 'magic', dot: true, silent: !!o.silent, knockback: 0, tags: o.tags || null, element: o.element || null, color: o.color || null };
+  return game.combat.zone(src, Object.assign({}, o, { dmg: 0, status: null, onTick(g, ze, list) {
+    for (let i = 0; i < list.length; i++) {
+      const t = list[i];
+      if (t.type !== 'enemy') continue;
+      if (amount > 0) g.combat.damage(t, amount, dopts);
+      if (status && t.alive && !t.removed) applyStatus(g, t, status, src);
+    }
+    if (userTick) userTick(g, ze, list);
+  } }));
+}
+
 /** Glow on the held weapon from kit state (crit ready, bow drawing, ...): only re-composes the look on change. */
 export function setHeldGlow(game, p, color) {
   const k = p.data.kit;
@@ -101,17 +124,18 @@ export function afterBasic(game, p, angle) {
 }
 
 // ---------- rank names (HUD + rank banner) ----------
-const infoCache = new Map();
+const infoCache = {};   // specId -> rank -> frozen {name, icon} (the HUD polls this at 10 Hz: no allocation after the first call)
 function rankInfo(game, p, rank) {
-  const sd = p.data.specId && game.data.specs ? game.data.specs[p.data.specId] : null;
+  const sid = p.data.specId || '';
+  const byRank = infoCache[sid] || (infoCache[sid] = []);
+  let o = byRank[rank];
+  if (o) return o;
+  const sd = sid && game.data.specs ? game.data.specs[sid] : null;
   const names = Object.assign({}, DEF.ranks, game.data.classes.rogue.ranks, sd && sd.ranks);
   let best = 1;
   for (const k in names) if (+k <= rank && +k > best) best = +k;
-  const name = names[best] || names[1] || 'Twin Daggers';
-  const icon = (sd && sd.basic && sd.basic.icon) || 'dagger';
-  const key = name + '|' + icon;
-  let o = infoCache.get(key);
-  if (!o) { o = Object.freeze({ name, icon }); infoCache.set(key, o); }
+  o = Object.freeze({ name: names[best] || names[1] || 'Twin Daggers', icon: (sd && sd.basic && sd.basic.icon) || 'dagger' });
+  byRank[rank] = o;
   return o;
 }
 
@@ -137,7 +161,7 @@ function dodgeRoll(game, p, ctx) {
       const n = b.n || 3;
       for (let i = 0; i < n; i++) {
         const f = n === 1 ? 0.5 : i / (n - 1);
-        g.combat.zone(c, { x: sx + (c.x - sx) * f, y: sy + (c.y - sy) * f, r: b.r || 0.9, dur: b.dur || 4, tick: 0.5, caltrops: true,
+        enemyZone(g, c, { x: sx + (c.x - sx) * f, y: sy + (c.y - sy) * f, r: b.r || 0.9, dur: b.dur || 4, tick: 0.5, caltrops: true,
           dmg: b.coef || 0.12, type: 'melee', silent: true, status: { slow: [0.6, b.slow || 0.35] }, color: '#9aa4ad' });
       }
       g.fx({ type: 'burst', x: c.x, y: c.y, n: 10, r: 0.8, color: '#9aa4ad' });
@@ -147,7 +171,7 @@ function dodgeRoll(game, p, ctx) {
   if (hasBoon(game, 'shadow_roll')) {
     const b = boonData(game, 'shadow_roll');
     const r = b.r || 1.8;
-    game.combat.zone(p, { x: sx, y: sy, r, dur: b.dur || 3, smoke: true, tick: 0.25, status: { slow: [0.4, 0.3] } });
+    enemyZone(game, p, { x: sx, y: sy, r, dur: b.dur || 3, smoke: true, tick: 0.25, status: { slow: [0.4, 0.3] } });
     game.fx({ type: 'smoke', x: sx, y: sy, r, dur: b.dur || 3 });
     game.fx({ type: 'poof', x: sx, y: sy, color: C.shadow });
     const ai = game.sys.ai;

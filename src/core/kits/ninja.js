@@ -5,7 +5,7 @@
 // two clones, three at full pips, mirror your throws at 60%) and the boons Explosive Tags, Blade Storm,
 // Substitution, Clone Mastery. Numbers: data.specs.ninja.kit + data.boons. State: p.data.kit.nj.
 import specdefs from '../../data/specs/rogue.js';
-import { TAG_BASIC, hasBoon, boonData, addPips, spendPips, consumeCrit, grantCrit, newVolley, tagVolley, afterBasic, flurryOn, angleTo }
+import { TAG_BASIC, hasBoon, boonData, addPips, spendPips, consumeCrit, grantCrit, newVolley, tagVolley, afterBasic, flurryOn, angleTo, enemyZone }
   from './rogue.js';
 import { clone } from '../ents.js';
 
@@ -127,7 +127,7 @@ function decoyBurst(game, p, d) {
   game.fx({ type: 'poof', x: d.x, y: d.y, color: N.colors.shadow });
   if (tags) {
     game.fx({ type: 'ring', x: d.x, y: d.y, r, color: N.colors.sash, dur: 0.45 });
-    game.combat.zone(p, { x: d.x, y: d.y, r: r * 0.8, dur: tags.fireDur || 3, element: 'fire', tick: 0.5, dmg: 0.15, silent: true });
+    enemyZone(game, p, { x: d.x, y: d.y, r: r * 0.8, dur: tags.fireDur || 3, element: 'fire', tick: 0.5, dmg: 0.15, silent: true });
   }
   p.data.kit.nj.bursts++;
 }

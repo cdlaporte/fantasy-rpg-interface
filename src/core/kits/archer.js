@@ -5,7 +5,7 @@
 // boons Split Arrow, Pinning Shot, Rain of Fire, Hawk. Numbers: data.specs.archer.kit + data.boons.
 // State: p.data.kit.ar (plain values + entity ids; transient visuals are rebuilt).
 import specdefs from '../../data/specs/rogue.js';
-import { TAG_BASIC, hasBoon, boonData, addPips, spendPips, consumeCrit, newVolley, tagVolley, afterBasic, flurryOn, rg, setHeldGlow }
+import { TAG_BASIC, hasBoon, boonData, addPips, spendPips, consumeCrit, newVolley, tagVolley, afterBasic, flurryOn, rg, setHeldGlow, enemyZone }
   from './rogue.js';
 
 const DEF = specdefs.archer;
@@ -157,7 +157,7 @@ function arrowRain(game, p, ctx) {
   const color = fire ? C.fire : C.main;
   const status = fire ? [{ slow: [0.8, R.slow] }, { id: 'burn', t: fire.burnDur || 3, p: (fire.burnDps || 0.35) * game.combat.powerOf(p) }] : { slow: [0.8, R.slow] };
   const perTick = R.arrowsPerTick + pips;
-  game.combat.zone(p, { x, y, r, dur: R.dur, tick: R.tick, dmg: R.coef, type: 'ranged', status, color, tags: TAG_RAIN, silent: false,
+  enemyZone(game, p, { x, y, r, dur: R.dur, tick: R.tick, dmg: R.coef, type: 'ranged', status, color, tags: TAG_RAIN, silent: false,
     model: fire ? 'ground_fire' : 'zone_ring',
     onTick(g, z) {
       for (let i = 0; i < perTick; i++) {

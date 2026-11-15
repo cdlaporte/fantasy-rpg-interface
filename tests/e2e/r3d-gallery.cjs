@@ -125,7 +125,7 @@ for (const y of [4, 9, 14, 20, 26, 32, 37]) for (const x of [9, 22, 33]) ZOOMS.p
         assert.deepStrictEqual(s.unknown, [], 'no unknown look values');
         assert.ok(s.draws <= BUDGET.draws && s.tris <= BUDGET.tris, 'budgets in the test zone');
         // a tile change rebuilds its chunk
-        await page.evaluate(() => { const g = window.__game.game; const p = g.player; g.world.setTile(Math.floor(p.x) + 2, Math.floor(p.y) + 1, g.data.tiles.index.water); g.world.setTile(Math.floor(p.x) - 2, Math.floor(p.y), g.data.tiles.index.brick); });
+        await page.evaluate(() => { const g = window.__game.game; const p = g.player; g.world.setTile(Math.floor(p.x) + 2, Math.floor(p.y) + 1, 'water'); g.world.setTile(Math.floor(p.x) - 2, Math.floor(p.y), 'brick'); });
         await page.evaluate(() => window.__game.step(2, { moveX: 0, moveY: 0 }));
         await H.shot(page, path.join(OUT, 'r3d-game-test-tile.png'));
         // hot swap to 2d and back, then dispose cleanly

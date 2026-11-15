@@ -32,7 +32,7 @@ export function create() {
   const unknown = new Set();
   let unknownList = [];
   let unknownSize = 0;
-  const st = { ms: 0, draws: 0, tris: 0, unknown: unknownList, programs: 0, models: 0, fxInstances: 0, chunks: 0, chunkTris: 0 };
+  const st = { ms: 0, draws: 0, tris: 0, unknown: unknownList, programs: 0, models: 0, fxInstances: 0, chunks: 0, chunkTris: 0, loadMs: 0 };
   const camState = { x: 0, y: 0, zoom: 1 };
   const v3 = new THREE.Vector3();
   const v3b = new THREE.Vector3();
@@ -435,9 +435,11 @@ export function create() {
     loadZone(zoneView) {
       freeZone();
       if (!zoneView) return;
+      const l0 = performance.now();
       zd = prepareZone(zoneView, unknown);
       try { skyBase.set((zoneView.palette && zoneView.palette.sky) || '#bfe6ff'); } catch { skyBase.set('#bfe6ff'); }
       buildZoneMeshes();
+      st.loadMs = Math.round(performance.now() - l0);
     },
     unloadZone() { freeZone(); },
     tileChanged(tx, ty) {

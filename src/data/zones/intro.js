@@ -136,7 +136,7 @@ export default {
       decoClear: 2.5,
       paint: [
         { at: 'clearing', r: 7.4, reserve: true },        // the clearing disc stays clear of decoration
-        { rect: [9, 104, 9, 14], reserve: true },          // wake meadow: room to walk
+        { rect: [5, 104, 17, 14], reserve: true },         // wake meadow: room to walk
       ],
     },
     markers: {

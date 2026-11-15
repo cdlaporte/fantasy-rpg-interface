@@ -126,6 +126,7 @@ export function buildZoneGrid(zoneDef, tileIndexById) {
   const reg = new Array(N);             // legend entry that owns each tile (mix/deco lookups)
   const reserved = new Uint8Array(N);   // 1 = no decoration here
   const isPath = new Uint8Array(N);
+  const keep = new Uint8Array(N);       // pinned tiles the shoreline pass must not touch
   const cellL = (cx, cy) => legend[(rows[cy] || '')[cx]] || DEFAULT_L;
 
   if (!macro) {
@@ -195,6 +196,15 @@ export function buildZoneGrid(zoneDef, tileIndexById) {
       if (cy === ch - 1) { stroke(L, ax, ay, ax, h); linked = true; }
       if (!linked) stroke(L, ax, ay, ax + 0.01, ay);
     }
+    // 2b. checkerboard junctions (walkable cells touching only diagonally): pin the two solid corner tiles so the
+    // diagonal does not become a passage (keeps macro 4-connectivity == tile connectivity)
+    for (let cy = 0; cy + 1 < ch; cy++) for (let cx = 0; cx + 1 < cw; cx++) {
+      const A = cellL(cx, cy), B = cellL(cx + 1, cy), C = cellL(cx, cy + 1), D = cellL(cx + 1, cy + 1);
+      const px = (cx + 1) * cell, py = (cy + 1) * cell;
+      const pin = (x, y, L) => { const i = y * w + x; tiles[i] = L.base; reg[i] = L; isPath[i] = 0; keep[i] = 1; };
+      if (!A.solid && !D.solid && B.solid && C.solid) { pin(px, py - 1, B); pin(px - 1, py, C); }
+      if (!B.solid && !C.solid && A.solid && D.solid) { pin(px - 1, py - 1, A); pin(px, py, D); }
+    }
     // 3. carve 2-wide corridors between 4-adjacent walkable cells (repairs any border the warp closed)
     const carve = (x, y, fallback) => {
       if (x < 0 || y < 0 || x >= w || y >= h) return;
@@ -225,7 +235,7 @@ export function buildZoneGrid(zoneDef, tileIndexById) {
       const snap = tiles.slice();
       for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
         const i = y * w + x;
-        if (snap[i] !== waterI) continue;
+        if (snap[i] !== waterI || keep[i]) continue;
         const u = x % cell, v = y % cell, cc = Math.floor(cell / 2) - 1;
         const ocx = (x / cell) | 0, ocy = (y / cell) | 0;
         if (cellL(ocx, ocy).base === waterI) {

@@ -377,7 +377,9 @@ function buildHair(k, s) {
       k.color(hc).add(T.rbox(0.5), [0, hy - 0.12, -0.13], [0.42, 0.36, 0.14]);
       k.color(hc).add(T.sphere(8, 6), [0.2, hy - 0.08, 0.03], [0.07, 0.16, 0.08]);
       k.color(hc).add(T.sphere(8, 6), [-0.2, hy - 0.08, 0.03], [0.07, 0.16, 0.08]);
-      k.color(hc).add(T.sphere(8, 6), [0, hy + 0.17, 0.15], [0.17, 0.05, 0.07], [0.45, 0, 0]);
+      k.lineless = true;
+      k.color(hc).add(T.sphere(8, 5), [0, hy + 0.2, 0.13], [0.16, 0.045, 0.07], [0.6, 0, 0]);
+      k.lineless = false;
       break;
     case 'bun':
       cap(-0.35);
@@ -480,9 +482,9 @@ function buildHat(k, s) {
     case 'helm':
     case 'horned': {
       const steel = s.hat.style === 'horned' ? mix(hc, '#8a8a9a', 0.5) : hc;
-      k.color(steel).add(T.dome(12, 5), [0, hy + 0.03, -0.01], [0.275, 0.26, 0.27], [-0.1, 0, 0]);
-      k.color(mul(steel, 0.8)).add(T.torus(0.25, 5, 14), [0, hy + 0.06, 0], [0.27, 0.27, 0.27], [Math.PI / 2 - 0.1, 0, 0]);
-      k.color(mul(steel, 0.85)).add(T.box(), [0, hy + 0.0, 0.25], [0.035, 0.12, 0.03]);
+      k.color(steel).add(T.dome(12, 5), [0, hy + 0.06, -0.02], [0.275, 0.25, 0.27], [-0.32, 0, 0]);
+      k.color(mul(steel, 0.8)).add(T.torus(0.25, 5, 14), [0, hy + 0.06, -0.02], [0.272, 0.272, 0.27], [Math.PI / 2 - 0.32, 0, 0]);
+      for (const sd of [1, -1]) k.color(mul(steel, 0.9)).add(T.rbox(0.4, 8, 4), [0.235 * sd, hy - 0.06, -0.02], [0.05, 0.14, 0.14]);
       if (s.hat.style === 'helm') {
         k.color(s.accent).add(T.rbox(0.5), [0, hy + 0.28, -0.03], [0.04, 0.09, 0.26]);
       } else {

@@ -213,6 +213,7 @@ if (vAlphaI < 0.995 && r3dBayer(gl_FragCoord.xy) > vAlphaI) discard;`)
 function makeFx(additive) {
   const m = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide,
     blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending });
+  m.forceSinglePass = true;   // no back-then-front double pass for transparent double-sided fx (half the draws, one program)
   m.onBeforeCompile = (sh) => {
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute float iAlpha;\nvarying float vIA;')

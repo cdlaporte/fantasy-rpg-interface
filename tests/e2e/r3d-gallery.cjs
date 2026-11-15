@@ -16,8 +16,8 @@ const ZOOMS = [];
 for (const y of [1.6, 3.6, 5.6, 7.6, 9.6, 11.6, 13.6, 15.6]) for (const x of [4, 10, 16, 22]) ZOOMS.push([0, x, y, 2.6, `h-${x}-${y}`]);
 ZOOMS.push([0, 23, 9.4, 4, 'heroes'], [0, 3, 11.4, 4, 'hood']);
 // pages 1-3: 3-tile grid
-for (const n of [1, 2, 3]) for (const y of [2.6, 8.6, 14.6, 20.6]) for (const x of [5, 14, 23]) ZOOMS.push([n, x, y, 1.7, `p${n}-${x}-${y}`]);
-ZOOMS.push([1, 23, 14.2, 2.6, 'mossback']);
+for (const n of [1, 2, 3]) for (const y of [1.9, 4.9, 7.9, 10.9, 13.9]) for (const x of [5.5, 14.5, 23.5]) ZOOMS.push([n, x, y, 2.2, `p${n}-${x}-${y}`]);
+ZOOMS.push([1, 26, 13.2, 2.6, 'mossback']);
 // page 4: tiles and props
 for (const y of [4, 9, 14, 20, 26, 32, 37]) for (const x of [9, 22, 33]) ZOOMS.push([4, x, y, 1.25, `p4-${x}-${y}`]);
 

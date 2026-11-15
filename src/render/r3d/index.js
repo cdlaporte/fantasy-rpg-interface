@@ -570,6 +570,7 @@ export function create() {
     /** Added (tests/debug): the three.js scene and camera. */
     get scene() { return scene; },
     get camera() { return camera; },
+    get webgl() { return renderer; },
     /** Added: the current quality level. */
     get quality() { return quality; },
   };

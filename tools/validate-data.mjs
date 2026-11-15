@@ -212,6 +212,20 @@ export function validateZone(id, d = data) {
     if (s.respawn === undefined) W(`${tag}: respawn not set`);
     if (s.if) walkConds(s.if, (n) => { if (!CONDS.includes(n)) E(`${tag}: unknown condition '${n}'`); }, tag);
   });
+  // awake-enemy budget: enemies whose spawn area center is inside a 30-tile bubble around any reachable spot (cap 24)
+  const sp = (def.spawns || []).map((s) => ({ s, r: s.area || furnitureRect(s, markers) })).filter((o) => o.r);
+  let worst = 0, worstAt = null;
+  for (let y = 0; y < h; y += 3) for (let x = 0; x < w; x += 3) {
+    if (!reachable(y * w + x)) continue;
+    let n = 0;
+    for (const { s, r } of sp) {
+      const dx = r[0] + r[2] / 2 - x, dy = r[1] + r[3] / 2 - y;    // spawn area centers
+      if (dx * dx + dy * dy <= 30 * 30) n += s.n || 0;
+    }
+    if (n > worst) { worst = n; worstAt = [x, y]; }
+  }
+  z.awakeWorst = { n: worst, at: worstAt };
+  if (worst > 24) W(`up to ${worst} spawned enemies within 30 tiles of ${worstAt} (cap 24 awake)`);
   // triggers
   const tids = new Set();
   (def.triggers || []).forEach((t, k) => {
@@ -321,7 +335,7 @@ if (import.meta.url === pathToFileURL(process.argv[1] || '').href) {
   const { errors, warnings, zones } = validateAll(ids);
   for (const id of ids) {
     const z = zones[id];
-    if (z) console.log(`${id.padEnd(8)} ${z.w}x${z.h}  props ${z.props.length - z.decoCount} + deco ${z.decoCount}  markers ${Object.keys(z.markers).length}  build ${z.ms.toFixed(1)} ms`);
+    if (z) console.log(`${id.padEnd(8)} ${z.w}x${z.h}  props ${z.props.length - z.decoCount} + deco ${z.decoCount}  markers ${Object.keys(z.markers).length}  build ${z.ms.toFixed(1)} ms  max enemies in a 30-tile bubble ${z.awakeWorst ? z.awakeWorst.n : 0}`);
   }
   for (const m of warnings) console.log('warn  ' + m);
   for (const m of errors) console.log('ERROR ' + m);

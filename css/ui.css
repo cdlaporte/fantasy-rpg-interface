@@ -177,7 +177,7 @@ canvas.icon-xl { width: 48px; height: 48px; }
 .comp.down .comp-face { filter: grayscale(0.8); }
 
 .pnl-nudges { display: flex; flex-direction: column; gap: 5px; margin-top: auto; padding: 0 3px 3px; }
-.nudge { display: flex; align-items: center; gap: 7px; padding: 5px 7px; margin: 3px; background: var(--gold); color: var(--ink); cursor: pointer;
+.nudge { display: flex; align-items: center; gap: 7px; padding: 5px 7px; margin: 3px; background: var(--gold); color: var(--ink);
   box-shadow: var(--notch-drop), inset 0 3px 0 #fff3c4; animation: nudge 1.2s ease-in-out infinite; font-weight: 600; font-size: 15px; }
 .nudge-text { flex: 1; }
 .nudge-spec { background: #b48cff; }
@@ -222,8 +222,7 @@ canvas.icon-xl { width: 48px; height: 48px; }
 .bigmap-hint { font-size: 14px; display: flex; align-items: center; gap: 4px; color: var(--ink-2); }
 
 /* ------------------------------------------------------------------ HUD: toasts */
-#toasts { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 6px; align-items: center; z-index: 4; transition: top 0.2s; }
-#hud.has-boss #toasts { top: 78px; }
+#toasts { position: absolute; top: 12px; left: 14px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; z-index: 4; max-width: calc(100% - 230px); }
 .toast { display: flex; align-items: center; gap: 7px; padding: 5px 10px 6px 8px; margin: 3px; background: var(--parch); color: var(--ink); font-size: 16px; font-weight: 600;
   box-shadow: var(--notch-drop), inset 0 3px 0 rgba(255, 255, 255, 0.55); animation: toast-in 0.2s steps(3); max-width: 520px; }
 .toast.out { animation: toast-out 0.25s steps(3) forwards; }
@@ -233,8 +232,8 @@ canvas.icon-xl { width: 48px; height: 48px; }
 .toast-bad { background: #ffd2c8; }
 .toast-loot { background: #fff0b8; }
 .toast-quest { background: #e6dcff; }
-@keyframes toast-in { from { transform: translateY(-10px); opacity: 0; } }
-@keyframes toast-out { to { transform: translateY(-8px); opacity: 0; } }
+@keyframes toast-in { from { transform: translateX(-14px); opacity: 0; } }
+@keyframes toast-out { to { transform: translateX(-12px); opacity: 0; } }
 @keyframes bump { 50% { transform: scale(1.06); } }
 
 /* ------------------------------------------------------------------ HUD: banners */
@@ -557,3 +556,19 @@ canvas.icon-xl { width: 48px; height: 48px; }
 
 #file-note { position: fixed; inset: 0; z-index: 100; background: #7fc6ff; color: var(--ink); display: flex; flex-direction: column;
   align-items: center; justify-content: center; text-align: center; font-size: 20px; }
+
+/* narrow screens (1024 wide): the play view is ~744 px */
+@media (max-width: 1150px) {
+  .class-card { width: 226px; }
+  .class-portrait { width: 64px; height: 64px; }
+  .class-blurb { font-size: 15px; }
+  .ab-desc { display: none; }
+  .boon-card { width: 205px; }
+  .boon-row { gap: 14px; }
+  .look-portrait { width: 192px; height: 192px; }
+  .look-row { gap: 44px; }
+  .picker-sub { font-size: 16px; }
+  .pause-side .controls-card { width: 290px; }
+  .pause-box { width: 330px; }
+  .boss { width: 360px; }
+}

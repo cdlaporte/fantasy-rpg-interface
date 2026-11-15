@@ -46,7 +46,7 @@ export default {
     // Balance: outgoing damage multiplier by level (linear between points), applied by the kit to the player's and
     // the familiars' hits. Keeps every coefficient exactly as in CLASSES.md while landing the measured mixed-fight
     // DPS inside the CLASSES band (docs/notes/kit-mage.md). Specs may override with their own `balance.dmgMul`.
-    balance: { dmgMul: [[1, 0.5], [3, 0.5], [5, 0.62], [8, 0.7], [12, 0.7]] },
+    balance: { dmgMul: [[1, 0.5], [3, 0.5], [5, 0.46], [8, 0.55], [12, 0.55]] },
 
     // Classmate Elowen (Sim companions schema, docs/notes/sim.md section 10). 70% of the numbers.
     companion: {

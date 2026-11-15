@@ -160,8 +160,8 @@ export function bot(ctx, st) {
  * Mixed fight: one tough enemy (elite x2.5 hp) + four weak ones of level `level` placed 6 tiles away, scripted play
  * until all fall (cap `cap` s). DPS = enemy hp removed / seconds.
  */
-export function mixedFight(spec, level, boons = [], cap = 45) {
-  const ctx = mk(spec, level, boons, { marker: 'start', seed: 21 });
+export function mixedFight(spec, level, boons = [], cap = 45, seed = 21) {
+  const ctx = mk(spec, level, boons, { marker: 'start', seed });
   const { game, p, input } = ctx;
   game.companions && game.companions.set([]);
   const base = 6 * Math.pow(level, 1.4);
@@ -187,6 +187,13 @@ export function mixedFight(spec, level, boons = [], cap = 45) {
   const left = foes.reduce((s, e) => s + (e.alive && !e.removed ? Math.max(0, e.hp) : 0), 0);
   const secs = steps * DT;
   return { dps: (total - left) / secs, secs, cleared: left === 0, total };
+}
+/** Median mixed-fight DPS over several seeds (the fight is chaotic: knockback, charges, pathing). */
+export function meanDps(spec, level, seeds = [21, 22, 23, 24, 25, 26, 27, 28]) {
+  const rs = seeds.map((sd) => mixedFight(spec, level, [], 45, sd)).sort((a, b) => a.dps - b.dps);
+  const m = rs.length >> 1;
+  const dps = rs.length % 2 ? rs[m].dps : (rs[m - 1].dps + rs[m].dps) / 2;
+  return { dps, secs: rs.reduce((a, r) => a + r.secs, 0) / rs.length, cleared: rs.filter((r) => r.cleared).length / rs.length, runs: rs.map((r) => r.dps) };
 }
 
 // ------------------------------------------------------------------------------------------------ data shape tests
@@ -254,3 +261,61 @@ test('companion Elowen uses the mage companion block (look merged, ranged bolts)
   ctx.step(300);
   assert.ok(comp > 0, 'Elowen deals damage');
 });
+
+// ------------------------------------------------------------------------------------------------ level sweep
+/**
+ * Runs every attack rank and every unlocked ability of the kit against two rings of rats for >= 600 steps.
+ * Returns per-phase records: {name, dmg, fx: Set, resBefore, resAfter, casts}.
+ */
+export function sweep(spec, level, boons = []) {
+  const ctx = mk(spec, level, boons);
+  const { game, p, step, input, rec: r } = ctx;
+  ring(game, 8, 1.5);
+  ring(game, 8, 4, { phase: 0.2 });
+  const phases = [];
+  let steps = 0;
+  const phase = (name, fn) => {
+    refill(ctx);
+    r.reset();
+    const resBefore = game.kits.resource(p).value;
+    const t0 = game.tick;
+    fn();
+    steps += game.tick - t0;
+    phases.push({ name, dmg: r.dmg, fx: new Set(r.fx.keys()), resBefore, resAfter: game.kits.resource(p).value, casts: r.casts.slice(),
+      hits: r.hits.slice() });
+  };
+  const raw = game.kits.active(p).basicMode === 'raw';
+  phase('basic', () => {
+    for (let d = 0; d < 4; d++) {
+      if (raw && game.kits.rank(p) >= 3) {
+        for (const hold of [3, 22, 70]) { input.set({ attackDir: d }); step(hold); input.set({ attackDir: -1 }); step(10); }
+      } else { input.set({ attackDir: d }); step(45); input.set({ attackDir: -1 }); step(5); }
+    }
+  });
+  for (const slot of ['space', 'q', 'f', 'shift']) {
+    if (!game.kits.unlocked(p, slot)) continue;
+    phase(slot, () => {
+      // move a bit toward the ring for movement-directed abilities, then press
+      input.set({ moveX: 1 });
+      step(1);
+      input.set({ moveX: 0 });
+      press(ctx, slot, 2);
+      step(150);
+      // second use after a cooldown reset (hold variant)
+      refill(ctx);
+      press(ctx, slot, 20);
+      step(60);
+    });
+  }
+  // fill to 600 steps with mixed play
+  phase('mixed', () => {
+    let i = 0;
+    while (steps + i < 650) {
+      input.set({ attackDir: (i >> 5) & 3, held: { q: i % 97 === 0, f: i % 131 === 0, shift: i % 211 === 0, space: i % 83 === 0 }, moveX: Math.sin(i / 20) });
+      step(1);
+      i++;
+    }
+    steps += i;
+  });
+  return { ctx, phases, steps: game.tick };
+}

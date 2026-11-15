@@ -19,12 +19,24 @@ const FLARE_AURA = Object.freeze({ style: 'flame', color: '#ff3b2a' });
 // shared helpers (exported for the spec kits)
 
 const FX = makeFxEvent();
+// game.data may override the warrior files partially (tests, mods): merge over the built-in files, one level deep
+// for nums / colors / ranks / look, cached per override object (no per-call allocation).
+const merged = new WeakMap();
+function over(base, d) {
+  if (!d || d === base || !base) return d || base;
+  let m = merged.get(d);
+  if (m) return m;
+  m = Object.assign({}, base, d);
+  for (const k of ['nums', 'colors', 'ranks', 'look']) if (base[k] || d[k]) m[k] = Object.assign({}, base[k], d[k]);
+  merged.set(d, m);
+  return m;
+}
 export const W = {
-  cdef(game) { return (game.data.classes && game.data.classes.warrior) || CLASSDEFS.warrior; },
+  cdef(game) { return over(CLASSDEFS.warrior, game.data.classes && game.data.classes.warrior); },
   nums(game) { return W.cdef(game).nums; },
-  sdef(game, id) { return (game.data.specs && game.data.specs[id]) || SPECDEFS[id]; },
+  sdef(game, id) { return over(SPECDEFS[id], game.data.specs && game.data.specs[id]); },
   snums(game, id) { return W.sdef(game, id).nums; },
-  bdef(game, id) { return (game.data.boons && game.data.boons[id]) || BOONDEFS[id] || null; },
+  bdef(game, id) { return over(BOONDEFS[id], game.data.boons && game.data.boons[id]) || null; },
   bnums(game, id) { const b = W.bdef(game, id); return (b && b.nums) || EMPTY; },
   colors(game) { return W.cdef(game).colors; },
   /** Does the player own boon `id`? (only the player has boons; companions do not run kits) */

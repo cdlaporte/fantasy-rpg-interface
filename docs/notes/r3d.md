@@ -59,19 +59,21 @@ Gallery at 800x450, fitted camera (all items in view; page 0 is a stress page, ~
 
 | Page | draws | tris |
 | --- | --- | --- |
-| 0 humanoids (81 ents, 81 unique models) | ~142 | ~199k |
-| 1 creatures (43) | ~94 | ~83k |
-| 2 projectiles & effects (38) | ~93 | ~32k |
-| 3 fx & fxTags | ~38-60 | ~70-78k |
-| 4 tiles & props | ~31 | ~54k |
+| 0 humanoids (81 ents, ~80 unique models) | 132 | 192k |
+| 1 creatures (43) | 92 | 81k |
+| 2 projectiles & effects (38) | 73 | 21k |
+| 3 fx & fxTags (varies with the fx cycle) | 35-60 | 64-78k |
+| 4 tiles & props | 24 | 51k |
 
-Busy scenes at 1086x657 (the Chromebook play view), quality 2 / 1 / 0:
+Busy scenes at 1086x657 (the Chromebook play view), quality 2 / 1 / 0 (asserted: <= 120 draws, <= 120k triangles, <= 8 programs):
 
 | Scene | draws | tris |
 | --- | --- | --- |
-| town square, 12 NPCs + player + 2 companions, fx | 55 / 51 / 33 | ~106k / ~100k / ~62k |
-| forest clearing, 24 enemies (4 kinds), 6 projectiles, fx | 43 / 38 / 28 | ~103k / ~97k / ~70k |
-| test zone in the real game | ~11-17 | ~28-33k |
+| town square, 12 NPCs + player + 2 companions, fx | 56 / 53 / 31 | 106k / 102k / 63k |
+| forest clearing, 24 enemies (4 kinds), 6 projectiles, fx | 39 / 34 / 23 | 101k / 98k / 69k |
+| test zone in the real game | 10-17 | 28-33k |
+
+Zone build time (all chunks at load): ~60-110 ms for a 40x32 / 48x36 zone in SwiftShader (`stats().loadMs`).
 
 Model sizes (triangles, body + outline): humanoid ~1230 + 750, wizard ~1570 + 940, Laporte ~2050 + 1520, quadruped 890 + 670,
 blob 570 + 340, flyer 840 + 680, plant 760 + 540, golem 1170 + 1100, Mossback 1900 + 1760.
@@ -111,7 +113,7 @@ Gallery page 0 exceeds the budget on purpose (it shows every look value at once)
 
 - `renderer.canvas` (the `<canvas class="r3d">`), `renderer.quality`, and for tests/debug `renderer.scene`, `renderer.camera`,
   `renderer.webgl` (the three WebGLRenderer).
-- `stats()` adds `programs, models, fxInstances, chunks, chunkTris`; `unknown` lists unknown look/fx values as `kind:value`.
+- `stats()` adds `programs, models, fxInstances, chunks, chunkTris, loadMs`; `unknown` lists unknown look/fx values as `kind:value`.
 - WebGL context loss: `init` throws when no context can be created (the loader falls back to 2D). A context lost later is
   reported with `console.warn`, a bubbling `r3d:contextlost` DOM event on the host element, and rendering pauses until restored.
 

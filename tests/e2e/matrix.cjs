@@ -28,10 +28,12 @@ const K = require('./kitdriver.cjs');
           for (const what of list) {
             const label = `${renderer} ${kit.id} L${level} ${what === 'basic' ? 'basic (' + s.basic + ')' : what + ' (' + s.abilities.find((a) => a.slot === what).id + ')'}`;
             if (what !== 'basic' || list.length > 1) await K.setup(page, kit, level);   // fresh state per cast
+            const res0 = await K.resource(page);
             await K.castStart(page, what, 6);
             await K.stepFrames(page, 6);
             await K.castEnd(page, what, 24);
             casts++;
+            if (what !== 'basic' && !(await K.fired(page, what, res0))) { failed++; console.log('FAIL (ability did not fire)', label); }
             const st = await page.evaluate(() => ({ unknown: window.__game.renderStats().unknown, errs: window.__game.errors() }));
             if (st.unknown.length || st.errs.length || errors.length) {
               failed++;

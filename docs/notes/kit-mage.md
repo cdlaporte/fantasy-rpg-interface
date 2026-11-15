@@ -1,7 +1,7 @@
 # Mage class package notes (Mage, Conjurer, Sorcerer, Monk)
 
 Files: `src/core/kits/{mage,conjurer,sorcerer,monk}.js`, `src/data/classdefs/mage.js`, `src/data/specs/mage.js`,
-`src/data/boondefs/mage.js`, `tests/node/kit-mage*.test.mjs` (79 tests, `kit-mage-lib.test.mjs` is the shared harness).
+`src/data/boondefs/mage.js`, `tests/node/kit-mage*.test.mjs` (71 tests, `kit-mage-lib.test.mjs` is the shared harness).
 Run: `node --test tests/node`.
 
 ## What each kit does

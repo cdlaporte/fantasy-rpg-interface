@@ -127,6 +127,7 @@ async function play(page, body, { timeout = 90, policy, until, log = [], onModal
         assert.ok(await page.$eval('#bossbar', (n) => getComputedStyle(n).display !== 'none' && n.textContent.includes('Mossback')), '#bossbar shows Mossback');
         await shot(page, 'boss-bar');
         assert.deepStrictEqual(errors, [], 'console errors');
+        assert.deepStrictEqual(await page.evaluate(() => window.__game.renderStats().unknown), [], 'renderStats().unknown after the scenarios');
         await page.close();
       });
 
@@ -138,6 +139,15 @@ async function play(page, body, { timeout = 90, policy, until, log = [], onModal
         const log = [];
         const S = (k) => shot(page, k);
 
+        // the right renderer is really running (3D: a real WebGL context, not a software canvas fallback)
+        assert.strictEqual(await page.$eval('#view canvas', (c) => c.className), 'r' + renderer, 'canvas of the ' + renderer + ' renderer');
+        if (renderer === '3d') {
+          const gl = await H.webglInfo(page);
+          assert.ok(gl && /ANGLE|SwiftShader|WebGL|GPU|Mesa|NVIDIA|Intel|AMD/i.test(gl), 'WebGL in use: ' + gl);
+          assert.strictEqual(await page.evaluate(() => !!(window.__game.renderStats().programs)), true, 'three.js programs compiled');
+          console.log('      webgl:', gl);
+        }
+        const xp0 = await page.evaluate(() => { const s = window.__game.state(); return s.level * 1e6 + s.xp; });
         // intro: control, tutorial key caps, the stick
         await play(page, `return game.inputLock === 0 && !!game.cutscene.tutorial;`, { log });
         await H.frames(page);
@@ -155,6 +165,10 @@ async function play(page, body, { timeout = 90, policy, until, log = [], onModal
         // rats and the giant rat
         await play(page, `await bot.walkTo('rats_1', {r: 3}); await bot.fight({kind: 'rat', until: () => game.quests.step('main_enroll') >= 3}); return true;`, { log, timeout: 120 });
         await S('03-rats');
+        const ratsDone = await page.evaluate(() => window.__game.game.quests.step('main_enroll'));
+        assert.ok(ratsDone >= 3, 'a rat was defeated (quest step ' + ratsDone + ')');
+        const xp1 = await page.evaluate(() => { const s = window.__game.state(); return s.level * 1e6 + s.xp; });
+        assert.ok(xp1 > xp0, `XP rose (${xp0} -> ${xp1})`);
         await play(page, `await bot.walkTo('rats_2', {r: 3}); await bot.fight({kind: 'rat', until: () => game.quests.step('main_enroll') >= 4});
           await bot.walkTo('big_rat', {r: 3}); await bot.fight({kind: 'giant_rat', kite: true, until: () => game.quests.step('main_enroll') >= 5}); return true;`, { log, timeout: 180 });
         // ambush: dialogue by keyboard, fight to 1 HP
@@ -262,6 +276,8 @@ async function play(page, body, { timeout = 90, policy, until, log = [], onModal
         assert.strictEqual(boons, 1, 'boon picked by keyboard');
         await S('16-after-boon');
 
+        const unk = await page.evaluate(() => window.__game.renderStats().unknown);
+        assert.deepStrictEqual(unk, [], 'renderStats().unknown');
         const gErr = await page.evaluate(() => window.__game.errors());
         assert.deepStrictEqual(gErr, [], '__game.errors()');
         assert.deepStrictEqual(errors, [], 'console errors');

@@ -3,7 +3,8 @@
 A bright, light-hearted fantasy action-RPG for reviewing statistics and geometry, built to run on school
 Chromebooks in Chrome. The same game runs in two looks, chosen on the title screen (and switchable from the
 pause menu): **2D Pixel** (Canvas 2D pixel art) and **3D Toy Box** (three.js, cel-shaded). All art is
-generated in code; there are no image files and no build step.
+generated in code; there are no image files and no build step. The game runs in the 3D toy-box look; the 2D
+pixel renderer is kept only as an automatic fallback for computers without WebGL (or `?renderer=2d`).
 
 ## What is in this build (the "vertical slice")
 
@@ -23,20 +24,33 @@ generated in code; there are no image files and no build step.
 | Key | Action |
 | --- | --- |
 | W A S D | Move |
-| Arrow keys (or I J K L) | Attack in that direction (hold to keep attacking) |
+| I J K L (or arrow keys) | Attack in that direction; hold two (e.g. I + L) to attack diagonally |
 | E | Talk, open, pick up |
-| Space, Q, F, Shift | Class abilities, unlocked as you level |
+| Space, U, O, H | Class abilities, unlocked as you level (Q, F, Shift also work) |
 | 1 - 6 | Use items |
 | Tab | Choose a boon when one is ready |
 | M | Map |
-| Esc or P | Pause (save, switch 2D/3D, quality, controls) |
+| Esc or P | Pause (save, settings, controls) |
+
+Every key can be changed in **Options → Settings** on the title screen or from the pause menu.
+
+## Teacher mode
+
+On the title screen choose **Options → Teacher options** and enter the PIN (**9631**). From there you can start or
+continue a game in teacher mode, turn questions on or off, and switch individual Unit 4 topics on or off. In a
+teacher game, the pause menu has **Teacher tools**: add XP, level up or down (1-12), pick any class or subclass
+instantly, god mode, extra gold, and jump to any part of the story. Questions show their answer and worked
+solution. The PIN is a classroom lock, not real security: anyone who reads the code can find it.
 
 ## Math questions
 
-Questions are not written yet. The game already calls a question "gate" at level-up boons, the
-specialization, rune gates and rune chests, boss shield phases, the Focus scroll, Academy lessons, quest
-turn-ins and shop haggling. For now a clearly labeled placeholder card appears instead. How to plug in a
-question bank: `docs/QUESTIONS.md`. URL option `questions=off|auto|stub` controls the placeholder.
+The game asks generated **Geometry C Unit 4: Similar Figures** problems (ratios, extended ratios, proportions,
+missing sides of similar triangles, AA/SSS/SAS, the Triangle Proportionality Theorem, parallel lines and
+proportional parts, the Triangle Angle Bisector Theorem) with drawn diagrams, at level-up boons, the
+specialization, rune gates and rune chests, boss shield phases, the Focus scroll, Academy lessons, quest turn-ins
+and shop haggling. Rune gates and boss shields need a correct answer (a wrong answer shows the worked solution and
+then a new problem); elsewhere a wrong answer only gives a smaller reward. Details and how to add a future unit:
+`docs/QUESTIONS.md`.
 
 ## Play it locally
 

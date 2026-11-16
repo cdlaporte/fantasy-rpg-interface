@@ -540,6 +540,33 @@ export default {
     }
 
     // ---------- leveling ----------
+    /** Boon slots earned by a level (BOON_LEVELS reached). */
+    function boonSlots(level) { let n = 0; for (const L of BOON_LEVELS) if (L <= level) n++; return n; }
+
+    /**
+     * round 2 (teacher mode): going DOWN a level. Boons taken above the new level are removed, pending boons are
+     * recomputed (the freed slots that still exist can be picked again with Tab), the kit is re-equipped (holds and
+     * abilities above the level end; abilities and attack rank follow the level), the look is refreshed (aura).
+     */
+    function levelDown(old, newLevel) {
+      const p = game.player;
+      if (p) { p.hp = p.hpMax; p.alive = true; }
+      const kept = [], removed = [];
+      for (const id of api.boons) ((api.boonLevels[id] || 1) <= newLevel ? kept : removed).push(id);
+      for (const id of removed) delete api.boonLevels[id];
+      api.boons = kept;
+      api.pendingBoons = Math.max(0, Math.min(boonSlots(newLevel) - kept.length, api.pendingBoons + removed.length));
+      api.offer = null;
+      if (!api.specId && newLevel < SPEC_LEVEL) api.pendingSpec = false;
+      applyKit();
+      recalc();
+      if (p) p.hp = p.hpMax;
+      refreshLook();
+      if (removed.length) emit('boons:removed', { ids: removed });
+      const r = rankAt(newLevel), oldRank = rankAt(old);
+      if (r < oldRank) emit('rank:down', { rank: r, prev: oldRank });
+    }
+
     function levelTo(newLevel, opts = {}) {
       const old = api.level;
       newLevel = Math.max(1, Math.min(cap(), newLevel | 0));
@@ -550,7 +577,11 @@ export default {
       api.xpNext = xpNext(newLevel);
       recalc();
       const p = game.player;
-      if (newLevel < old) { if (p) p.hp = p.hpMax; return 0; }
+      if (newLevel < old) {
+        levelDown(old, newLevel);
+        emit('level:set', { level: newLevel, prev: old });
+        return 0;
+      }
       if (p) { p.hp = p.hpMax; p.alive = true; }
       const gained = newLevel - old;
       if (!opts.quiet && p) {
@@ -574,7 +605,16 @@ export default {
       }
       if (old < SPEC_LEVEL && newLevel >= SPEC_LEVEL) markSpecReady(opts.quiet);
       if (old < AURA_LEVEL && newLevel >= AURA_LEVEL) refreshLook();
+      emit('level:set', { level: newLevel, prev: old });
       return gained;
+    }
+
+    /** Jump to a level (debug, teacher tools): xp restarts at 0 of the new level (full at the cap). */
+    function setLevel(n, opts = {}) {
+      const was = api.level;
+      const r = levelTo(n, opts);
+      if (api.level !== was) api.xp = api.level >= cap() ? api.xpNext : 0;
+      return r;
     }
 
     function addXp(n) {
@@ -720,6 +760,7 @@ export default {
       }
       const def = boonDef(id);
       api.boons.push(id);
+      api.boonLevels[id] = api.level;
       if (api.pendingBoons > 0) api.pendingBoons--;
       api.offer = null;
       const p = game.player;
@@ -914,10 +955,13 @@ export default {
     // ---------- api ----------
     const api = {
       level: 1, xp: 0, xpTotal: 0, xpNext: xpNext(1), classId: null, specId: null, boons: [],
+      /** round 2: boon id -> the level it was taken at (a level-down removes boons taken above the new level). */
+      boonLevels: {},
       pendingBoons: 0, pendingSpec: false, offer: null, downed: false, downPromise: null,
       xpFor: xpNext,
       addXp,
-      setLevel(n, opts) { return levelTo(n, opts || {}); },
+      setLevel(n, opts) { return setLevel(n, opts || {}); },
+      boonSlots,
       setClass, setSpec,
       rank() { return rankAt(api.level); },
       rankAt,
@@ -935,7 +979,7 @@ export default {
       /** Reset to a fresh level-1 novice (debug reset). */
       reset() {
         api.level = 1; api.xp = 0; api.xpTotal = 0; api.xpNext = xpNext(1); api.classId = null; api.specId = null;
-        api.boons = []; api.pendingBoons = 0; api.pendingSpec = false; api.offer = null; api.downed = false;
+        api.boons = []; api.boonLevels = {}; api.pendingBoons = 0; api.pendingSpec = false; api.offer = null; api.downed = false;
         lastReviveAsk = -Infinity;
         updateNames(); applyKit(); recalc();
         if (game.player) game.player.hp = game.player.hpMax;
@@ -981,6 +1025,7 @@ export default {
     const a = game.sys.progression;
     return {
       level: a.level, xp: a.xp, xpTotal: a.xpTotal, classId: a.classId, specId: a.specId, boons: a.boons.slice(),
+      boonLevels: Object.assign({}, a.boonLevels),
       pendingBoons: a.pendingBoons, pendingSpec: a.pendingSpec, offer: a.offer ? a.offer.map((o) => Object.assign({}, o)) : null,
     };
   },
@@ -995,6 +1040,12 @@ export default {
     a.classId = j.classId && a.classDef(j.classId) ? j.classId : null;
     a.specId = j.specId && a.specDef(j.specId) ? j.specId : null;
     a.boons = Array.isArray(j.boons) ? j.boons.slice() : [];
+    // older saves: the i-th boon filled the i-th boon slot (4, 6, 8, ...)
+    a.boonLevels = {};
+    a.boons.forEach((id, i) => {
+      const L = j.boonLevels && Number(j.boonLevels[id]);
+      a.boonLevels[id] = L > 0 ? L : Math.min(a.level, BOON_LEVELS[Math.min(i, BOON_LEVELS.length - 1)]);
+    });
     a.pendingBoons = Math.max(0, j.pendingBoons | 0);
     a.pendingSpec = !!j.pendingSpec;
     a.offer = Array.isArray(j.offer) && j.offer.length ? j.offer : null;

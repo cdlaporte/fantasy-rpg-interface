@@ -416,6 +416,118 @@ export default {
       },
     };
 
+    // ---------- round 2: places (teacher "Go to") and the teacher tools ----------
+    // Unlike the scenarios, these keep the player's level, class, spec and boons. Story flags are made consistent:
+    // the road and the ambush replay the intro (story flags reset to that point); town and later only ADD the flags
+    // of that point (intro done, cloak off) plus the ones the player's class / spec imply, so nothing replays twice.
+    const KEEP_FLAGS = ['look_choice', 'teacher_game'];
+    const PLACES = [
+      { id: 'road', name: 'Country road (start)' },
+      { id: 'ambush', name: 'The ambush' },
+      { id: 'town', name: 'Flinkerton town' },
+      { id: 'academy', name: 'The Academy' },
+      { id: 'forest', name: 'Whisperwood forest' },
+      { id: 'forest_boss', name: 'Forest boss (Old Mossback)' },
+    ];
+    function resetStory(list) {
+      for (const k of Object.keys(game.flags)) if (!KEEP_FLAGS.includes(k)) delete game.flags[k];
+      for (const k of list) game.setFlag(k, true);
+    }
+    function addFlags(list) { for (const k of list) if (!game.flags[k]) game.setFlag(k, true); }
+    function classFlags() {
+      const pr = S('progression');
+      if (pr.classId) addFlags(['town_seen', 'class_chosen', 'forest_open']);
+      if (pr.specId) addFlags(['spec_ready', 'spec_ceremony_done']);
+    }
+    function settle() {
+      const pr = S('progression');
+      if (pr.refreshLook) pr.refreshLook();
+      const p = game.player;
+      if (p) { p.hp = p.hpMax; p.alive = true; }
+      game.snapCamera();
+    }
+    function goTo(place) {
+      const m = [];
+      const pr = S('progression');
+      try {
+        clearTransient();
+        let z = null;
+        switch (place) {
+          case 'road':
+            resetStory(STORY_FLAGS.intro);
+            z = load('intro', 'start', m);
+            play('intro_wake', m);
+            break;
+          case 'ambush':
+            resetStory(STORY_FLAGS.tutorial);
+            z = load('intro', 'clearing', m);
+            play('ambush', m);
+            break;
+          case 'town':
+            addFlags(STORY_FLAGS.rescued);
+            classFlags();
+            z = load('town', 'gate_south', m);
+            // without a class the arrival walk leads to the class pick (skipping it does too)
+            if (!pr.classId) play('town_arrival', m);
+            break;
+          case 'academy':
+            addFlags(STORY_FLAGS.town);
+            classFlags();
+            z = load('academy', 'hall', m);
+            if (!pr.classId && !play('class_pick', m) && pr.openClassPicker) pr.openClassPicker();
+            break;
+          case 'forest':
+          case 'forest_boss': {
+            if (!pr.classId && pr.setClass) pr.setClass('warrior', { quiet: true });
+            addFlags(STORY_FLAGS.classed);
+            classFlags();
+            if (place === 'forest') { z = load('forest', 'entry_town', m); companionsFor(pr.classId); break; }
+            addFlags(['spec_ready', 'gate_grove_seal']);
+            if (game.flags.mossback_defeated) delete game.flags.mossback_defeated;
+            z = load('forest', 'boss_arena', m);
+            companionsFor(pr.classId);
+            if (!play('forest_boss_intro', m)) {
+              const p = game.player;
+              const boss = spawnOne('old_mossback', p.x, p.y - 5, {}, m);
+              if (boss && boss.kind !== 'old_mossback') boss.tags.push('boss');
+            }
+            break;
+          }
+          default:
+            return { ok: false, id: place, missing: ['place:' + place] };
+        }
+        settle();
+        return { ok: m.length === 0, id: place, zone: z, missing: m };
+      } catch (e) {
+        api.logError(`goTo ${place}: ${e && (e.stack || e)}`);
+        return { ok: false, id: place, missing: m.concat('error:' + (e && e.message)) };
+      }
+    }
+    api.places = () => PLACES.map((p) => Object.assign({}, p));
+    api.goTo = goTo;
+
+    /**
+     * Teacher tools (pause menu "Teacher tools"). Every call does nothing and returns false unless the game runs in
+     * teacher mode (game.teacher === true, set only by main.js after the PIN).
+     */
+    const on = () => game.teacher === true;
+    const gate = (fn) => (...a) => (on() ? fn(...a) : false);
+    const P = () => S('progression');
+    api.teacher = {
+      enabled: on,
+      addXp: gate((n) => { P().addXp(n); return true; }),
+      levelUp: gate(() => { const pr = P(); if (pr.level >= ((game.config && game.config.levelCap) || 12)) return false; pr.setLevel(pr.level + 1); return true; }),
+      levelDown: gate(() => { const pr = P(); if (pr.level <= 1) return false; pr.setLevel(pr.level - 1); return true; }),
+      setLevel: gate((n) => { P().setLevel(n); return true; }),
+      setClass: gate((id) => P().setClass(id)),
+      setSpec: gate((id) => P().setSpec(id)),
+      god: gate((b) => { api.god(b); return true; }),
+      isGod: () => god,
+      gold: gate((n) => { const inv = S('inventory'); if (inv.addGold) inv.addGold(n); return true; }),
+      goTo: gate((id) => goTo(id)),
+      places: api.places,
+    };
+
     // fresh-state snapshot for reset(), after every system has initialized
     game.bus.once('zone:load', () => { try { baseline = game.saveSystems(); } catch { baseline = null; } });
 

@@ -1,5 +1,6 @@
 // Town arrival, the class pick in the Grand Hall, and the level-8 specialization ceremony.
 // `onSkip` (added): ops run instead of the remaining steps when a skippable cutscene is skipped.
+import { tutorialStep as tut } from '../../platform/bindings.js';  // round 2: key names follow the bindings
 const DOWN = 2;
 const UP = 0;
 
@@ -20,7 +21,7 @@ export default {
       ['cameraReset'],
       ['letterbox', false],
       ['unlockInput'],
-      ['tutorial', 'Follow Mr. Laporte up the main street.', ['W']],
+      tut('Follow Mr. Laporte up the main street.', 'move_up'),
       ['escort', 'laporte', { to: 'square' }],
       ['tutorial', null],
       ['bubble', 'laporte', 'The fountain grants wishes. Mostly it collects coins.', 3],

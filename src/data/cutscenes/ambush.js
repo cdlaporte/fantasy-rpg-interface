@@ -2,6 +2,7 @@
 // Started by the intro zone trigger at `clearing` (if tutorial_done and not ambush_done). Chains into `rescue`.
 // `fx` steps may give `at` (a marker name, 'player', an npc/entity id string or '@tag'); Story resolves x/y from it,
 // one event per entity for '@tag'.
+import { tutorialStep as tut } from '../../platform/bindings.js';  // round 2: key names follow the bindings
 export default {
   ambush: {
     id: 'ambush', skippable: false,
@@ -31,7 +32,7 @@ export default {
       ['cameraReset'],
       ['letterbox', false],
       ['unlockInput'],
-      ['tutorial', 'Trapped! Fight back!', ['↑', '←', '↓', '→']],
+      tut('Trapped! Fight back!', 'attack'),
       ['control', { until: ['hp', 'player', '<=', 1], minHp: 1 }],
       ['tutorial', null],
       ['flag.set', 'ambush_done', true],

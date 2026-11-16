@@ -87,10 +87,10 @@ export default {
     boss: null,
   },
 
-  // L18 heavy charger (a small elite: x1.8 hp, x2 xp). Paws the starry floor before a long comet charge.
+  // L18 heavy charger (a small elite: x1.8 hp, x1.6 xp). Paws the starry floor before a long comet charge.
   astral_golem: {
     id: 'astral_golem', name: 'Astral Golem', level: 18, tags: ['construct', 'golem'],
-    stats: { hp: 370, power: 29, defense: 4, speed: 1.9, radius: 0.6, xp: 150 },
+    stats: { hp: 370, power: 29, defense: 4, speed: 1.9, radius: 0.6, xp: 120 },
     flying: false,
     ai: { brain: 'charger', aggro: 7, leash: 12 },
     attacks: [
@@ -132,7 +132,7 @@ export default {
   // Summoned by Malgrim Ascended in phase 2 (tag malgrim_minion). Chases, slashes, rushes with the shield.
   star_hexguard: {
     id: 'star_hexguard', name: 'Star Hexguard', level: 17, tags: ['construct', 'hexguard', 'minion'],
-    stats: { hp: 150, power: 24, defense: 2, speed: 3.0, radius: 0.38, xp: 30 },
+    stats: { hp: 150, power: 24, defense: 2, speed: 3.0, radius: 0.38, xp: 20 },
     flying: false,
     ai: { brain: 'chaser', aggro: 14, leash: 24 },
     attacks: [
@@ -154,7 +154,7 @@ export default {
   // hp tuned so a level-20 player with both classmates wins in about 2-3 minutes (docs/notes/r3-aether.md).
   malgrim_ascended: {
     id: 'malgrim_ascended', name: 'Malgrim Ascended', level: 20, tags: ['boss', 'villain', 'story'],
-    stats: { hp: 7000, power: 26, defense: 4, speed: 2.8, radius: 0.9, xp: 1000 },
+    stats: { hp: 7000, power: 26, defense: 4, speed: 2.8, radius: 0.9, xp: 500 },
     flying: false,
     ai: { brain: 'boss', aggro: 16, leash: 24, keepRange: 4.5, blinkCd: 7 },
     attacks: [

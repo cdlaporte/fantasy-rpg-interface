@@ -69,7 +69,7 @@ export default {
         k: { tile: 'cloud', mix: [['grass', 0.12, 4]],
           deco: { cloud_puff: 0.06, moon_flower: 0.008 },
           fringe: { cloud_puff: 0.5 } },
-        p: { tile: 'starfloor', mix: [['rune_floor', 0.2, 5]],
+        p: { tile: 'starfloor', mix: [['rune_floor', 0.12, 6]],
           deco: { moon_flower: 0.01 },
           fringe: { cloud_puff: 0.3 } },
         s: { tile: 'grass', mix: [['flowers', 0.3, 3], ['cloud', 0.1, 5]],
@@ -121,7 +121,8 @@ export default {
         { line: [50, 21, 50, 34], width: 3, tile: 'rune_floor', reserve: true },
         // ---- the Orrery Plaza: a starry disc with a rune ring around the Great Orrery
         { disc: [50, 44, 9.6], tile: 'starfloor', reserve: true },
-        { disc: [50, 44, 7.2], r0: 6.2, tile: 'rune_floor', reserve: true },
+        { disc: [50, 44, 4.8], r0: 3.9, tile: 'rune_floor', reserve: true },   // two orbit rings around the orrery
+        { disc: [50, 44, 8.0], r0: 7.1, tile: 'cloud', reserve: true },
         // ---- cloud paths (3 wide)
         { line: [50, 54, 50, 66], width: 3, tile: 'cloud', reserve: true },     // camp -> plaza
         { line: [24, 74, 38, 74], width: 3, tile: 'cloud', reserve: true },     // camp -> moon meadow
@@ -189,6 +190,11 @@ export default {
       { kind: 'bench', x: 51, y: 75 },
       { kind: 'banner', x: 40, y: 75, look: { cloth: '#4b3fa8', emblem: '#ffe680' } },
       lamp(38, 72), lamp(61, 74), lamp(48, 64),
+      { kind: 'table', x: 50, y: 68 }, { kind: 'chair', x: 49, y: 68 }, { kind: 'chair', x: 52, y: 68 },
+      { kind: 'cauldron', x: 43, y: 75 },
+      { kind: 'flowers_blue', x: 56, y: 74 }, { kind: 'flowers_blue', x: 57, y: 75 }, { kind: 'flowers_wild', x: 38, y: 70 },
+      { kind: 'moon_flower', x: 52, y: 72 }, { kind: 'moon_flower', x: 44, y: 78 }, { kind: 'moon_flower', x: 55, y: 78 },
+      { kind: 'bush_flower', x: 37, y: 74 }, { kind: 'tree_blossom', x: 60, y: 69 },
       { kind: 'sign', x: 47, y: 64, id: 'sign_camp', interact: { prompt: 'Read', do: [['toast', 'North: the Orrery Plaza. West: Moon Meadow. East: the Cloud Banks.', 'info']] } },
       // Orrery Plaza: the Great Orrery and its ring of star lamps
       { kind: 'orrery', x: 49, y: 43, id: 'orrery',
@@ -218,6 +224,11 @@ export default {
       { kind: 'sign', x: 17, y: 70, id: 'sign_moon', interact: { prompt: 'Read', do: [['toast', 'Moon Meadow. Moths asleep. Please keep it that way. Shh.', 'info']] } },
       { kind: 'statue', x: 12, y: 38, look: { stone: '#fff6d0', base: '#c9a6ff' } },
       lamp(8, 34), lamp(18, 34), lamp(8, 46), lamp(18, 46),
+      // Nimbus's cloud pen (fence ring, open to the south-west)
+      ...[84, 85, 86, 87, 88].map((x) => ({ kind: 'fence_white', x, y: 66 })),
+      ...[67, 68, 69].map((y) => ({ kind: 'fence_white', x: 88, y })),
+      ...[67, 68].map((y) => ({ kind: 'fence_white', x: 84, y })),
+      ...[86, 87, 88].map((x) => ({ kind: 'fence_white', x, y: 70 })),
       { kind: 'sign', x: 76, y: 70, id: 'sign_clouds', interact: { prompt: 'Read', do: [['toast', 'Cloud Banks. Do not hug the clouds. They hug back. Hard.', 'info']] } },
       { kind: 'ruin_pillar', x: 78, y: 36 }, { kind: 'ruin_pillar', x: 86, y: 36 }, { kind: 'ruin_pillar_broken', x: 86, y: 44 },
       // floating rocks drifting in the open sky

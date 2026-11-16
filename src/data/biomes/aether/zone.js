@@ -228,7 +228,7 @@ export default {
     spawns: [
       { kind: 'moon_moth', area: [5, 64, 20, 18], n: 4, respawn: 70, levelOffset: -2 },
       { kind: 'cloud_puffling', area: [73, 63, 17, 20], n: 5, respawn: 60, levelOffset: -1 },
-      { kind: 'clockwork_owl', area: [38, 34, 24, 18], n: 4, respawn: 90, levelOffset: 0, clear: false },
+      { kind: 'clockwork_owl', area: [38, 34, 24, 18], n: 4, respawn: 60, levelOffset: 0 },
       { kind: 'star_sprite', area: [5, 30, 18, 22], n: 5, respawn: 60, levelOffset: 0 },
       { kind: 'astral_golem', area: [74, 30, 16, 20], n: 3, respawn: 120, levelOffset: 1 },
       // Malgrim Ascended waits on the summit whenever he is undefeated; the arena trigger plays aether_boss_intro.

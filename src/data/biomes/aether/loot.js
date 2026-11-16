@@ -15,7 +15,7 @@ export default {
     id: 'aether_rune', gold: [45, 75],
     items: [
       { id: 'potion_big', n: 1, p: 0.7 },
-      { id: 'star_chart', n: 1, p: 0.6 },
+      { id: 'star_chart', n: 1, p: 1 },
       { id: 'moon_tea', n: 2, p: 0.5 },
       { id: 'focus_scroll', n: 1, p: 0.35 },
     ],

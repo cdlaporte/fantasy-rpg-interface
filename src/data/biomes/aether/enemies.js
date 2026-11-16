@@ -83,7 +83,7 @@ export default {
     onDeath: null,
     look: { rig: 'flyer', size: 0.6, colors: { body: '#c8a060', belly: '#f4e3c4', accent: '#e0b850', eye: '#7fd6ff' },
       features: ['wings_bird', 'orb'], hero: null },
-    drops: { gold: [3, 16], goldChance: 0.65, items: [{ id: 'star_chart', p: 0.5 }, { id: 'potion_small', p: 0.06 }] },
+    drops: { gold: [3, 16], goldChance: 0.65, items: [{ id: 'star_chart', p: 0.55 }, { id: 'potion_small', p: 0.06 }] },
     boss: null,
   },
 

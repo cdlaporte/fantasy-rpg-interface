@@ -1,7 +1,7 @@
 // Aether Gardens quests. Rewards sized for levels 15-20 (about 40% of a level for a side quest: xpNext(18) = 1146).
 //   aether_finale (main): starts on arrival (zone trigger `arrive`); every step after the talk is a flag, so a player who
 //     does things out of order still finishes it. Its last flag (end_of_term) is set by the finale cutscene.
-//   aether_star_charts (Celeste): five star charts from the clockwork owls (and rune chests).
+//   aether_star_charts (Celeste): four star charts from the clockwork owls (one in each rune chest).
 //   aether_puff_roundup (Nimbus): calm six cloud pufflings.
 export default {
   aether_finale: {
@@ -20,11 +20,11 @@ export default {
   aether_star_charts: {
     id: 'aether_star_charts', name: 'Charts of the Stars', giver: 'celeste', req: [], companions: null,
     steps: [
-      { text: 'Recover Celeste\'s star charts from the owls. (5)', goal: { type: 'collect', item: 'star_chart', n: 5 } },
+      { text: 'Recover Celeste\'s star charts from the owls. (4)', goal: { type: 'collect', item: 'star_chart', n: 4 } },
       { text: 'Bring the star charts to Celeste.', goal: { type: 'talk', npc: 'celeste' } },
     ],
     rewards: { xp: 450, gold: 120, items: [{ id: 'moon_tea', n: 3 }, { id: 'focus_scroll', n: 1 }] },
-    onDone: [['take', 'star_chart', 5], ['rel', 'celeste', 2]],
+    onDone: [['take', 'star_chart', 4], ['rel', 'celeste', 2]],
   },
   aether_puff_roundup: {
     id: 'aether_puff_roundup', name: 'Puffling Round-Up', giver: 'nimbus', req: [], companions: null,

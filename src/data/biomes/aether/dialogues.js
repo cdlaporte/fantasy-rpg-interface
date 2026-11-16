@@ -37,9 +37,9 @@ export default {
       },
       charts: {
         say: [S('celeste', 'My star charts blew away in his storm. The clockwork owls grabbed them.', 'worried'),
-          S('celeste', 'They think they are "filing" them. They are not. Could you bring back five?')],
+          S('celeste', 'They think they are "filing" them. They are not. Could you bring back four?')],
         options: [
-          { text: 'Five star charts. On it.', do: [['quest.start', 'aether_star_charts']], goto: 'charts_yes' },
+          { text: 'Four star charts. On it.', do: [['quest.start', 'aether_star_charts']], goto: 'charts_yes' },
           { text: 'Why owls?', goto: 'owls' },
           { text: 'Maybe later.', goto: 'more' },
         ],
@@ -48,16 +48,16 @@ export default {
         say: [S('celeste', 'I built them to help. They help the way a cat helps with homework.'),
           S('celeste', 'They perch around the orrery and fire gears. Step aside from the bright line.')],
         options: [
-          { text: 'Five star charts. On it.', do: [['quest.start', 'aether_star_charts']], goto: 'charts_yes' },
+          { text: 'Four star charts. On it.', do: [['quest.start', 'aether_star_charts']], goto: 'charts_yes' },
           { text: 'Maybe later.', goto: 'more' },
         ],
       },
       charts_yes: {
-        say: [S('celeste', 'Wonderful. The owls drop them when they... retire. The rune chests may hold one too.', 'happy')],
+        say: [S('celeste', 'Wonderful. The owls drop them when they... retire. The rune chests on the islets hold one each.', 'happy')],
         goto: 'more',
       },
       charts_active: {
-        say: [S('celeste', 'Five charts, please. Owls in the plaza, mostly. Check the islets for rune chests, too.')],
+        say: [S('celeste', 'Four charts, please. Owls in the plaza, mostly. The rune chests on the islets hold one each.')],
         goto: 'more',
       },
       thanks: {

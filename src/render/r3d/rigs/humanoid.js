@@ -184,6 +184,13 @@ function buildTorso(k, s, tw, sw) {
       // collar + zipper + undershirt peek
       k.lineless = true;
       k.color(collar).add(T.cyl(0.9, 1, 12, false), [0, 0.6, 0], [0.11, 0.07, 0.09]);
+      if (lap) {
+        // high mantle collar in the cape's maroon (wings beside the jaw, gold trim) with a gold clasp at the throat
+        const mc = C((s.cape && s.cape.color) || '#7a2e3b');
+        k.color(mc).add(T.cyl(1.15, 0.8, 14), [0, 0.66, -0.02], [0.215, 0.12, 0.17]);
+        k.color('#ffd24a').add(T.cyl(1, 1, 14), [0, 0.72, -0.02], [0.232, 0.014, 0.184]);
+        k.color('#ffd24a').add(T.sphere(6, 4), [0, 0.545, 0.155], [0.032, 0.032, 0.02]);
+      }
       k.color(lap ? LAPORTE.undershirt : '#ecf0f1').add(T.sphere(6, 4), [0, 0.6, 0.075], [0.035, 0.035, 0.02]);
       k.color('#d8dce0').add(T.box(), [0, 0.47, 0.145], [0.012, 0.2, 0.012]);
       k.color('#e8eaee').add(T.box(), [0, 0.565, 0.152], [0.03, 0.035, 0.012]);
@@ -444,8 +451,11 @@ function buildHat(k, s) {
   switch (s.hat.style) {
     case 'wizard': {
       const tall = s.hero === 'malgrim' ? 1.35 : 1;
+      const lap = s.hero === 'laporte';
+      // Laporte wears it set back on the head (pitched back about the head center) so his M hairline shows
+      if (lap) k.push().tf(0, hy, 0, -0.36, 0, 0).tf(0, -hy - 0.035, -0.04, 0, 0, 0);
       k.color(hc).add(T.cyl(1, 1, 14), [0, top - 0.02, 0], [0.36, 0.03, 0.34], [-0.08, 0, 0]);
-      k.color(s.hero === 'malgrim' ? C('#ffd24a') : mul(hc, 0.6)).add(T.cyl(1, 1, 12), [0, top + 0.03, -0.005], [0.205, 0.05, 0.2]);
+      k.color(s.hero === 'malgrim' || lap ? C('#ffd24a') : mul(hc, 0.6)).add(T.cyl(1, 1, 12), [0, top + 0.03, -0.005], [0.205, 0.05, 0.2]);
       k.push().tf(0, top, -0.01, -0.12, 0, 0);
       k.color(hc).add(T.cyl(0.7, 1, 10), [0, 0.1 * tall, 0], [0.2, 0.2 * tall, 0.19]);
       k.tf(0, 0.2 * tall, 0, -0.35, 0, 0.12);
@@ -454,6 +464,7 @@ function buildHat(k, s) {
       k.color(hc).add(T.cone(8), [0, 0.08 * tall, 0], [0.07, 0.17 * tall, 0.07]);
       k.pop();
       k.color('#ffe680', 0.7).add(T.octa(), [0, top + 0.12, 0.18], [0.035, 0.035, 0.015]);
+      if (lap) k.pop();
       break;
     }
     case 'cap':

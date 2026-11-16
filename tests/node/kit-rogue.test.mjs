@@ -582,8 +582,8 @@ test('data: picker payloads, icons from the closed list, boons per pool, compani
     for (const a of d.abilities) assert.ok(ICONS.has(a.icon), a.id);
   }
   const boons = Object.values(data.boons).filter((b) => b.class === 'rogue' || ['archer', 'thief', 'ninja'].includes(b.spec));
-  assert.equal(boons.filter((b) => b.class === 'rogue').length, 8);
-  for (const s of ['archer', 'thief', 'ninja']) assert.equal(boons.filter((b) => b.spec === s).length, 4);
+  assert.equal(boons.filter((b) => b.class === 'rogue').length, 11);   // round 3: +3
+  for (const s of ['archer', 'thief', 'ninja']) assert.equal(boons.filter((b) => b.spec === s).length, 6);   // round 3: +2 each
   for (const b of boons) { assert.ok(ICONS.has(b.icon), b.id); assert.ok(b.desc && b.desc.length < 100, b.id); }
   const cc = data.classes.rogue.companion;
   assert.equal(cc.npc, 'pip');

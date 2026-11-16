@@ -81,9 +81,9 @@ test('warrior data: class, picker card, abilities, companion, look, boons', () =
   assert.equal(c.companion.basic.use, 'melee_arc');
   assert.equal(c.look.held.style, 'sword');
   const cls = Object.values(data.boons).filter((b) => b.class === 'warrior');
-  assert.equal(cls.length, 8);
+  assert.equal(cls.length, 11);   // round 3: + Thunder Clap, Juggernaut, War Banner
   for (const s of ['knight', 'berserker', 'battlemage']) {
-    assert.equal(Object.values(data.boons).filter((b) => b.spec === s).length, 4, s);
+    assert.equal(Object.values(data.boons).filter((b) => b.spec === s).length, 6, s);   // round 3: +2 each
     assert.equal(data.specs[s].from, 'warrior');
     assert.equal(data.specs[s].abilities.length, 2);
   }

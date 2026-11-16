@@ -43,13 +43,13 @@ function behindPoint(game, t, fx, fy, gap, out) {
 }
 
 // ---------- Shuriken ----------
-function throwVolley(game, src, owner, angle, rank, mult, crit, tags) {
-  const N = nk(game), S = N.shuriken, S4 = N.shurikenIV;
+function throwVolley(game, src, owner, angle, rank, mult, crit, tags, halo) {
+  const N = nk(game), S = N.shuriken, S4 = N.shurikenIV, S5 = N.shurikenV;
   const four = rank >= 4;
-  const ring = flurryOn(game, owner);
+  const ring = flurryOn(game, owner) || !!halo;
   const shots = game.abilities.use('multishot', src, {
-    angle, n: ring ? 8 : four ? S4.n : S.n, spread: four ? S4.spread : S.spread, ring, model: 'shuriken', color: N.colors.steel,
-    glow: src === owner ? N.colors.sash : N.colors.shadow, speed: S.speed, range: S.range, dmg: S.coef, mult, crit,
+    angle, n: halo ? S5.n : ring ? 8 : four ? S4.n : S.n, spread: four ? S4.spread : S.spread, ring, model: 'shuriken', color: N.colors.steel,
+    glow: src === owner ? N.colors.sash : N.colors.shadow, speed: S.speed, range: halo ? S5.range : S.range, dmg: halo ? S5.coef : S.coef, mult, crit,
     returns: true, pierce: four ? 0 : true, bounce: four ? S4.bounce : 0, bounceRange: S4.bounceRange, knockback: 0.8, tags, anim: 'attack',
   });
   // One volley = one fan: the shuriken share their hit list, so each target is cut once on the way out and once on
@@ -62,16 +62,23 @@ function shuriken(game, p, ctx) {
   const N = nk(game), nj = p.data.kit.nj;
   const crit = consumeCrit(game, p);
   const vol = newVolley(p);
-  const shots = throwVolley(game, p, p, ctx.angle, ctx.rank, 0, crit, TAG_BASIC);
+  nj.throws = (nj.throws || 0) + 1;
+  // round 3, rank V Shuriken Halo: every third throw is a full ring of returning shuriken
+  const halo = ctx.rank >= 5 && nj.throws % N.shurikenV.every === 0;
+  const shots = throwVolley(game, p, p, ctx.angle, ctx.rank, 0, crit, TAG_BASIC, halo);
   tagVolley(shots, vol);
-  game.fx({ type: 'slash', x: p.x, y: p.y, angle: ctx.angle, arc: 50, r: 0.7, color: N.colors.sash, style: 'crescent' });
+  game.fx({ type: 'slash', x: p.x, y: p.y, angle: ctx.angle, arc: halo ? 360 : 50, r: halo ? 1.2 : 0.7, color: N.colors.sash, style: halo ? 'spin' : 'crescent' });
+  if (halo) {
+    game.fx({ type: 'ring', x: p.x, y: p.y, r: 1.6, color: N.colors.sash, dur: 0.35 });
+    nj.halos = (nj.halos || 0) + 1;
+  }
   if (crit) game.fx({ type: 'sparkle', x: p.x, y: p.y, n: 8, r: 0.5, color: N.colors.sash });
   // Shadow Clones mirror the throw at 60%.
   for (let i = 0; i < nj.clones.length; i++) {
     const c = game.ents.get(nj.clones[i]);
     if (!c || c.removed || !c.alive) continue;
     c.angle = ctx.angle;
-    throwVolley(game, c, p, ctx.angle, ctx.rank, N.clones.mult, false, TAG_CLONE);
+    throwVolley(game, c, p, ctx.angle, ctx.rank, N.clones.mult, false, TAG_CLONE, halo);
     game.ents.setAnim(c, 'attack', 0.2);
   }
   afterBasic(game, p, ctx.angle);
@@ -161,6 +168,27 @@ function shadowStep(game, p, ctx) {
   addPips(game, p, S.pips);
   grantCrit(game, p, N.afterimage.critWindow);
   nj.steps++;
+  if (hasBoon(game, 'kunai_fan')) {
+    // round 3 boon: a fan of kunai from the spot you vanished, toward where you went (or the target)
+    const b = boonData(game, 'kunai_fan');
+    const a = t ? angleTo(x0, y0, t.x, t.y) : angleTo(x0, y0, p.x, p.y);
+    game.abilities.use('multishot', p, { x: x0, y: y0, angle: a, n: b.n || 5, spread: b.spread || 50, model: 'kunai', color: C.steel, glow: C.sash,
+      speed: b.speed || 14, range: b.range || 6, dmg: b.coef || 0.6, knockback: 1, tags: TAG_DECOY, anim: 'dash' });
+    game.fx({ type: 'slash', x: x0, y: y0, angle: a, arc: b.spread || 50, r: 0.9, color: C.sash, style: 'crescent' });
+    nj.kunaiFans = (nj.kunaiFans || 0) + 1;
+  }
+  if (hasBoon(game, 'smoke_screen')) {
+    // round 3 boon: a big smoke cloud where you vanished; enemies inside are slowed and blinded
+    const b = boonData(game, 'smoke_screen');
+    enemyZone(game, p, { x: x0, y: y0, r: b.r || 2.4, dur: b.dur || 3, smoke: true, tick: 0.25, silent: true, status: { slow: [0.5, b.slow || 0.4] } });
+    game.fx({ type: 'smoke', x: x0, y: y0, r: b.r || 2.4, dur: b.dur || 3 });
+    const ai = game.sys.ai;
+    if (ai && ai.blind) {
+      const near = game.ents.inRadius(x0, y0, (b.r || 2.4) + 0.5, isEnemy, nj.scratch);
+      for (let i = 0; i < near.length; i++) ai.blind(near[i], 1.5);
+    }
+    nj.screens = (nj.screens || 0) + 1;
+  }
   // Clone Mastery: every clone steps too, leaving a smoke burst behind.
   if (hasBoon(game, 'clone_mastery') && nj.clones.length) {
     const cm = boonData(game, 'clone_mastery');

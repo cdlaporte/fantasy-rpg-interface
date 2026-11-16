@@ -19,6 +19,7 @@ const LABEL_FULL = 'Full draw!';
 const TAG_RAIN = Object.freeze(['archer_rain']);
 const TAG_STAR = Object.freeze(['archer_star']);
 const TAG_HAWK = Object.freeze(['archer_hawk']);
+const TAG_BURN = Object.freeze(['archer_burn']);
 
 const HAWK_LOOK = { rig: 'flyer', size: 0.55, colors: { body: '#8b5a2b', belly: '#f1e9da', accent: '#f2c94c', eye: '#1b1b1b' }, features: ['wings_bird'], hero: null };
 const HAWK_DEF = { id: 'hawk', name: 'Hawk', look: HAWK_LOOK, stats: { radius: 0.25, speed: 8 }, flying: true };
@@ -42,16 +43,45 @@ function quickArrow(game, p, angle, rank) {
     shots = game.abilities.use('multishot', p, { angle, n: 8, ring: true, model: 'arrow', color: C.main, glow: C.gold, speed: B.arrow.speed,
       range: B.arrow.range * 0.6, dmg: B.arrow.coef * 0.7, knockback: B.arrow.knockback, crit, tags: TAG_BASIC, anim: 'attack' });
     game.fx({ type: 'ring', x: p.x, y: p.y, r: 1.2, color: C.main, dur: 0.3 });
-  } else if (rank >= 4) {
-    shots = game.abilities.use('multishot', p, { angle, n: 2, parallel: B.pair.spacing, model: 'arrow', color: C.main, glow: C.gold,
-      speed: B.arrow.speed, range: B.arrow.range, dmg: B.pair.coef, knockback: B.arrow.knockback, crit, tags: TAG_BASIC, anim: 'attack' });
   } else {
-    shots = game.abilities.use('projectile', p, { angle, model: 'arrow', color: C.main, glow: C.gold, speed: B.arrow.speed,
-      range: B.arrow.range, dmg: B.arrow.coef, knockback: B.arrow.knockback, crit, tags: TAG_BASIC, anim: 'attack' });
+    // round 3 boon Ricochet Arrows: quick arrows bounce into a second enemy
+    const rico = hasBoon(game, 'ricochet_arrows') ? boonData(game, 'ricochet_arrows') : null;
+    const bounce = rico ? rico.bounce || 1 : 0, bounceRange = rico ? rico.bounceRange || 4.5 : 4;
+    const onHit = rico ? ricoHit : null;
+    if (rank >= 4) {
+      shots = game.abilities.use('multishot', p, { angle, n: 2, parallel: B.pair.spacing, model: 'arrow', color: C.main, glow: C.gold,
+        speed: B.arrow.speed, range: B.arrow.range, dmg: B.pair.coef, knockback: B.arrow.knockback, crit, tags: TAG_BASIC, anim: 'attack',
+        bounce, bounceRange, onHit });
+    } else {
+      shots = game.abilities.use('projectile', p, { angle, model: 'arrow', color: C.main, glow: C.gold, speed: B.arrow.speed,
+        range: B.arrow.range, dmg: B.arrow.coef, knockback: B.arrow.knockback, crit, tags: TAG_BASIC, anim: 'attack', bounce, bounceRange, onHit });
+    }
   }
   tagVolley(shots, vol);
   game.fx({ type: 'burst', x: p.x + Math.cos(angle) * 0.5, y: p.y + Math.sin(angle) * 0.5, n: 4, r: 0.3, color: C.gold });
   afterBasic(game, p, angle);
+}
+
+function ricoHit(game, t, dealt, pr) {
+  const pd = pr.data.proj;
+  if (!pd.ricoHalf) { pd.ricoHalf = true; pd.dmg *= 0.5; }   // the ricochet hits for half
+  game.fx({ type: 'sparkle', x: t.x, y: t.y, n: 5, r: 0.4, color: ak(game).colors.gold });
+  const ar = game.ents.get(pr.owner);
+  if (ar && ar.data.kit && ar.data.kit.ar) ar.data.kit.ar.ricos = (ar.data.kit.ar.ricos || 0) + 1;
+}
+/** round 3, rank V Burning Shot: burning ground along the flight line of a full Power Shot. */
+function burnTrail(game, p, angle) {
+  const T = ak(game).longbow.burnTrail, D = ak(game).longbow.draw, C = ak(game).colors;
+  const len = game.world.raycast(p.x, p.y, angle, D.range, true);
+  const n = Math.min(T.max, Math.max(1, Math.floor(len / T.step)));
+  const status = { id: 'burn', t: T.burnDur, p: T.burnDps * game.combat.powerOf(p) };
+  for (let i = 1; i <= n; i++) {
+    const d = i * T.step;
+    enemyZone(game, p, { x: p.x + Math.cos(angle) * d, y: p.y + Math.sin(angle) * d, r: T.r, dur: T.dur, tick: T.tick, dmg: T.coef,
+      element: 'fire', model: 'ground_fire', color: C.fire, type: 'ranged', silent: true, status, tags: TAG_BURN });
+  }
+  game.fx({ type: 'trail', x: p.x, y: p.y, x2: p.x + Math.cos(angle) * len, y2: p.y + Math.sin(angle) * len, color: C.fire });
+  p.data.kit.ar.burnTrails = (p.data.kit.ar.burnTrails || 0) + 1;
 }
 
 function powerShot(game, p, angle, heldT, rank) {
@@ -64,16 +94,26 @@ function powerShot(game, p, angle, heldT, rank) {
   const split = hasBoon(game, 'split_arrow') ? boonData(game, 'split_arrow') : null;
   const pin = full && hasBoon(game, 'pinning_shot') ? boonData(game, 'pinning_shot') : null;
   const splinter = full && rank >= 4 ? B.splinters : null;
-  const size = 1.3 + f * 1.2;
+  const burning = full && rank >= 5;
+  const boom = full && hasBoon(game, 'explosive_arrow') ? boonData(game, 'explosive_arrow') : null;
+  const size = 1.3 + f * 1.2 + (burning ? 0.4 : 0);
   let first = true;
   const shot = game.abilities.use('projectile', p, {
-    angle, look: arrowLook(full ? C.gold : C.main, full ? '#ffffff' : C.gold, size), speed: D.speed, range: D.range, radius: 0.22,
+    angle, look: arrowLook(burning ? C.fire : full ? C.gold : C.main, full ? '#ffffff' : C.gold, size), speed: D.speed, range: D.range, radius: 0.22,
     dmg: coef, pierce: true, knockback: D.knockback * (0.4 + 0.6 * f), crit, tags: TAG_BASIC, anim: 'attack', hitStop: full ? 0.05 : 0,
     status: pin ? { root: pin.root || 2 } : null,
     onHit(g, t, dealt, pr) {
       if (pin) g.fx({ type: 'ring', x: t.x, y: t.y, r: 0.6, color: C.gold, dur: 0.5 });
       if (!first) return;
       first = false;
+      if (boom) {
+        // round 3 boon Explosive Arrow: a golden blast on the first enemy hit
+        g.combat.aoe(p, { x: t.x, y: t.y, r: boom.r || 2, dmg: boom.coef || 1, knockback: 6, type: 'ranged', fx: 'meteor', color: C.gold,
+          shake: 0.3, tags: TAG_STAR });
+        g.fx({ type: 'shockwave', x: t.x, y: t.y, r: boom.r || 2, color: C.gold });
+        const a = p.data.kit && p.data.kit.ar;
+        if (a) a.booms = (a.booms || 0) + 1;
+      }
       if (splinter) {
         const shots = g.abilities.use('multishot', p, { x: t.x, y: t.y, angle: pr.angle, n: splinter.n, spread: splinter.arc, model: 'arrow',
           color: C.gold, size: 0.7, speed: D.speed * 0.8, range: splinter.range, amount: pr.data.proj.dmg * splinter.dmgMul, knockback: 1,
@@ -91,6 +131,7 @@ function powerShot(game, p, angle, heldT, rank) {
     },
   });
   tagVolley(shot, vol);
+  if (burning) burnTrail(game, p, angle);
   game.fx({ type: 'burst', x: p.x + Math.cos(angle) * 0.6, y: p.y + Math.sin(angle) * 0.6, n: 6 + Math.round(10 * f), r: 0.5 + f * 0.5, color: C.gold });
   if (full) {
     game.fx({ type: 'sparkle', x: p.x, y: p.y, n: 14, r: 0.9, color: C.gold });

@@ -136,3 +136,68 @@ test('(d) levels at the forest milestones (quest XP + a realistic kill count)', 
   t.diagnostic('\n' + rows.map((r) => `${r.name.padEnd(80)} kills ${String(r.killXp).padStart(4)} quests ${String(r.questXp).padStart(4)} total ${String(r.total).padStart(5)} -> L${r.level}`).join('\n'));
   for (const r of rows) assert.equal(r.level, r.want, r.name);
 });
+
+// ------------------------------------------------------------------- round 3 (package A): levels 13-20
+// (e) a level-18 hero vs level-18 biome enemies feels like the forest at level 8: a regular enemy (balance-sheet hp
+// x0.6, the biome rule) dies in a few seconds and the hero survives about as many hits as at level 8 (the late
+// toughness in progression.js makes up for the enemy damage curve growing faster than class hp).
+function hitsToDown(cls, spec, level) {
+  const game = setup({ cls, spec, level, zone: 'test', marker: 'start', companions: false });
+  const p = game.player;
+  const e = game.ents.spawn('goblin_scout', p.x + 5, p.y, { level });
+  const hit = (e.def.attacks[0].dmg || 1) * e.stats.power * 10 / (10 + (p.stats.defense || 0));
+  return p.hpMax / hit;
+}
+for (const [spec, cls] of BOSS_ROWS) {
+  test(`(e) round 3: a level 18 ${spec} survives as many hits and kills as fast as a level 8 one did in the forest`, async (t) => {
+    const h8 = hitsToDown(cls, spec, 8), h18 = hitsToDown(cls, spec, 18);
+    const ttk = {};
+    for (const L of [8, 18]) {
+      const game = setup({ cls, spec, level: L, zone: 'test', marker: 'start', companions: false });
+      const p = game.player;
+      p.data.minHp = 1;
+      const e = game.ents.spawn('goblin_scout', p.x + 5, p.y, { level: L });
+      const f = fighter(game, { profile: 'expert' });
+      const t0 = game.t;
+      await f.run(30, { pick: () => (e.alive && !e.removed ? e : null), stop: () => e.removed || !e.alive });
+      assert.ok(e.removed || !e.alive, `L${L} goblin down`);
+      ttk[L] = game.t - t0;
+    }
+    t.diagnostic(`${spec}: hits to down L8 ${h8.toFixed(1)} / L18 ${h18.toFixed(1)}; goblin time to kill L8 ${ttk[8].toFixed(1)} s / L18 ${ttk[18].toFixed(1)} s`);
+    assert.ok(h18 >= h8 * 0.9 && h18 >= 3, 'survives a few hits, about as many as at level 8');
+    assert.ok(ttk[18] <= 9 && ttk[18] <= ttk[8] * 1.6 + 1, 'a regular enemy still dies in a few seconds');
+  });
+}
+
+// (f) round 3: the level after each biome for a student who clears its quests and fights what is on the way.
+// Kill model per biome: 30 regular kills at the player's level (scaleToPlayer, offsets average 0, clamped to the
+// biome's levelRange) + 2 elites (x3 xp) + the boss (x20 at one level more), xp = (5 + 3L) x1.3 (the round 2 rule);
+// quests: 2.5 quests at ~40% of a level each (the balance sheet). Start: after Old Mossback.
+export const BIOMES = [['dunes', 10, 16], ['cove', 11, 17], ['peaks', 13, 19], ['aether', 15, 20]];
+export function biomeLevels({ kills = 30, elites = 2, quests = 2.5 } = {}) {
+  let xp = 0;
+  for (let l = 1; l < 10; l++) xp += xpNext(l);
+  xp += 164 + data.enemies.old_mossback.stats.xp + Q('forest_goblin_trouble');   // the r2c milestone (L10 +164) + boss + its quest
+  const lvl = () => { let L = 1, x = xp; while (L < 20 && x >= xpNext(L)) { x -= xpNext(L); L++; } return L + (L < 20 ? x / xpNext(L) : 0); };
+  const kill = (L) => Math.round((5 + 3 * L) * 1.3);
+  const out = [{ name: 'after Mossback', level: lvl() }];
+  for (const [name, lo, hi] of BIOMES) {
+    for (let k = 0; k < kills + elites * 3; k++) xp += kill(Math.max(lo, Math.min(hi, Math.floor(lvl()))));
+    xp += kill(Math.max(lo, Math.min(hi, Math.floor(lvl()) + 1))) * 20;
+    xp += Math.round(0.4 * xpNext(Math.floor(lvl())) * quests);
+    out.push({ name, level: lvl() });
+  }
+  return out;
+}
+test('(f) round 3: about two levels per biome, level 20 around the end of the fourth biome', (t) => {
+  const rows = biomeLevels();
+  t.diagnostic(rows.map((r) => `${r.name}: ${r.level.toFixed(1)}`).join(' | '));
+  assert.ok(rows[0].level >= 11 && rows[0].level < 12.5, 'level 11 after Mossback');
+  for (let i = 2; i < rows.length; i++) {
+    const g = rows[i].level - rows[i - 1].level;
+    assert.ok((g >= 1.4 || rows[i].level >= 20) && g <= 3.2, `${rows[i].name}: +${g.toFixed(1)} levels`);
+  }
+  assert.ok(rows[1].level - rows[0].level <= 3.5, 'the first biome is the biggest step but not a runaway');
+  assert.ok(rows[4].level >= 19.3, 'level 20 around the end of the fourth biome: ' + rows[4].level.toFixed(1));
+  assert.ok(rows[3].level < 19.5, 'not capped before the last biome: ' + rows[3].level.toFixed(1));
+});

@@ -3,7 +3,7 @@
 // stack, storm chains to 2 enemies for 50%), Rune Slash (rank III: Elemental Wave every third swing; rank IV: every
 // second, piercing, leaving element ground or a storm chain of 4), F Rune Shift (cycle + nova of the new element),
 // Shift Runestorm (planted blade: fire pillar ring, frost ring, six storm bolts). Boons: Elemental Overlap,
-// Twin Runes, Rune Trail, Encore.
+// Twin Runes, Rune Trail, Encore; round 3: Trinity Slash, Elemental Crown; rank V Rune Tempest (dual-element waves).
 import { W, TAG_BASIC, TAG_SKILL } from './warrior.js';
 import SPECDEFS from '../../data/specs/warrior.js';
 
@@ -109,6 +109,9 @@ function waveHit(game, t, dealt, proj) {
   if (!p || !p.data.kit || !p.data.kit.bm) return;
   const i = elIndex(proj.data.proj.element);
   applyElement(game, p, t, i, dealt);
+  // round 3, rank V: the wave carries a second element (the previous one) as well
+  const d = proj.data.bmDual;
+  if (d != null && d >= 0 && d !== i && t.alive && !t.removed) applyElement(game, p, t, d, dealt * 0.5);
   if (!proj.data.bmRank4) return;
   const g = N(game).ground;
   if (i === 2) {
@@ -134,14 +137,59 @@ function groundZone(game, p, x, y, i) {
     status: { slow: [0.8, n.frost.slow] } });
 }
 
-function fireWave(game, p, angle, i, side, rank4) {
+function fireWave(game, p, angle, i, side, rank4, dual) {
   const w = N(game).wave;
   const col = colorOf(game, i);
-  const e = game.abilities.use('projectile', p, { angle, side, model: 'wave', color: col, glow: col, size: rank4 ? 1.5 : 1.2,
-    speed: w.speed, range: w.range, dmg: rank4 && w.dmg4 != null ? w.dmg4 : w.dmg, radius: w.radius, pierce: rank4 ? true : 0, knockback: 2.5,
-    type: 'magic', element: ELEMENTS[i], tags: TAG_SKILL, onHit: waveHit, onExpire: waveEnd, anim: 'attack', sfx: 'spell' });
-  if (e && e.data) { e.data.bmRank4 = !!rank4; e.data.bmZones = 0; e.data.bmChained = false; }
+  const two = dual != null && dual >= 0 && dual !== i;
+  const w5 = N(game).wave5;
+  const e = game.abilities.use('projectile', p, { angle, side, model: 'wave', color: col, glow: two ? colorOf(game, dual) : col,
+    size: two ? w5.size : rank4 ? 1.5 : 1.2,
+    speed: w.speed, range: w.range, dmg: rank4 && w.dmg4 != null ? w.dmg4 : w.dmg, radius: two ? w5.radius : w.radius, pierce: rank4 ? true : 0,
+    knockback: 2.5, type: 'magic', element: ELEMENTS[i], tags: TAG_SKILL, onHit: waveHit, onExpire: waveEnd, anim: 'attack', sfx: 'spell' });
+  if (e && e.data) { e.data.bmRank4 = !!rank4; e.data.bmZones = 0; e.data.bmChained = false; e.data.bmDual = two ? dual : -1; }
+  if (two) {
+    game.fx({ type: 'slash', x: p.x, y: p.y, angle, arc: 70, r: 1.6, color: colorOf(game, dual), style: 'crescent' });
+    p.data.kit.bm.duals = (p.data.kit.bm.duals || 0) + 1;
+  }
   return e;
+}
+
+/** round 3 boon Trinity Slash: a burst of all three elements around you. */
+function trinityHit(game, t, dealt, src) {
+  if (!src.data.kit || !src.data.kit.bm) return;
+  for (let j = 0; j < 3; j++) { if (!t.alive || t.removed) return; applyElement(game, src, t, j, dealt); }
+}
+function trinity(game, p) {
+  const b = W.bnums(game, 'trinity_slash'), col = C(game);
+  game.combat.aoe(p, { x: p.x, y: p.y, r: b.r, dmg: b.dmg, knockback: 4, type: 'magic', tags: TAG_SKILL, onHit: trinityHit,
+    fx: { type: 'ring', r: b.r, color: col.storm, dur: 0.4 } });
+  game.fx({ type: 'pillar', x: p.x, y: p.y, r: 0.8, color: col.fire, dur: 0.5 });
+  game.fx({ type: 'sparkle', x: p.x, y: p.y, n: 18, r: b.r, color: col.frost });
+  game.fx({ type: 'bolt', x: p.x, y: p.y, color: col.storm });
+  game.fx({ type: 'shockwave', x: p.x, y: p.y, r: b.r, color: col.plasma });
+  p.data.kit.bm.trinities = (p.data.kit.bm.trinities || 0) + 1;
+}
+/** round 3 boon Elemental Crown: the current element strikes the nearest enemy every `every` s. */
+function crownStrike(game, p, bm) {
+  const b = W.bnums(game, 'elemental_crown');
+  let best = null, bd = b.range * b.range;
+  const list = game.ents.inRadius(p.x, p.y, b.range, null);
+  for (let i = 0; i < list.length; i++) {
+    const e = list[i];
+    if (!game.combat.canHit(p, e) || e.type !== 'enemy') continue;
+    const d = (e.x - p.x) * (e.x - p.x) + (e.y - p.y) * (e.y - p.y);
+    if (d < bd) { bd = d; best = e; }
+  }
+  if (!best) return false;
+  const col = colorOf(game, bm.el);
+  if (bm.el === 2) game.fx({ type: 'bolt', x: p.x, y: p.y, x2: best.x, y2: best.y, color: col });
+  else game.fx({ type: 'trail', x: p.x, y: p.y, x2: best.x, y2: best.y, color: col });
+  game.fx({ type: bm.el === 1 ? 'sparkle' : 'burst', x: best.x, y: best.y, n: 10, r: 0.6, color: col });
+  const dealt = game.combat.damage(best, b.dmg * game.combat.powerOf(p), { source: p, type: 'magic', element: ELEMENTS[bm.el], color: col,
+    tags: TAG_SKILL, knockback: 1 });
+  applyElement(game, p, best, bm.el, dealt);
+  bm.crowns = (bm.crowns || 0) + 1;
+  return true;
 }
 
 function pulse(game, p, st, kind) {
@@ -189,12 +237,12 @@ export default {
   basicInfo(game, p, r) {
     if (r < 3) return W.cdef(game).ranks[Math.max(1, r)];
     const ranks = W.sdef(game, 'battlemage').ranks;
-    return ranks[Math.min(4, r)] || ranks[3];
+    return ranks[r] || ranks[4] || ranks[3];
   },
 
   onEquip(game, p) {
     const k = p.data.kit;
-    k.bm = { el: 0, prev: 2, slashes: 0, storm: null };
+    k.bm = { el: 0, prev: 2, slashes: 0, storm: null, crownT: 0 };
     k.offFreeze = game.bus.on('status', (e) => {
       if (e.id !== 'freeze' || !e.ent || p.data.kit !== k) return;
       const t = e.ent;
@@ -235,9 +283,14 @@ export default {
     game.fx({ type: 'trail', x: x0, y: y0, x2: x1, y2: y1, color: col });
   },
 
-  update(game, p) {
+  update(game, p, dt) {
     const bm = p.data.kit.bm;
-    if (!bm || !bm.storm) return;
+    if (!bm) return;
+    if (W.has(game, p, 'elemental_crown')) {
+      bm.crownT -= dt;
+      if (bm.crownT <= 0) bm.crownT = crownStrike(game, p, bm) ? W.bnums(game, 'elemental_crown').every : 0.25;
+    }
+    if (!bm.storm) return;
     const st = bm.storm;
     const rs = N(game).runestorm;
     const el = game.t - st.t0;
@@ -270,15 +323,16 @@ export default {
     const col = colorOf(game, bm.el);
     game.abilities.use('melee_arc', p, { angle: ctx.angle, arc: n.slash.arc, range: n.slash.range, dmg: n.slash.dmg,
       knockback: n.slash.knockback, tags: TAG_BASIC, style: 'sword', color: col, element: ELEMENTS[bm.el], onHit: slashHit });
-    const r4 = ctx.rank >= 4;
+    const r4 = ctx.rank >= 4, r5 = ctx.rank >= 5;
     if (bm.slashes % (r4 ? n.wave.every4 : n.wave.every) === 0) {
       if (W.has(game, p, 'twin_runes')) {
         const sp = W.bnums(game, 'twin_runes').spread || 0.08;
-        fireWave(game, p, ctx.angle - sp, bm.el, -n.wave.twinSide, r4);
-        fireWave(game, p, ctx.angle + sp, bm.prev, n.wave.twinSide, r4);
-      } else fireWave(game, p, ctx.angle, bm.el, 0, r4);
+        fireWave(game, p, ctx.angle - sp, bm.el, -n.wave.twinSide, r4, r5 ? bm.prev : -1);
+        fireWave(game, p, ctx.angle + sp, bm.prev, n.wave.twinSide, r4, r5 ? bm.el : -1);
+      } else fireWave(game, p, ctx.angle, bm.el, 0, r4, r5 ? bm.prev : -1);
       game.fx({ type: 'sparkle', x: p.x, y: p.y, n: 8, r: 0.6, color: col });
     }
+    if (W.has(game, p, 'trinity_slash') && bm.slashes % (W.bnums(game, 'trinity_slash').every || 5) === 0) trinity(game, p);
     W.afterBasic(game, p, ctx.angle);
     return undefined;
   },

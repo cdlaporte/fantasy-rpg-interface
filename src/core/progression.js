@@ -235,9 +235,25 @@ export const DEFAULT_BOONS = [
 
 /** Attack rank thresholds (rank I..V). */
 export const RANK_LEVELS = [1, 4, 8, 12, 16];
-export const BOON_LEVELS = [4, 6, 8, 10, 12];
+export const BOON_LEVELS = [4, 6, 8, 10, 12, 14, 16, 18, 20];   // round 3: cap 20 (docs/notes/r3a.md)
 export const SPEC_LEVEL = 8;
 export const AURA_LEVEL = 10;
+/** round 3: from this level the class aura is "empowered" (brighter, `tier: 2`, the weapon glows in the aura color). */
+export const EMPOWER_LEVEL = 14;
+/** Fallback cap when no config is given (config.levelCap wins). */
+export const LEVEL_CAP = 20;
+/**
+ * round 3: levels 11+ cost more. The biomes scale their enemies to the player, so kill xp (5 + 3L, x1.3) grows with the
+ * player; with the plain curve one biome alone would give ~5 levels. xpNext(l) = base l^exp x (mul + perLevel (l - from))
+ * for l >= from; levels 1-10 (the tutorial and the forest, tuned in round 2) are unchanged. See docs/notes/r3a.md.
+ */
+export const XP_LATE = Object.freeze({ from: 11, mul: 2, perLevel: 0.3 });
+/**
+ * round 3: enemy hits grow 2 + 1.5L while class hp grows a fixed amount per level, so without help a level-18 hero
+ * survives ~15% fewer hits than a level-8 one. From level 13 the hero gains +0.3 defense per level (defense divides
+ * damage by 1 + def / 10): hits-to-down at 18 match level 8 again (docs/notes/r3a.md).
+ */
+export const LATE_TOUGHNESS = Object.freeze({ from: 12, defensePerLevel: 0.3 });
 export const AURA_STYLES = { warrior: 'flame', mage: 'sparkle', rogue: 'shadow' };
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -246,7 +262,19 @@ export const AURA_STYLES = { warrior: 'flame', mage: 'sparkle', rogue: 'shadow' 
 /** XP needed to go from level l to l + 1 (CONTRACTS 12). */
 export function xpNext(l) {
   const c = CONFIG.xpCurve || { base: 20, exp: 1.6 };
-  return Math.round(c.base * Math.pow(Math.max(1, l), c.exp));
+  const late = c.late || XP_LATE;
+  const L = Math.max(1, l);
+  const m = late && L >= late.from ? late.mul + late.perLevel * (L - late.from) : 1;
+  return Math.round(c.base * Math.pow(L, c.exp) * m);
+}
+
+/** round 3: the empowered aura (level >= EMPOWER_LEVEL): a brighter color (mixed toward white) and `tier: 2`. */
+export function brighten(hex, f) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  const ch = (v) => Math.round(v + (255 - v) * f).toString(16).padStart(2, '0');
+  return '#' + ch((n >> 16) & 255) + ch((n >> 8) & 255) + ch(n & 255);
 }
 
 /** Attack rank 1..5 for a level. */
@@ -325,6 +353,9 @@ export function compareCond(value, c) {
   return !!value;
 }
 
+let EMPOWER_T = 0;
+const EMPOWER_FX = { type: 'sparkle', x: 0, y: 0, z: 0.6, n: 5, r: 0.75, color: '#ffffff' };
+
 const NEGATIVE_STATUS = ['stun', 'slow', 'burn', 'frost', 'root', 'mark', 'venom'];
 const REVIVE_COOLDOWN = 300;    // seconds between optional revive questions
 const WAKE_INVULN = 2.5;
@@ -341,7 +372,7 @@ export default {
       if (typeof console !== 'undefined') console.warn('[progression] ' + msg);
     };
     const data = () => game.data || {};
-    const cap = () => (game.config && game.config.levelCap) || 12;
+    const cap = () => (game.config && game.config.levelCap) || LEVEL_CAP;
     const kits = () => game.sys.kits || null;
     const gates = () => game.sys.gates || null;
     const emit = (e, p) => game.bus.emit(e, p);
@@ -477,6 +508,7 @@ export default {
       let defense = (b.defense || 0) + (b.defensePerLevel || 0) * L;
       const s = api.specId ? specDef(api.specId) : null;
       if (s) { hp *= s.mods.hp; power *= s.mods.power; speed *= s.mods.speed; defense *= s.mods.defense; }
+      if (api.classId && L > LATE_TOUGHNESS.from) defense += LATE_TOUGHNESS.defensePerLevel * (L - LATE_TOUGHNESS.from);
       const mods = p.data && p.data.statMods;
       if (mods) {
         for (const k in mods) {
@@ -605,6 +637,17 @@ export default {
       }
       if (old < SPEC_LEVEL && newLevel >= SPEC_LEVEL) markSpecReady(opts.quiet);
       if (old < AURA_LEVEL && newLevel >= AURA_LEVEL) refreshLook();
+      if (old < EMPOWER_LEVEL && newLevel >= EMPOWER_LEVEL && api.classId) {
+        refreshLook();
+        if (!opts.quiet && p) {
+          const col = (p.look && p.look.aura && p.look.aura.color) || '#ffd24a';
+          game.fx({ type: 'pillar', x: p.x, y: p.y, r: 1.6, color: col, dur: 1.4 });
+          game.fx({ type: 'shockwave', x: p.x, y: p.y, r: 3, color: col });
+          game.fx({ type: 'sparkle', x: p.x, y: p.y, n: 30, r: 1.8, color: '#ffffff' });
+          game.toast('Your aura blazes brighter! (Empowered)', 'good');
+        }
+        emit('aura:empowered', { level: newLevel });
+      }
       emit('level:set', { level: newLevel, prev: old });
       return gained;
     }
@@ -1005,6 +1048,18 @@ export default {
     game.commands.openSpecPicker = () => (api.pendingSpec && game.flags.spec_ceremony_done ? openSpecPicker() : Promise.resolve(null));
 
     game.bus.on('player:down', () => { onDown(); });
+    // round 3: the empowered aura. Every player look refresh (Sim or local) ends with 'look:changed'; from level 14 the
+    // aura it composed gets brighter and `tier: 2` (renderers may draw it larger), and the weapon glows in its color.
+    game.bus.on('look:changed', (e) => {
+      const p = game.player;
+      if (!e || e.ent !== p || !p || !p.look || api.level < EMPOWER_LEVEL || !api.classId) return;
+      const a = p.look.aura;
+      if (!a || a.tier === 2) return;
+      a.color = brighten(a.color, 0.35);
+      a.tier = 2;
+      a.empowered = true;
+      if (p.look.held && !p.look.held.glow) p.look.held.glow = a.color;
+    });
 
     updateNames();
     recalc();
@@ -1012,8 +1067,18 @@ export default {
     return api;
   },
 
-  update(game) {
+  update(game, dt) {
     const api = game.sys.progression;
+    // round 3: the empowered aura (level 14+) also throws off a few sparks every second (one pooled fx event)
+    const p = game.player;
+    if (p && api.level >= EMPOWER_LEVEL && api.classId && p.look && p.look.aura && p.look.aura.tier === 2 && !p.data.down && p.alpha !== 0) {
+      EMPOWER_T -= dt || 1 / 60;
+      if (EMPOWER_T <= 0) {
+        EMPOWER_T = 1.1;
+        EMPOWER_FX.x = p.x; EMPOWER_FX.y = p.y; EMPOWER_FX.color = p.look.aura.color;
+        game.fx(EMPOWER_FX);
+      }
+    }
     const inp = game.input;
     if (inp && inp.pressed && inp.pressed.boon && !game.modal && !game.inputLock) {
       if (api.pendingBoons > 0) api.openBoonPicker();
@@ -1033,7 +1098,7 @@ export default {
   load(game, j) {
     const a = game.sys.progression;
     if (!j) return;
-    a.level = Math.max(1, Math.min((game.config && game.config.levelCap) || 12, j.level | 0 || 1));
+    a.level = Math.max(1, Math.min((game.config && game.config.levelCap) || LEVEL_CAP, j.level | 0 || 1));
     a.xpNext = xpNext(a.level);
     a.xp = Math.max(0, Number(j.xp) || 0);
     a.xpTotal = Math.max(0, Number(j.xpTotal) || 0);

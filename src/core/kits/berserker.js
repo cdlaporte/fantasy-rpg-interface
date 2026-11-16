@@ -2,7 +2,8 @@
 // hp falls 100% -> 30%; Rage never decays; at 100 Rage Frenzy: 6 s, Rage drains to 0, fxTag frenzy, afterimages,
 // +40% attack speed, 8% lifesteal), Twin Axes (rank III alternating chops, +8 Rage per hit; rank IV every fourth chop
 // throws a returning axe), F Whirlwind (hold: drains Rage, spins and shreds), Shift Skyfall Leap (z arc, meteor landing,
-// bigger during Frenzy). Boons: Cyclone, Axe Storm, Meteor Heart, Undying.
+// bigger during Frenzy). Boons: Cyclone, Axe Storm, Meteor Heart, Undying; round 3: Rampage, Whirling Axes; rank V
+// Splitting Axes.
 import { W, TAG_BASIC, TAG_SKILL } from './warrior.js';
 import SPECDEFS from '../../data/specs/warrior.js';
 
@@ -36,6 +37,7 @@ function startFrenzy(game, p) {
 function endFrenzy(game, p) {
   const k = p.data.kit, bz = k.bz;
   bz.frenzyEnd = 0;
+  bz.rampExtra = 0;
   k.rageLock = false;
   game.kits.setResource(p, 0);
   game.combat.removeMod(p, 'frenzy');
@@ -70,6 +72,32 @@ function skyLand(game, p) {
 
 const LEAP_PICK = { range: 7, mode: 'strongest', cone: 100, angle: 0 };
 
+/** round 3, rank V (Splitting Axes): the thrown axe bursts into a fan of small axes on its first hit. */
+function splitAxe(game, t, dealt, proj) {
+  if (proj.data.bzSplit) return;
+  proj.data.bzSplit = true;
+  const p = game.ents.get(proj.owner);
+  if (!p || !p.data.kit || !p.data.kit.bz) return;
+  const n = N(game).splitAxe, col = C(game);
+  const shots = game.abilities.use('multishot', p, { x: t.x, y: t.y, angle: proj.angle, n: n.n, spread: n.arc, model: 'axe', color: col.bone,
+    glow: col.crimson, size: n.size, speed: n.speed, range: n.range, dmg: n.dmg, radius: 0.25, pierce: true, knockback: 2, type: 'melee',
+    tags: TAG_SKILL, anim: 'attack' });
+  for (let i = 0; i < shots.length; i++) shots[i].data.proj.hits.push(t.id);
+  game.fx({ type: 'burst', x: t.x, y: t.y, n: 12, r: 0.8, color: col.crimson });
+  game.fx({ type: 'slash', x: t.x, y: t.y, angle: proj.angle, arc: n.arc, r: 1, color: col.bone, style: 'axe' });
+  p.data.kit.bz.splits = (p.data.kit.bz.splits || 0) + 1;
+}
+/** round 3 boon Rampage: a defeat during Frenzy extends it and bursts bone shards. */
+function rampage(game, p, dead) {
+  const bz = p.data.kit && p.data.kit.bz;
+  if (!bz || !(bz.frenzyEnd > game.t) || !dead || !W.has(game, p, 'rampage')) return;
+  const b = W.bnums(game, 'rampage'), col = C(game);
+  if ((bz.rampExtra || 0) < b.maxExtra) { bz.frenzyEnd += b.extend; bz.rampExtra = (bz.rampExtra || 0) + b.extend; }
+  const x = dead.x, y = dead.y;
+  (bz.rampQ || (bz.rampQ = [])).push(x, y);
+  game.fx({ type: 'text', x: p.x, y: p.y, z: 1.6, text: 'Rampage!', style: 'info', ent: p.id });
+}
+
 export default {
   id: 'berserker',
   parent: 'warrior',
@@ -77,7 +105,7 @@ export default {
   basicInfo(game, p, r) {
     if (r < 3) return W.cdef(game).ranks[Math.max(1, r)];
     const ranks = W.sdef(game, 'berserker').ranks;
-    return ranks[Math.min(4, r)] || ranks[3];
+    return ranks[r] || ranks[4] || ranks[3];
   },
 
   onEquip(game, p) {
@@ -86,7 +114,7 @@ export default {
     k.noDecay = true;
     k.ragePerHit = n.axes.rage;
     k.bz = { chops: 0, frenzyEnd: 0, frenzyMods: Object.assign({}, FRENZY_MODS), wild: { attackSpeed: 0 }, lsAcc: 0, aiT: 0,
-      spin: false, spinT: 0, tickT: 0, undying: false, prevMinHp: undefined, leapFrenzy: false };
+      spin: false, spinT: 0, tickT: 0, undying: false, prevMinHp: undefined, leapFrenzy: false, rampExtra: 0, rampQ: [], axeT: 0 };
     game.combat.addMod(p, 'wild_heart', k.bz.wild, Infinity);
   },
   onUnequip(game, p) {
@@ -107,12 +135,23 @@ export default {
     const hpf = p.hpMax > 0 ? p.hp / p.hpMax : 1;
     const f = Math.max(0, Math.min(1, (wh.hpHigh - hpf) / (wh.hpHigh - wh.hpLow)));
     bz.wild.attackSpeed = wh.maxAttackSpeed * f;
+    // Rampage bursts (queued from the death hook, resolved outside combat loops)
+    if (bz.rampQ && bz.rampQ.length) {
+      const b = W.bnums(game, 'rampage');
+      for (let i = 0; i < bz.rampQ.length; i += 2) {
+        const x = bz.rampQ[i], y = bz.rampQ[i + 1];
+        game.combat.aoe(p, { x, y, r: b.r, dmg: b.dmg, knockback: 5, type: 'melee', tags: TAG_SKILL, fx: 'burst', color: col.bone });
+        game.fx({ type: 'ring', x, y, r: b.r, color: col.crimson, dur: 0.35 });
+        bz.ramps = (bz.ramps || 0) + 1;
+      }
+      bz.rampQ.length = 0;
+    }
     // Frenzy
     if (bz.frenzyEnd > 0) {
       const left = bz.frenzyEnd - game.t;
       if (left <= 0) endFrenzy(game, p);
       else {
-        game.kits.setResource(p, p.data.resource.max * (left / n.frenzy.dur));
+        game.kits.setResource(p, p.data.resource.max * Math.min(1, left / n.frenzy.dur));
         bz.aiT -= dt;
         if (bz.aiT <= 0) {
           bz.aiT = n.frenzy.afterimage;
@@ -142,13 +181,14 @@ export default {
     game.abilities.use('melee_arc', p, { angle: ctx.angle, arc: a.arc, range: a.range, dmg: a.dmg, knockback: a.knockback,
       tags: TAG_BASIC, style: 'axe', color: fr ? col.crimson : col.bone, animDur: a.swing,
       fx: { type: 'slash', angle: ctx.angle + side * 0.35, arc: a.arc, r: a.range, color: fr ? col.crimson : col.bone, style: 'axe' } });
-    if (ctx.rank >= 4 && bz.chops % n.throw.every === 0) {
+    const r5 = ctx.rank >= 5;
+    if (ctx.rank >= 4 && bz.chops % (r5 ? n.splitAxe.every : n.throw.every) === 0) {
       const storm = W.has(game, p, 'axe_storm');
       const b = W.bnums(game, 'axe_storm');
-      game.abilities.use('projectile', p, { angle: ctx.angle, model: 'axe', color: col.bone, glow: col.crimson, size: 1.3,
+      game.abilities.use('projectile', p, { angle: ctx.angle, model: 'axe', color: col.bone, glow: col.crimson, size: r5 ? 1.6 : 1.3,
         speed: n.throw.speed, range: n.throw.range, dmg: n.throw.dmg, radius: n.throw.radius, returns: true,
         pierce: storm ? 0 : true, bounce: storm ? b.bounces : 0, bounceRange: b.bounceRange || 4,
-        knockback: 2, type: 'melee', tags: TAG_SKILL, anim: 'attack', sfx: 'swing' });
+        knockback: 2, type: 'melee', tags: TAG_SKILL, anim: 'attack', sfx: 'swing', onHit: r5 ? splitAxe : null });
     }
     W.afterBasic(game, p, ctx.angle);
     return undefined;
@@ -173,6 +213,18 @@ export default {
         bz.spinT += dt;
         bz.tickT -= dt;
         if (p.anim !== 'spin') game.ents.setAnim(p, 'spin');
+        if (W.has(game, p, 'whirling_axes')) {
+          // round 3 boon: axes fly out of the spin (rotating aim) and boomerang back
+          const b = W.bnums(game, 'whirling_axes');
+          bz.axeT -= dt;
+          if (bz.axeT <= 0) {
+            bz.axeT = b.every;
+            game.combat.projectile(p, { angle: bz.spinT * 5.3, model: 'axe', color: col.bone, glow: col.crimson, size: 1.1,
+              speed: b.speed, range: b.range, dmg: b.dmg, radius: 0.3, returns: true, pierce: true, knockback: 2, type: 'melee',
+              tags: TAG_SKILL });
+            bz.flungAxes = (bz.flungAxes || 0) + 1;
+          }
+        }
         if (bz.tickT > 0) return undefined;
         bz.tickT += w.tick;
         const cyc = W.has(game, p, 'cyclone');
@@ -224,6 +276,7 @@ export default {
   },
 
   hooks: {
+    onKill(game, p, e) { rampage(game, p, e.ent); },
     onHit(game, p, e) {
       const bz = p.data.kit && p.data.kit.bz;
       if (!bz || !(e.amount > 0) || bz.frenzyEnd <= game.t || e.target === p) return;

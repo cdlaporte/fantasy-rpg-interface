@@ -29,6 +29,65 @@ function onMarked(game, p, t) {
     if (f.ai) f.ai.target = t.id;
     if (pack) game.combat.status(f, 'haste', s.pack_leader.hasteT, s.pack_leader.haste);
   }
+  if (boon(game, 'wild_hunt') && game.t >= (p.data.kit.cj_huntT || 0)) {
+    p.data.kit.cj_huntT = game.t + s.wild_hunt.icd;
+    const tid = t.id;
+    defer(p, () => ghostWolf(game, p, tid));
+  }
+}
+
+// ---------------------------------------------------------------------------------------------- round 3
+const WOLF_LOOK = { rig: 'quadruped', size: 0.6, colors: { body: '#e8fffb', belly: '#ffffff', accent: '#3fe0c5', eye: '#3fe0c5' },
+  features: ['tail_bushy', 'ears_pointy', 'mane'], hero: null };
+/** Wild Hunt: a short-lived ghost wolf leaps out next to the marked enemy and goes for it. */
+function ghostWolf(game, p, tid) {
+  const t = game.ents.get(tid);
+  if (!t || t.removed || !t.alive || p.removed) return;
+  const s = S(game), w = s.wild_hunt, fox = s.familiars.fox;
+  const a = game.rng.next() * Math.PI * 2;
+  let x = t.x + Math.cos(a) * 1.1, y = t.y + Math.sin(a) * 1.1;
+  if (game.world.solidAt(x, y)) { x = p.x; y = p.y; }
+  const out = game.abilities.use('summon', p, {
+    def: { id: 'ghost_wolf', name: 'Ghost Wolf', look: WOLF_LOOK, stats: { radius: 0.3 }, attacks: [fox.attack] }, key: 'ghost_wolf',
+    max: w.max, ttl: w.ttl, brain: 'ally_melee', powerMul: w.powerMul, hpMul: w.hpMul, speed: (p.stats.speed || 3.3) * 1.6, x, y,
+    color: s.color, tags: ['familiar', 'ghost_wolf'],
+  });
+  const e = out && out[0];
+  if (!e) return;
+  e.alpha = 0.8;
+  e.glow = s.color;
+  if (e.ai) e.ai.target = tid;
+  game.fx({ type: 'poof', x, y, color: s.light });
+  game.fx({ type: 'trail', x, y, x2: t.x, y2: t.y, color: s.color });
+  const k = p.data.kit;
+  k.cj_wolves = (k.cj_wolves || 0) + 1;
+}
+/** Spirit Totem: a healing totem where you summon (effect entity + a healing zone for you and your pets). */
+function plantTotem(game, p) {
+  const s = S(game), st = s.spirit_totem, k = p.data.kit;
+  if (k.cj_totem && !k.cj_totem.removed) game.ents.remove(k.cj_totem);
+  k.cj_totem = game.ents.create({ kind: 'spirit_totem', type: 'effect', team: p.team, owner: p.id, x: p.x, y: p.y, solid: false,
+    look: { rig: 'effect', model: 'totem', color: s.color, r: 0.5 }, ttl: st.dur });
+  game.combat.zone(p, { x: p.x, y: p.y, r: st.r, dur: st.dur, tick: st.tick, healAmount: Math.max(1, Math.round(p.hpMax * st.healPct)),
+    color: s.color, id: 'spirit_totem' });
+  game.fx({ type: 'pillar', x: p.x, y: p.y, r: 0.7, color: s.light, dur: 0.8 });
+  game.fx({ type: 'ring', x: p.x, y: p.y, r: st.r, color: s.color, dur: 0.6 });
+  k.cj_totems = (k.cj_totems || 0) + 1;
+}
+/** Rank V Spirit Chain: the bolt's hit chains to `jumps` more enemies, marking each (deferred). */
+function spiritChain(game, p, t) {
+  const s = S(game), c = s.chain;
+  const x = t.x, y = t.y, tid = t.id;
+  defer(p, () => {
+    if (p.removed) return;
+    const k = p.data.kit;
+    k.m_chaining = true;
+    const hits = game.abilities.use('chain', p, { x, y, jumps: c.jumps, range: c.range, dmg: c.dmg, exclude: [tid], color: s.color,
+      element: 'spirit', fx: 'bolt', status: { id: 'mark', t: s.spiritBolt.markT, p: s.spiritBolt.markPower },
+      onHit(g, e2) { onMarked(g, p, e2); g.fx({ type: 'sparkle', x: e2.x, y: e2.y, n: 6, color: s.light, r: 0.4 }); } });
+    k.m_chaining = false;
+    if (hits && hits.length) k.cj_chains = (k.cj_chains || 0) + 1;
+  });
 }
 
 function fireSpiritBolt(game, p, angle, rank) {
@@ -37,8 +96,9 @@ function fireSpiritBolt(game, p, angle, rank) {
   const status = { id: 'mark', t: sb.markT, p: sb.markPower };
   game.abilities.use('projectile', p, {
     angle, speed: sb.speed, range: sb.range, dmg: sb.dmg, radius: sb.radius, type: 'magic', knockback: 1, status,
-    look: projLook('orb', s.color, s.light, sb.size), color: s.color, split: splitFor(game, s.color, s.light, 'orb'),
-    onHit(g, t) { onMarked(g, p, t); },
+    look: projLook('orb', s.color, rank >= 5 ? '#ffffff' : s.light, rank >= 5 ? sb.size * 1.25 : sb.size), color: s.color,
+    split: splitFor(game, s.color, s.light, 'orb'),
+    onHit: rank >= 5 ? (g, t) => { onMarked(g, p, t); spiritChain(g, p, t); } : (g, t) => { onMarked(g, p, t); },
     tags: ['spirit_bolt'],
   });
   game.fx({ type: 'sparkle', x: p.x + Math.cos(angle) * 0.5, y: p.y + Math.sin(angle) * 0.5, n: rank >= 4 ? 7 : 5, color: s.color, r: 0.4 });
@@ -255,6 +315,7 @@ const conjurer = {
   interval(game, p, rank) { return rank >= 3 ? S(game).spiritBolt.interval : classN(game).bolt.interval; },
   basicInfo(game, p, rank) {
     const r = (sdata(game, 'conjurer') || DEF).ranks || DEF.ranks;
+    if (rank >= 5 && r[5]) return r[5];
     if (rank >= 4) return r[4];
     if (rank >= 3) return r[3];
     return mage.basicInfo(game, p, rank);
@@ -271,6 +332,8 @@ const conjurer = {
     for (const f of list) game.combat.expireSummon(f, 'unequip');
     const gd = k.cj_guardian ? game.ents.get(k.cj_guardian) : null;
     if (gd && !gd.removed) game.combat.expireSummon(gd, 'unequip');
+    for (const w of game.combat.summonsOf(p, 'ghost_wolf', [])) game.combat.expireSummon(w, 'unequip');
+    if (k.cj_totem && !k.cj_totem.removed) game.ents.remove(k.cj_totem);
   },
   update(game, p, dt) { updateGrand(game, p, dt); },
   hud(game, p, hud) {
@@ -297,6 +360,7 @@ const conjurer = {
         const e = summonFamiliar(game, p, kind);
         if (!e) return false;
         k.cj_next++;
+        if (boon(game, 'spirit_totem')) plantTotem(game, p);
         game.bus.emit('sfx', { id: 'spell' });
         return undefined;
       },

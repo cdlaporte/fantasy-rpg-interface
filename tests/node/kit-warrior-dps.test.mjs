@@ -8,15 +8,15 @@ import data from '../../src/data/index.js';
 import { DT, makeInputState } from '../../src/contracts.js';
 import { mk } from './kit-warrior.test.mjs';
 
-export const TARGET = Object.fromEntries(Object.entries({ 3: 11, 5: 19.5, 8: 35, 10: 47, 12: 62 }).map(([k, v]) => [k, v * config.numberScale]));   // round 2 band (docs/notes/r2c.md: the CLASSES band x the +25% power-per-level growth) x number scale
-// A sensible boon pick per spec (boons at 4, 6, 8, 10, 12; at least one spec boon from 8).
+export const TARGET = Object.fromEntries(Object.entries({ 3: 11, 5: 19.5, 8: 35, 10: 47, 12: 62, 14: 77, 16: 93, 18: 109, 20: 127 }).map(([k, v]) => [k, v * config.numberScale]));   // round 2 band (docs/notes/r2c.md: the CLASSES band x the +25% power-per-level growth) x number scale
+// A sensible boon pick per spec (boons at 4, 6, 8, 10, 12, 14, 16, 18, 20; at least one spec boon from 8).
 export const LOADOUT = {
-  warrior: ['cleaving_wind', 'rage_spikes', 'aftershock', 'ricochet_bash', 'blazing_bash'],
-  knight: ['cleaving_wind', 'rage_spikes', 'mirror_shield', 'earthsplitter', 'aftershock'],
-  berserker: ['cleaving_wind', 'rage_spikes', 'cyclone', 'axe_storm', 'meteor_heart'],
-  battlemage: ['cleaving_wind', 'rage_spikes', 'elemental_overlap', 'twin_runes', 'encore'],
+  warrior: ['cleaving_wind', 'rage_spikes', 'aftershock', 'ricochet_bash', 'blazing_bash', 'thunder_clap', 'juggernaut', 'war_banner', 'battle_hymn'],
+  knight: ['cleaving_wind', 'rage_spikes', 'mirror_shield', 'earthsplitter', 'aftershock', 'judgement', 'hallowed_ground', 'thunder_clap', 'juggernaut'],
+  berserker: ['cleaving_wind', 'rage_spikes', 'cyclone', 'axe_storm', 'meteor_heart', 'rampage', 'whirling_axes', 'thunder_clap', 'war_banner'],
+  battlemage: ['cleaving_wind', 'rage_spikes', 'elemental_overlap', 'twin_runes', 'encore', 'trinity_slash', 'elemental_crown', 'thunder_clap', 'war_banner'],
 };
-export const boonsAt = (spec, level) => LOADOUT[spec || 'warrior'].slice(0, [4, 6, 8, 10, 12].filter((l) => l <= level).length);
+export const boonsAt = (spec, level) => LOADOUT[spec || 'warrior'].slice(0, [4, 6, 8, 10, 12, 14, 16, 18, 20].filter((l) => l <= level).length);
 const dirTo = (dx, dy) => (Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0));
 
 /**
@@ -154,5 +154,22 @@ test('save/load of class, spec, boons and level restores a working kit', () => {
     for (let i = 0; i < 60; i++) { inp.attackPressed = i === 0 ? 1 : -1; again.step(DT, inp); }
     assert.ok(dealt > 0 && e.hp < 999, spec + ' attacks after load');
     assert.equal(again.hudState().abilities[2].unlocked, true);
+  }
+});
+
+// round 3 (levels 13-20): the band continues at a constant time to kill (62 x (L/12)^1.4: 77 / 93 / 109 / 127, docs/notes/r3a.md).
+test('round 3: each warrior spec at levels 14 / 16 / 18 / 20 inside the band (+-15%) and within +-15% of each other', () => {
+  const rows = {};
+  for (const spec of ['knight', 'berserker', 'battlemage']) for (const lv of [14, 16, 18, 20]) rows[spec + '@' + lv] = avgDps(spec, lv);
+  if (process.env.KIT_DPS_TABLE) console.log(JSON.stringify(rows, null, 1));
+  for (const k in rows) {
+    const lv = +k.split('@')[1];
+    const r = rows[k] / TARGET[lv];
+    assert.ok(r > 0.85 && r < 1.15, `${k}: ${rows[k].toFixed(1)} vs target ${TARGET[lv]}`);
+  }
+  for (const lv of [14, 16, 18, 20]) {
+    const v = ['knight', 'berserker', 'battlemage'].map((s) => rows[s + '@' + lv]);
+    const mean = v.reduce((a, b) => a + b, 0) / 3;
+    for (const x of v) assert.ok(Math.abs(x / mean - 1) < 0.15, `L${lv} specs within 15%: ${v.map((y) => y.toFixed(1))}`);
   }
 });

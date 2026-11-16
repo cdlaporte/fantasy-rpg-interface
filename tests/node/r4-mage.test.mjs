@@ -41,7 +41,7 @@ test('mastery data: six tier-3 entries with passive, ultimate, look patch (CONTR
     assert.equal(s.tier, 3);
     assert.ok(s.name && s.blurb && s.blurb.length < 100 && /^#[0-9a-f]{6}$/i.test(s.color), id);
     for (const k of ['hp', 'power', 'speed']) assert.equal(typeof s.mods[k], 'number');
-    assert.deepEqual(s.mods, data.specs[MASTERIES[id]].mods, id + ' keeps its subclass body');
+    assert.deepEqual(s.mods, { hp: 1, power: 1, speed: 1 }, id + ' keeps its subclass body (the subclass mods layer under it)');
     assert.ok(s.passive && s.passive.name && s.passive.desc && s.passive.desc.length < 110, id);
     assert.ok(s.ultimate && s.ultimate.name && s.ultimate.desc && ICONS.has(s.ultimate.icon), id);
     const l = s.look;
@@ -86,6 +86,7 @@ for (const id of IDS) {
     }
     // switching back to the subclass drops the mastery look and ultimate
     const ctx = mkM(id, 16);
+    if (ctx.game.sys.progression.setMastery) ctx.game.sys.progression.setMastery(null, { quiet: true });
     ctx.game.kits.set(ctx.p, 'mage', MASTERIES[id]);
     ctx.step(1);
     assert.equal(ctx.p.data.masteryId, null);
@@ -409,6 +410,7 @@ test('save-safe: saving mid-ultimate and loading gives a working kit; re-equippi
     const want = g2.progression.masteryId || (g2.debug && g2.debug.setMastery ? id : MASTERIES[id]);
     assert.ok([id, MASTERIES[id]].includes(g2.kits.active(g2.player).id), id + ' restores ' + want);
     // re-equip the subclass on the first game: everything the mastery spawned or changed is cleaned up
+    if (game.sys.progression.setMastery) game.sys.progression.setMastery(null, { quiet: true });
     game.kits.set(p, 'mage', MASTERIES[id]);
     ctx.step(2);
     for (const key of ['guardian_dragon', 'mirror_image', 'hall_mirror', 'mystic_avatar']) assert.equal(summons(ctx, key).length, 0, id + ' ' + key);

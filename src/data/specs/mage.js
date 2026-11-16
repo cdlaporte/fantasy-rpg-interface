@@ -169,7 +169,7 @@ export default {
   summoner: {
     id: 'summoner', from: 'conjurer', tier: 3, name: 'Summoner', color: EMERALD,
     blurb: 'Why fight alone? Command five familiars, a reborn Phoenix and a Guardian Dragon.',
-    mods: { hp: 1.1, power: 0.9, speed: 1 },
+    mods: { hp: 1, power: 1, speed: 1 },   // the subclass mods already apply (layered)
     look: {
       outfit: { style: 'robe', primary: '#1d7a4b', secondary: '#ffd36b', accent: EMERALD },
       hat: { style: 'crown', color: '#ffd36b' },
@@ -203,7 +203,7 @@ export default {
   illusionist: {
     id: 'illusionist', from: 'conjurer', tier: 3, name: 'Illusionist', color: ROSE,
     blurb: 'Which one is the real you? Every spell leaves a mirror image that fights, fools and pops.',
-    mods: { hp: 1.1, power: 0.9, speed: 1 },
+    mods: { hp: 1, power: 1, speed: 1 },   // the subclass mods already apply (layered)
     look: {
       outfit: { style: 'robe', primary: '#7a2a8c', secondary: '#d8b4ff', accent: ROSE },
       hat: { style: 'feather', color: ROSE },
@@ -228,7 +228,7 @@ export default {
   stormcaller: {
     id: 'stormcaller', from: 'sorcerer', tier: 3, name: 'Stormcaller', color: VOLT,
     blurb: 'Lightning that jumps from enemy to enemy, and a storm that follows you around.',
-    mods: { hp: 0.95, power: 1.15, speed: 1 },
+    mods: { hp: 1, power: 1, speed: 1 },   // the subclass mods already apply (layered)
     look: {
       outfit: { style: 'robe', primary: '#1c2a5a', secondary: '#eaf6ff', accent: VOLT },
       hat: { style: 'wizard', color: '#13204a' },
@@ -252,7 +252,7 @@ export default {
   pyromancer: {
     id: 'pyromancer', from: 'sorcerer', tier: 3, name: 'Pyromancer', color: FLAME,
     blurb: 'Set one enemy on fire and watch it spread. Then make it rain fireballs.',
-    mods: { hp: 0.95, power: 1.15, speed: 1 },
+    mods: { hp: 1, power: 1, speed: 1 },   // the subclass mods already apply (layered)
     look: {
       outfit: { style: 'robe', primary: '#8c0f12', secondary: '#ffd84a', accent: FLAME },
       hat: { style: 'horned', color: '#3a1010' },
@@ -278,7 +278,7 @@ export default {
   sage: {
     id: 'sage', from: 'monk', tier: 3, name: 'Sage', color: LOTUS,
     blurb: 'Calm as a lake. Stand your ground, heal your friends, and slow time itself.',
-    mods: { hp: 1.3, power: 1, speed: 1.15 },
+    mods: { hp: 1, power: 1, speed: 1 },   // the subclass mods already apply (layered)
     look: {
       outfit: { style: 'gi', primary: '#f4f1e6', secondary: LOTUS, accent: '#ffe9a0' },
       hat: { style: 'circlet', color: '#ffe9a0' },
@@ -303,7 +303,7 @@ export default {
   mystic: {
     id: 'mystic', from: 'monk', tier: 3, name: 'Mystic', color: SPIRIT,
     blurb: 'Your punches fly. Then a giant spirit version of you punches the ground.',
-    mods: { hp: 1.3, power: 1, speed: 1.15 },
+    mods: { hp: 1, power: 1, speed: 1 },   // the subclass mods already apply (layered)
     look: {
       outfit: { style: 'gi', primary: '#3a2470', secondary: '#7fe7ff', accent: SPIRIT },
       hat: { style: 'bandana', color: SPIRIT },

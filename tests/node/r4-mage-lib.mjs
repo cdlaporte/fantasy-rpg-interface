@@ -10,7 +10,9 @@ export function mkM(mastery, level = 16, boons = [], opts = {}) {
   const sub = MASTERIES[mastery] || null;
   const ctx = mk(sub, level, boons, opts);
   if (mastery && MASTERIES[mastery]) {
-    ctx.game.kits.set(ctx.p, 'mage', mastery);
+    const pr = ctx.game.sys.progression;   // equip the way the game does; the core keeps the kit in sync
+    if (pr && typeof pr.setMastery === 'function') { try { pr.setMastery(mastery, { quiet: true }); } catch { /* fall through */ } }
+    if (ctx.p.data.masteryId !== mastery) ctx.game.kits.set(ctx.p, 'mage', mastery);
     ctx.step(1);
     ctx.rec.reset();
   }

@@ -3,8 +3,9 @@
 // first enemies it pierces; a Fireball's blast arcs one from the enemy nearest the explosion. Every chain hit builds a
 // Static pip (HUD `Static`, max 5); with full Static the next charged shot also calls a sky-bolt volley down on every
 // enemy around (fx `bolt` from the sky + `ring`, short stun) and empties the meter. Shift = Thunderstorm (replaces
-// Cataclysm): the sky darkens and a storm follows you for 6 s, striking enemies around you about four times a second
-// (sky `bolt`, `ring`, stun, a little chain), with white `screenFlash`es and thunder shakes.
+// Cataclysm): the sky darkens and a storm follows you for 6 s, striking enemies around you about four times a second,
+// one bolt per three enemies around (up to four; sky `bolt`, `ring`, stun, a little chain), with white `screenFlash`es
+// and thunder shakes.
 // Numbers: data/specs/mage.js `stormcaller.kit`. State keys: `sc_*` in p.data.kit.
 import SPECS from '../../data/specs/mage.js';
 import sorcerer from './sorcerer.js';

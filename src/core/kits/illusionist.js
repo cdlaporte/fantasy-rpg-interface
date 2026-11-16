@@ -3,8 +3,8 @@
 // mirror copy of you (your look, rose `tint`, see-through, fxTag `shadow`) for a few seconds. Copies taunt enemies, copy
 // each Spirit Bolt you fire with a rose mini-bolt of their own, and burst in a rose ring when they fade or fall (max 3).
 // Blink leaves the copy where you stood. Shift = Hall of Mirrors (replaces Grand Conjuration): six mirror copies appear
-// in a ring around you, linked by flashing mirror beams, and all cast Spirit Bolts at the nearest enemies for 7 s, then
-// shatter one after another. Numbers: data/specs/mage.js `illusionist.kit`. State keys: `il_*` in p.data.kit.
+// in a ring around you, linked by flashing mirror beams, and all cast Spirit Bolts at the nearest enemies for 7 s (two
+// each in a big crowd), then shatter one after another. Numbers: data/specs/mage.js `illusionist.kit`. State keys: `il_*` in p.data.kit.
 import SPECS from '../../data/specs/mage.js';
 import conjurer from './conjurer.js';
 import { defer, enemiesNear, projLook, sdata, setPatch } from './mage.js';

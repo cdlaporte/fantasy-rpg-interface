@@ -1,9 +1,9 @@
 // SUMMONER mastery (tier 3, layered over the Conjurer; docs/MASTERY.md). The bigger army.
-// Passive Legion: up to five familiars, Summon Familiar (F) calls two at a time, and the order adds a Phoenix familiar
-// (fire-colored `flyer` with `wings_bird` + `glow`, throws small fireballs) that bursts into flame when it falls and is
-// reborn from its ashes a few seconds later. Shift = Guardian Dragon (replaces Grand Conjuration): a giant emerald `flyer`
+// Passive Legion: up to five familiars, Summon Familiar (F) calls two at a time (at the cap the oldest one that is not the
+// Phoenix makes room), led by a Phoenix familiar (called first whenever you have none; fire-colored `flyer` with
+// `wings_bird` + `glow`, throws small fireballs) that bursts into flame when it falls and is reborn a few seconds later. Shift = Guardian Dragon (replaces Grand Conjuration): a giant emerald `flyer`
 // (`wings_bat` + `glow`, size 2.4) drops out of the sky with a shockwave, flies to the biggest crowds and breathes fire
-// cones that leave burning ground, while the familiars grow and gain haste; it ends with a fiery dive.
+// cones that leave burning ground (faster in a big crowd: `crowd` enemies around), while the familiars grow and gain haste; it ends with a fiery dive.
 // Numbers: data/specs/mage.js `summoner.kit`. State keys: `sm_*` in p.data.kit.
 import SPECS from '../../data/specs/mage.js';
 import { boon, defer, enemiesNear, sdata, setPatch } from './mage.js';

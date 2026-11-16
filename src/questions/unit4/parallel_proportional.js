@@ -75,7 +75,7 @@ function build(rng, difficulty) {
   const x2 = (y) => gap + lean2 * (-y) / Math.tan(th2);
   // keep the transversals apart inside the band
   for (const y of ys) if (x2(y) - x1(y) < 2.2) return null;
-  for (const y of [ys[0] + H * 0.3, ys[2] - H * 0.3]) if (x2(y) - x1(y) < 1.2) return null;   // not even past the lines
+  for (const y of [ys[0] + H * 0.2, ys[2] - H * 0.2]) if (x2(y) - x1(y) < 1.2) return null;   // not even past the lines
   const left = Math.min(...ys.map(x1)) - 1.6, right = Math.max(...ys.map(x2)) + 1.6;
   const spin = deg(rng.range(-16, 16));   // near-horizontal lines leave room for the labels
   const R = (pt) => rot(pt, spin);
@@ -86,7 +86,7 @@ function build(rng, difficulty) {
     const t = ((x1(y) + x2(y)) / 2 - left) / (right - left);
     fig.parallel(R([left, y]), R([right, y]), 1, t);
   }
-  const yTop = ys[0] + H * 0.25, yBot = ys[2] - H * 0.25;      // transversals stick out past the outer lines
+  const yTop = ys[0] + H * 0.16, yBot = ys[2] - H * 0.16;      // transversals stick out past the outer lines
   const tPts = (fx) => [R([fx(yTop), yTop]), R([fx(yBot), yBot])];
   const [t1a, t1b] = tPts(x1), [t2a, t2b] = tPts(x2);
   fig.seg(t1a, t1b, { ends: 'both', ext: 4 }).seg(t2a, t2b, { ends: 'both', ext: 4 });
@@ -114,7 +114,7 @@ function build(rng, difficulty) {
     const t = lab[key];
     if (t.k !== 0 && (t.k !== 1 || t.h !== 0)) steps.push(`Check: ${termText(t)} = ${num(vals[key])} when x = ${num(x)}.`);
   }
-  const r = fig.render({ title: 'Three parallel lines cut by two transversals' });
+  const r = fig.render({ title: 'Three parallel lines cut by two transversals', maxW: 420, maxH: 262, pad: 28 });
   if (!figOk(r)) return null;
   return numberQuestion({
     topic: TOPIC, difficulty, prompt: 'Find the value of x.', figure: r.svg, figureMeta: r.meta, answer: x, solution: steps,

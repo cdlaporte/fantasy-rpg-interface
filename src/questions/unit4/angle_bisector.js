@@ -87,7 +87,10 @@ function build(rng, difficulty) {
       `${fracText(lab.AD, lab.DC)} = ${fracText(lab.BA, lab.BC)}`,
       ...r.steps.slice(),
     ];
-    if (!segFirst) steps[1] = `${fracText(lab.BA, lab.BC)} = ${fracText(lab.AD, lab.DC)}`;
+    if (!segFirst) {
+      steps[0] = `${nm.B}${nm.D} bisects ${ANG}${nm.B}, so ${names.BA}/${names.BC} = ${names.AD}/${names.DC}.`;
+      steps[1] = `${fracText(lab.BA, lab.BC)} = ${fracText(lab.AD, lab.DC)}`;
+    }
     const ut = lab[unk];
     if (ut.k !== 1 || ut.h !== 0) steps.push(`Check: ${termText(ut)} = ${num(vals[unk])} when x = ${num(x)}.`);
   }

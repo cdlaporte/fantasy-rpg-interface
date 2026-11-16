@@ -108,6 +108,8 @@
 .tch-class { border-left: 6px solid var(--cc, #9a8a7a) !important; }
 .tch-class.on { background: color-mix(in srgb, var(--cc, #9a8a7a) 30%, #fff6df); }
 .tch-go { background: #d9e9ff; }
+/* round 4: the MASTERY row (the current subclass's two masteries + None) */
+.tch-mastery.dim, .tch-mastery-none.dim { opacity: 0.55; }
 .tch-god.on { background: #ffd8a8; }
 .tch-tools .tch-back { flex: 0 0 auto !important; margin-left: auto; margin-right: auto; }
 

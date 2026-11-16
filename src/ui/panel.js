@@ -177,7 +177,16 @@ export function createPanel(root, ctx = {}) {
   const nSpecText = el('span', 'nudge-text');
   let nSpecKey = keycap(keyLabel('boon'));
   add(nSpec, iconCanvas('up', 'icon-sm'), nSpecText, nSpecKey);
-  add(nudges, nBoon, nSpec);
+  // round 4: the mastery nudge (level 15): "See Mr. Laporte!" until the ceremony, then "Mastery ready!" + Tab
+  const nMastery = el('div', 'nudge nudge-spec nudge-mastery');
+  const nMasteryText = el('span', 'nudge-text');
+  let nMasteryKey = keycap(keyLabel('boon'));
+  add(nMastery, iconCanvas('star', 'icon-sm'), nMasteryText, nMasteryKey);
+  nMastery.addEventListener('click', () => {
+    const g = game0 || ctx.game;
+    if (g && g.commands && g.commands.masteryNudge) g.commands.masteryNudge();
+  });
+  add(nudges, nBoon, nSpec, nMastery);
 
   add(wrap, hero, bars, basic, el('div', 'sec-title pxfont sec-abil', 'ABILITIES'), abil,
     el('div', 'sec-title pxfont sec-items', 'ITEMS'), items, quest, comps, nudges);
@@ -186,7 +195,7 @@ export function createPanel(root, ctx = {}) {
   // ---- tooltips (one shared element, ui/tooltip.js)
   let lastHud = null;
   const H = () => lastHud || {};
-  tip(portrait.parentElement, () => { const p = H().player || {}; return { title: p.name || 'You', tag: 'LV ' + (p.level || 1), lines: [p.className ? (p.specName ? `${p.className}, ${p.specName}` : p.className) : 'Adventurer'] }; });
+  tip(portrait.parentElement, () => { const p = H().player || {}; return { title: p.name || 'You', tag: 'LV ' + (p.level || 1), lines: [p.className ? [p.className, p.specName, p.masteryName].filter(Boolean).join(', ') : 'Adventurer'] }; });
   tip(hp.root, () => { const p = H().player || {}; return { title: 'Health', meta: [`${Math.ceil(p.hp || 0)} / ${p.hpMax || 0}`], lines: ['If it reaches zero you are knocked out. Potions and resting bring it back.'] }; });
   tip(xp.root, () => { const p = H().player || {}; return { title: 'Experience', meta: [`${p.xp || 0} / ${p.xpNext || 0}`], lines: ['Fill the bar to level up. Right answers earn the most.'] }; });
   tip(res.root, () => {
@@ -234,6 +243,7 @@ export function createPanel(root, ctx = {}) {
     return { title: it.name || d.name || it.id, tag: keyLabel('item' + (i + 1)), meta, lines: [it.desc || d.desc || ''] };
   }));
   tip(nBoon, () => ({ title: 'Boon ready', lines: ['You earned a boon. Press ' + keyLabel('boon') + ' to choose one of three.'] }));
+  tip(nMastery, () => ({ title: 'Mastery ready', lines: [ctx.game && ctx.game.flags && ctx.game.flags.mastery_ceremony_done ? 'Press ' + keyLabel('boon') + ' (or click) to choose your mastery.' : 'Go and see Mr. Laporte in his office to choose your mastery.'] }));
   tip(nSpec, () => ({ title: 'New path ready', lines: [ctx.game && ctx.game.flags && ctx.game.flags.spec_ceremony_done ? 'Press ' + keyLabel('boon') + ' to choose your specialization.' : 'Go and see Mr. Laporte to choose your specialization.'] }));
 
   // key names follow the player's bindings
@@ -242,6 +252,7 @@ export function createPanel(root, ctx = {}) {
     islots.forEach((sl, i) => { sl.k.textContent = keyLabel('item' + (i + 1)); });
     const bk = keycap(keyLabel('boon')); nBoon.replaceChild(bk, nBoon.lastChild);
     const sk = keycap(keyLabel('boon')); nSpec.replaceChild(sk, nSpecKey); nSpecKey = sk; show(sk, !!(game0 && game0.flags && game0.flags.spec_ceremony_done));
+    const mk = keycap(keyLabel('boon')); nMastery.replaceChild(mk, nMasteryKey); nMasteryKey = mk; show(mk, !!(game0 && game0.flags && game0.flags.mastery_ceremony_done));
   }
   let game0 = ctx.game;
   const offBind = onBindingsChange(relabel);
@@ -325,7 +336,9 @@ export function createPanel(root, ctx = {}) {
       if (key !== pKey) { pKey = key; blitGrid(portrait, buildPortrait(p.look, { mood, t, bg: 'sky' })); }
       setClass(frame, 'cloaked', !!p.cloaked);
       setText(name, p.name || '');
-      const clsText = p.className ? (p.specName ? `${p.className} · ${p.specName}` : p.className) : (p.cloaked ? 'Mysterious traveler' : 'Novice');
+      // round 4: "Class · Subclass · Mastery" (the class is dropped when all three would not fit)
+      const clsText = p.className ? (p.masteryName ? `${(p.className + p.specName + p.masteryName).length > 22 ? '' : p.className + ' · '}${p.specName} · ${p.masteryName}`
+        : p.specName ? `${p.className} · ${p.specName}` : p.className) : (p.cloaked ? 'Mysterious traveler' : 'Novice');
       setText(cls, clsText);
       setText(lv, 'LV ' + (p.level || 1));
       setText(goldN, fmtNum(p.gold || 0));
@@ -427,7 +440,12 @@ export function createPanel(root, ctx = {}) {
       const ceremonyDone = game && game.flags && game.flags.spec_ceremony_done;
       setText(nSpecText, ceremonyDone ? 'New path ready!' : 'See Mr. Laporte!');
       show(nSpecKey, !!ceremonyDone);
-      show(nudges, nb > 0 || !!hud.pendingSpec);
+      const pm = !!p.pendingMastery && !hud.pendingSpec;
+      show(nMastery, pm);
+      const mDone = !!(game && game.flags && game.flags.mastery_ceremony_done);
+      setText(nMasteryText, mDone ? 'Mastery ready!' : 'See Mr. Laporte!');
+      show(nMasteryKey, mDone);
+      show(nudges, nb > 0 || !!hud.pendingSpec || pm);
     },
     dispose() { offBind(); wrap.remove(); },
   };

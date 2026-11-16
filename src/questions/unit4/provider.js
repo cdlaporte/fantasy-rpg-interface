@@ -15,6 +15,7 @@ export const CONTEXT_INFO = {
   levelup: ['Level up', 'Answer for a level-up bonus.'],
   boon: ['Level-up bonus', 'Right answer: choose from 3 boons (wrong: 2).'],
   spec: ['Specialization trial', 'Answer, then choose your specialization.'],
+  mastery: ['Mastery trial', 'Answer, then choose your mastery.'],
   gate: ['Rune gate', 'Answer correctly to break the seal.'],
   chest: ['Rune chest', 'Right answer: bonus treasure inside.'],
   scholar_chest: ["Scholar's chest", 'Solve it to open the chest. (Wrong: try again with a new problem.)'],

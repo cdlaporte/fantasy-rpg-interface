@@ -393,17 +393,22 @@ export default {
 
     // ---- progression events ----
     const prog = () => game.sys.progression || {};
+    // round 4: the top layer id progression wants (its mastery, else its subclass) and the class a kit id roots in
+    const topOf = (pr) => pr.masteryId || pr.specId || null;
+    const rootOf = (id) => { let k = KITS[id]; for (let n = 0; k && k.parent && n < 4; n++) k = KITS[k.parent]; return k ? k.id : null; };
     game.bus.on('class:set', ({ classId }) => {
       const p = game.player;
       if (!p) return;
-      const sid = prog().specId && KITS[prog().specId] && KITS[prog().specId].parent === classId ? prog().specId : null;
+      const top = topOf(prog());
+      const sid = top && KITS[top] && KITS[top].parent && rootOf(top) === classId ? top : null;
       api.set(p, classId, sid);
     });
     game.bus.on('spec:set', ({ specId }) => {
       const p = game.player;
       if (!p) return;
       const cid = p.data.classId || prog().classId || (KITS[specId] && KITS[specId].parent) || null;
-      api.set(p, cid, specId);
+      const mid = prog().masteryId;
+      api.set(p, cid, mid && KITS[mid] && KITS[mid].parent === specId ? mid : specId);
     });
     let fbKey = null, fbList = null;
     function fallbackAbility(L, slot) {
@@ -435,12 +440,13 @@ export default {
     api._update = (dt) => {
       // Follow progression even if it never emitted 'class:set' / 'spec:set' (e.g. after loading a save).
       // Only reacts to CHANGES of progression.classId/specId, so a direct kits.set() (tests, debug) sticks.
+      // round 4: the spec side is the mastery when there is one (p.data.specId stays the subclass, masteryId the mastery).
       const p = game.player, pr = game.sys.progression;
       if (p && pr && pr.classId !== undefined) {
-        const cid = pr.classId || null, sid = pr.specId || null;
+        const cid = pr.classId || null, sid = pr.masteryId || pr.specId || null;
         if (cid !== seenClass || sid !== seenSpec) {
           seenClass = cid; seenSpec = sid;
-          if (cid !== (p.data.classId || null) || sid !== (p.data.specId || null)) api.set(p, cid, sid);
+          if (cid !== (p.data.classId || null) || sid !== (p.data.masteryId || p.data.specId || null)) api.set(p, cid, sid);
         }
       }
       for (let i = withKits.length - 1; i >= 0; i--) {

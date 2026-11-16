@@ -187,6 +187,7 @@ canvas.icon-xl { width: 48px; height: 48px; }
   box-shadow: var(--notch-drop), inset 0 3px 0 #fff3c4; animation: nudge 1.2s ease-in-out infinite; font-weight: 600; font-size: calc(17px * var(--ui-scale)); }
 .nudge-text { flex: 1; }
 .nudge-spec { background: #b48cff; }
+.nudge-mastery { background: #ffb45a; cursor: pointer; }
 
 @keyframes glow { 50% { box-shadow: var(--notch), 0 0 0 3px rgba(255, 209, 102, 0.9), inset 0 3px 0 #fff; } }
 @keyframes ready-pop { 0% { transform: scale(1); } 40% { transform: scale(1.15); background: #fff; } 100% { transform: scale(1); } }
@@ -405,6 +406,10 @@ canvas.icon-xl { width: 48px; height: 48px; }
 .ab-lv { font-size: calc(10px * var(--ui-scale)); color: #fff; background: var(--wood-3); padding: 2px 3px 1px; }
 .ab-tag { font-size: calc(10px * var(--ui-scale)); color: #fff; background: var(--red); padding: 2px 3px 1px; }
 .ab-desc { font-size: calc(16px * var(--ui-scale)); line-height: 1.1; color: var(--ink-2); }
+/* round 4: the mastery picker (spec picker, tier 3): two wider cards, the passive tag, the subclass line */
+.mastery-picker .class-card { width: 300px; }
+.class-from { font-size: calc(10px * var(--ui-scale)); text-align: center; color: var(--ink-2); margin: -2px 8px 6px; letter-spacing: 1px; }
+.ab-passive .ab-tag { background: #6a3fb5; }
 .boon-row { gap: 20px; }
 .boon-card { width: 240px; padding: 14px 14px 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; cursor: pointer; text-align: center; }
 .boon-card.sel { transform: translateY(-8px); box-shadow: var(--notch), 0 0 0 6px var(--gold), 6px 10px 0 6px rgba(20, 10, 10, 0.45); background: #fff8e2; }
@@ -626,6 +631,8 @@ canvas.icon-xl { width: 48px; height: 48px; }
   .class-portrait { width: 64px; height: 64px; }
   .class-blurb { font-size: calc(17px * var(--ui-scale)); }
   .ab-desc { display: none; }
+  .mastery-picker .class-card { width: 290px; }
+  .mastery-picker .ab-desc { display: block; font-size: calc(15px * var(--ui-scale)); }
   .boon-card { width: 205px; }
   .boon-row { gap: 14px; }
   .look-portrait { width: 104px; height: 104px; }

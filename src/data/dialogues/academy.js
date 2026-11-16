@@ -23,6 +23,9 @@ export default {
   laporte: tree('laporte', [S('laporte', '{name}. What do you need?')], 'Anything else?', [
     { text: 'You wanted to see me?', if: [['level', '>=', 8], ['flag', 'class_chosen'], once('spec_ceremony_done')],
       do: [['cutscene', 'spec_ceremony']], end: true },
+    // round 4: the mastery ceremony (level 15 with a subclass; progression sets `mastery_ready` exactly then)
+    { text: 'You wanted to see me?', if: [['level', '>=', 15], ['spec'], ['flag', 'mastery_ready'], ['flag', 'spec_ceremony_done'],
+      once('mastery_ceremony_done')], do: [['cutscene', 'mastery_ceremony']], end: true },
     { text: 'I did my first steps!', if: [['quest', 'main_first_steps', 'done'], once('laporte_fs_chat')], goto: 'fs_done' },
     { text: 'Any advice?', if: [below(5)], goto: 'adv_low' },
     { text: 'Any advice?', if: [['level', '>=', 5], below(8)], goto: 'adv_mid' },

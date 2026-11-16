@@ -89,7 +89,7 @@ export default {
         systems: JSON.parse(JSON.stringify(game.saveSystems())),
         meta: {
           savedAt: game.t, tick: game.tick, level: prog.level || 1, classId: prog.classId || null,
-          specId: prog.specId || null, zoneName: (game.zone && game.zone.name) || '',
+          specId: prog.specId || null, masteryId: prog.masteryId || null, zoneName: (game.zone && game.zone.name) || '',
         },
       };
     }

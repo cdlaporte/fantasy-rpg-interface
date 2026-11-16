@@ -63,13 +63,15 @@ export default {
       for (const k of list) game.setFlag(k, true);
     }
 
-    function setupPlayer({ level = 1, classId = null, specId = null }) {
+    function setupPlayer({ level = 1, classId = null, specId = null, masteryId = null }) {
       const pr = S('progression');
       if (pr.reset) pr.reset();
       if (pr.setLevel) pr.setLevel(level, { quiet: true, boons: false });
       if (classId && pr.setClass) pr.setClass(classId, { quiet: true });
       if (specId && pr.setSpec) pr.setSpec(specId, { quiet: true });
-      if (pr) { pr.pendingSpec = !!(classId && !specId && level >= 8); }
+      // round 4: a tier-3 mastery (sets its subclass and class when they differ)
+      if (masteryId && pr.setMastery) pr.setMastery(masteryId, { quiet: true });
+      if (pr) { pr.pendingSpec = !!(pr.classId && !pr.specId && level >= 8); }
       if (pr.refreshLook) pr.refreshLook();
       const p = game.player;
       if (p) p.hp = p.hpMax;
@@ -272,11 +274,18 @@ export default {
         return result('stress', m, z, { enemies: enemies.length, projectiles });
       },
       class_demo(o, m) {
-        const classId = o.classId || 'warrior';
-        const level = o.level || 12;
-        const specId = o.specId === undefined ? (level >= 8 ? DEFAULT_SPEC[classId] : null) : o.specId;
-        setFlags(STORY_FLAGS.classed.concat(specId ? ['spec_ready', 'spec_ceremony_done'] : []));
-        setupPlayer({ level, classId, specId });
+        // round 4: opts.masteryId (a tier-3 mastery) sets its subclass and class; the level defaults to 15 then
+        const pr0 = S('progression');
+        const mdef = o.masteryId && pr0.masteryDef ? pr0.masteryDef(o.masteryId) : null;
+        if (o.masteryId && !mdef) m.push('mastery:' + o.masteryId);
+        const mSpec = mdef ? mdef.from : null;
+        const mClass = mSpec && pr0.specDef && pr0.specDef(mSpec) ? pr0.specDef(mSpec).from : null;
+        const classId = mClass || o.classId || 'warrior';
+        const level = o.level || (mdef ? 15 : 12);
+        const specId = mSpec || (o.specId === undefined ? (level >= 8 ? DEFAULT_SPEC[classId] : null) : o.specId);
+        const masteryId = mdef ? o.masteryId : null;
+        setFlags(STORY_FLAGS.classed.concat(specId ? ['spec_ready', 'spec_ceremony_done'] : [], masteryId ? ['mastery_ready', 'mastery_ceremony_done'] : []));
+        setupPlayer({ level, classId, specId, masteryId });
         const z = load('test', 'start', m);
         api.god(true);
         const p = game.player;
@@ -289,7 +298,7 @@ export default {
         if (kind === 'rat') for (const d of dummies) disableAi(d);
         const pr = S('progression');
         const abilities = pr.abilityList ? pr.abilityList().filter((a) => a.unlock <= level).map((a) => a.slot) : [];
-        return result('class_demo', m, z, { classId, specId, level, dummies: dummies.map((d) => d.id), abilities });
+        return result('class_demo', m, z, { classId, specId, masteryId: pr.masteryId || null, level, dummies: dummies.map((d) => d.id), abilities });
       },
     };
 
@@ -310,6 +319,7 @@ export default {
             stats: Object.assign({}, p.stats), lookRev: p.lookRev } : null,
           camera: { x: game.camera.x, y: game.camera.y, zoom: game.camera.zoom },
           level: pr.level, xp: pr.xp, xpNext: pr.xpNext, classId: pr.classId || null, specId: pr.specId || null,
+          masteryId: pr.masteryId || null, pendingMastery: !!pr.pendingMastery,
           rank: pr.rank ? pr.rank() : 1, boons: pr.boons ? pr.boons.slice() : [], pendingBoons: pr.pendingBoons || 0,
           pendingSpec: !!pr.pendingSpec, gold: inv.gold || 0, items: Object.assign({}, inv.items || {}),
           hotbar: inv.hotbar ? inv.hotbar.slice() : [], question: g.pending ? g.pending() : null,
@@ -329,7 +339,7 @@ export default {
         const missing = [];
         if (!fn) return { ok: false, id, missing: ['scenario:' + id] };
         let opts = args[0];
-        if (id === 'class_demo' && typeof opts === 'string') opts = { classId: args[0], specId: args[1], level: args[2] };
+        if (id === 'class_demo' && typeof opts === 'string') opts = { classId: args[0], specId: args[1], level: args[2], masteryId: args[3] };
         opts = opts && typeof opts === 'object' ? opts : {};
         try {
           clearTransient();
@@ -341,7 +351,10 @@ export default {
           return { ok: false, id, zone: game.zone && game.zone.id, missing };
         }
       },
-      class_demo(classId, specId, level) { return api.scenario('class_demo', { classId, specId, level }); },
+      class_demo(classId, specId, level, masteryId) {
+        if (classId && typeof classId === 'object') return api.scenario('class_demo', classId);
+        return api.scenario('class_demo', { classId, specId, level, masteryId });
+      },
       scenarios() { return Object.keys(SCENARIOS); },
       teleport(zone, markerOrXY) {
         if (zone && zone !== (game.zone && game.zone.id)) {
@@ -356,6 +369,14 @@ export default {
       setLevel(n) { const pr = S('progression'); if (pr.setLevel) pr.setLevel(n); return pr.level; },
       setClass(id) { const pr = S('progression'); return pr.setClass ? pr.setClass(id) : false; },
       setSpec(id) { const pr = S('progression'); return pr.setSpec ? pr.setSpec(id) : false; },
+      /** round 4: equip a tier-3 mastery at the current level (sets its subclass and class if needed); null removes it. */
+      setMastery(id, opts) {
+        const pr = S('progression');
+        if (!pr.setMastery) return false;
+        const ok = pr.setMastery(id || null, opts || {});
+        if (ok && id) for (const f of ['spec_ready', 'spec_ceremony_done', 'mastery_ready', 'mastery_ceremony_done']) if (!game.flags[f]) game.setFlag(f, true);
+        return ok;
+      },
       giveItem(id, n = 1) { const inv = S('inventory'); return inv.give ? inv.give(id, n) : 0; },
       giveGold(n) { const inv = S('inventory'); return inv.addGold ? inv.addGold(n) : 0; },
       setFlag(k, v = true) { game.setFlag(k, v); },
@@ -470,6 +491,7 @@ export default {
       const pr = S('progression');
       if (pr.classId) addFlags(['town_seen', 'class_chosen', 'forest_open']);
       if (pr.specId) addFlags(['spec_ready', 'spec_ceremony_done']);
+      if (pr.masteryId) addFlags(['mastery_ready', 'mastery_ceremony_done']);
     }
     function settle() {
       const pr = S('progression');
@@ -572,8 +594,25 @@ export default {
       levelDown: gate(() => { const pr = P(); if (pr.level <= 1) return false; pr.setLevel(pr.level - 1, { quiet: true }); return true; }),
       setLevel: gate((n) => { P().setLevel(n, { quiet: true }); return true; }),
       // the plain class: picking Warrior while a Knight drops the subclass
-      setClass: gate((id) => { const pr = P(); if (pr.classId === id && pr.specId && pr.classDef(id)) { pr.specId = null; pr.pendingSpec = false; } return pr.setClass(id); }),
-      setSpec: gate((id) => P().setSpec(id)),
+      setClass: gate((id) => {
+        const pr = P();
+        if (pr.classId === id && pr.specId && pr.classDef(id)) { pr.specId = null; pr.pendingSpec = false; pr.masteryId = null; pr.pendingMastery = false; }
+        return pr.setClass(id);
+      }),
+      // the plain subclass: picking Knight while a Paladin drops the mastery
+      setSpec: gate((id) => {
+        const pr = P();
+        if (pr.specId === id && pr.masteryId && pr.setMastery) { pr.setMastery(null, { quiet: true }); return true; }
+        return pr.setSpec(id);
+      }),
+      // round 4: any mastery from level 8, instantly at the current level (its subclass and class are set if needed)
+      setMastery: gate((id) => {
+        const pr = P();
+        if (!pr.setMastery) return false;
+        if (!id) return pr.setMastery(null, { quiet: true }) || true;
+        if (pr.level < 8) return false;
+        return pr.setMastery(id);
+      }),
       god: gate((b) => { api.god(b); return true; }),
       isGod: () => god,
       gold: gate((n) => { const inv = S('inventory'); if (inv.addGold) inv.addGold(n); return true; }),

@@ -237,6 +237,10 @@ export const DEFAULT_BOONS = [
 export const RANK_LEVELS = [1, 4, 8, 12, 16];
 export const BOON_LEVELS = [4, 6, 8, 10, 12, 14, 16, 18, 20];   // round 3: cap 20 (docs/notes/r3a.md)
 export const SPEC_LEVEL = 8;
+/** round 4: the tier-3 mastery (docs/MASTERY.md): ceremony with Laporte at 15, transform + passive + upgraded ultimate. */
+export const MASTERY_LEVEL = 15;
+/** round 4: a right answer at the mastery trial adds this much power, permanently (saved). */
+export const MASTERY_TRIAL_BONUS = 0.05;
 export const AURA_LEVEL = 10;
 /** round 3: from this level the class aura is "empowered" (brighter, `tier: 2`, the weapon glows in the aura color). */
 export const EMPOWER_LEVEL = 14;
@@ -284,6 +288,7 @@ export function rankAt(level) {
   return Math.max(1, r);
 }
 
+const titleCase = (id) => String(id || '').split(/[_\s-]+/).filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join(' ');
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const clone = (v) => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)));
 
@@ -381,7 +386,7 @@ export default {
     // picker in progress: {type, resolve, chosen}
     let picker = null;
     let boonAsking = false;
-    let className = '', specName = '';
+    let className = '', specName = '', masteryName = '';
     let lastReviveAsk = -Infinity;
 
     // ---------- definitions ----------
@@ -416,7 +421,53 @@ export default {
       return unionIds(DEFAULT_CLASSES, data().classes).filter((k) => k !== 'novice' && (classDef(k) || {}).pickable !== false);
     }
     function specIds(classId) {
-      return unionIds(DEFAULT_SPECS, data().specs).filter((id) => { const s = specDef(id); return s && (!classId || s.from === classId); });
+      return unionIds(DEFAULT_SPECS, data().specs).filter((id) => { const s = specDef(id); return s && s.tier !== 3 && (!classId || s.from === classId); });
+    }
+    // ---------- round 4: tier-3 masteries (docs/MASTERY.md) ----------
+    // Data entries in src/data/specs/<class>.js ({id, from: '<subclass>', tier: 3, name, blurb, color, mods, look,
+    // passive, ultimate}) win field by field; a mastery with only its kit stub (registry `{id, parent, tier: 3}`) still
+    // works with fallbacks: its id title-cased as the name, the subclass color, no mods.
+    const kitReg = () => { const k = kits(); return (k && k.registry) || {}; };
+    function masteryDef(id) {
+      if (!id) return null;
+      const d = (data().specs || {})[id];
+      const kit = kitReg()[id];
+      if (!((d && d.tier === 3) || (kit && kit.tier === 3))) return null;
+      const from = (d && d.from) || (kit && kit.parent) || null;
+      const sub = from ? specDef(from) : null;
+      const out = mergeDef({ id, from, tier: 3, name: titleCase(id), blurb: '', color: (sub && sub.color) || '#ffd24a',
+        look: null, passive: null, ultimate: null }, d);
+      out.mods = Object.assign({ hp: 1, power: 1, speed: 1, defense: 1 }, d && d.mods);
+      out.id = id; out.tier = 3; out.from = from;
+      return out;
+    }
+    const isMastery = (id) => !!masteryDef(id);
+    /** The masteries of a subclass (all 18 when no subclass is given): kit registry order, then data-only entries. */
+    function masteryIds(specId) {
+      const out = [];
+      const reg = kitReg();
+      for (const k of Object.keys(reg)) if (reg[k] && reg[k].tier === 3) out.push(k);
+      const ds = data().specs || {};
+      for (const k of Object.keys(ds)) if (ds[k] && ds[k].tier === 3 && !out.includes(k)) out.push(k);
+      return out.filter((id) => { const m = masteryDef(id); return m && m.from && (!specId || m.from === specId); });
+    }
+    /** A mastery's abilities: data `abilities`, else its `ultimate` on the shift slot (unlock 15), else its kit's. */
+    function masteryAbilities(m) {
+      if (!m) return [];
+      let list = normAbilities(m.abilities);
+      if (!list.length && m.ultimate && (m.ultimate.name || m.ultimate.desc)) {
+        const u = m.ultimate;
+        list = normAbilities([{ slot: 'shift', id: u.id || m.id + '_ultimate', name: u.name || m.name, icon: u.icon || 'star',
+          unlock: typeof u.unlock === 'number' ? u.unlock : MASTERY_LEVEL, desc: u.desc || '' }]);
+      }
+      if (!list.length) { const kit = kitReg()[m.id]; list = normAbilities(kit && kit.abilities); }
+      return list;
+    }
+    /** `over` replaces the entries of `list` with the same slot (in place), the rest are appended. */
+    function overSlots(list, over) {
+      const out = list.slice();
+      for (const a of over) { const i = out.findIndex((b) => b.slot === a.slot); if (i >= 0) out[i] = a; else out.push(a); }
+      return out;
     }
     function boonDefs() {
       const db = data().boons || {};
@@ -428,9 +479,15 @@ export default {
     function boonDef(id) { return boonDefs().find((b) => b.id === id) || null; }
 
     /** Abilities for a class/spec: the active kit when it lists any, else data, else the CLASSES defaults. */
-    function abilityList(classId = api.classId, specId = api.specId, useKit = true) {
+    function abilityList(classId = api.classId, specId = api.specId, useKit = true, masteryId) {
+      // round 4: a mastery id given as the spec (the kit layer's id) splits into its subclass + the mastery; with no
+      // mastery given, the current one applies when the class and subclass are the current ones.
+      if (masteryId === undefined) {
+        if (specId && isMastery(specId)) { masteryId = specId; specId = masteryDef(specId).from; }
+        else masteryId = classId === api.classId && specId === api.specId ? api.masteryId : null;
+      }
       const k = kits();
-      if (useKit && k && k.active && game.player && classId === api.classId && specId === api.specId) {
+      if (useKit && k && k.active && game.player && classId === api.classId && specId === api.specId && (masteryId || null) === (api.masteryId || null)) {
         const kit = k.active(game.player);
         const list = normAbilities(kit && kit.abilities);
         if (list.length) return list;
@@ -442,6 +499,7 @@ export default {
         const reg = k.registry;
         list = normAbilities(reg[classId] && reg[classId].abilities).concat(normAbilities(reg[specId] && reg[specId].abilities));
       }
+      if (masteryId) list = overSlots(list, masteryAbilities(masteryDef(masteryId)));
       return list;
     }
 
@@ -457,13 +515,18 @@ export default {
       const i = Math.max(0, Math.min(looks.length - 1, game.flags.look_choice | 0));
       return clone(looks[i]);
     }
-    /** Preview look for pickers: base look + class patch (+ spec patch). */
-    function previewLook(classId, specId) {
+    /** Preview look for pickers: base look + class patch (+ spec patch) (+ round 4: mastery patch, and its aura). */
+    function previewLook(classId, specId, masteryId) {
       const look = baseLook();
       const c = classDef(classId);
       if (c && c.look) applyLookPatch(look, c.look);
       const s = specId ? specDef(specId) : null;
       if (s && s.look) applyLookPatch(look, s.look);
+      const m = masteryId ? masteryDef(masteryId) : null;
+      if (m) {
+        if (m.look) applyLookPatch(look, m.look);
+        if (!look.aura) look.aura = m.aura ? clone(m.aura) : { style: AURA_STYLES[classId] || 'glow', color: m.color || '#ffd24a' };
+      }
       return look;
     }
     /** Sim's refreshLook (COMMON 12) when present; otherwise a local composition with the same order. */
@@ -480,11 +543,14 @@ export default {
         if (c && c.look) applyLookPatch(look, c.look);
         const s = api.specId ? specDef(api.specId) : null;
         if (s && s.look) applyLookPatch(look, s.look);
+        const m = api.masteryId ? masteryDef(api.masteryId) : null;
+        if (m && m.look) applyLookPatch(look, m.look);
         if (p.data.kit && p.data.kit.lookPatch) applyLookPatch(look, p.data.kit.lookPatch);
         const inv = game.sys.inventory;
         if (inv && inv.equippedLookPatch) applyLookPatch(look, inv.equippedLookPatch());
         if (api.level >= AURA_LEVEL && api.classId) {
-          look.aura = { style: AURA_STYLES[api.classId] || 'glow', color: (s && s.color) || (c && c.color) || '#ffd24a' };
+          look.aura = (m && m.aura) ? clone(m.aura)
+            : { style: AURA_STYLES[api.classId] || 'glow', color: (m && m.color) || (s && s.color) || (c && c.color) || '#ffd24a' };
         }
         const kp = p.data.kit && p.data.kit.lookPatch;
         if (kp && kp.aura) look.aura = clone(kp.aura);
@@ -508,6 +574,10 @@ export default {
       let defense = (b.defense || 0) + (b.defensePerLevel || 0) * L;
       const s = api.specId ? specDef(api.specId) : null;
       if (s) { hp *= s.mods.hp; power *= s.mods.power; speed *= s.mods.speed; defense *= s.mods.defense; }
+      // round 4: the mastery's mods multiply over the subclass's; a right answer at the mastery trial adds +5% power
+      const ms = api.masteryId ? masteryDef(api.masteryId) : null;
+      if (ms) { hp *= ms.mods.hp; power *= ms.mods.power; speed *= ms.mods.speed; defense *= ms.mods.defense; }
+      if (api.masteryBonus) power *= 1 + api.masteryBonus;
       if (api.classId && L > LATE_TOUGHNESS.from) defense += LATE_TOUGHNESS.defensePerLevel * (L - LATE_TOUGHNESS.from);
       const mods = p.data && p.data.statMods;
       if (mods) {
@@ -574,6 +644,15 @@ export default {
       if (!was && !quiet) game.toast('Mr. Laporte wants to see you in his office.', 'quest');
     }
 
+    /** round 4: level 15 with a subclass and no mastery: Laporte wants to see you (the mastery ceremony). */
+    function markMasteryReady(quiet) {
+      if (!api.specId || api.masteryId || api.level < MASTERY_LEVEL || !masteryIds(api.specId).length) return;
+      const was = api.pendingMastery;
+      api.pendingMastery = true;
+      if (!game.flags.mastery_ready) game.setFlag('mastery_ready', true);
+      if (!was && !quiet) game.toast('Mr. Laporte wants to see you in his office.', 'quest');
+    }
+
     // ---------- leveling ----------
     /** Boon slots earned by a level (BOON_LEVELS reached). */
     function boonSlots(level) { let n = api.bonusBoons || 0; for (const L of BOON_LEVELS) if (L <= level) n++; return n; }
@@ -593,11 +672,18 @@ export default {
       api.pendingBoons = Math.max(0, Math.min(boonSlots(newLevel) - kept.length, api.pendingBoons + removed.length));
       api.offer = null;
       if (!api.specId && newLevel < SPEC_LEVEL) api.pendingSpec = false;
+      // round 4 (teacher mode): below 15 the mastery goes (the subclass stays, as in round 2)
+      let lostMastery = null;
+      if (newLevel < MASTERY_LEVEL) {
+        api.pendingMastery = false;
+        if (api.masteryId) { lostMastery = api.masteryId; api.masteryId = null; updateNames(); }
+      }
       applyKit();
       recalc();
       if (p) p.hp = p.hpMax;
       refreshLook();
       if (removed.length) emit('boons:removed', { ids: removed });
+      if (lostMastery) emit('mastery:set', { masteryId: null, specId: api.specId, prev: lostMastery });
       const r = rankAt(newLevel), oldRank = rankAt(old);
       if (r < oldRank) emit('rank:down', { rank: r, prev: oldRank });
     }
@@ -639,6 +725,7 @@ export default {
         for (const L of BOON_LEVELS) if (L > old && L <= newLevel) api.pendingBoons++;
       }
       if (old < SPEC_LEVEL && newLevel >= SPEC_LEVEL) markSpecReady(opts.quiet);
+      if (old < MASTERY_LEVEL && newLevel >= MASTERY_LEVEL) markMasteryReady(opts.quiet);
       if (old < AURA_LEVEL && newLevel >= AURA_LEVEL) refreshLook();
       if (old < EMPOWER_LEVEL && newLevel >= EMPOWER_LEVEL && api.classId) {
         refreshLook();
@@ -689,23 +776,27 @@ export default {
       if (!p) return;
       p.data.classId = api.classId;
       p.data.specId = api.specId;
+      p.data.masteryId = api.masteryId || null;
       const k = kits();
       if (k && typeof k.set === 'function') {
-        try { k.set(p, api.classId, api.specId); } catch (e) { warn('kitset', 'kits.set failed: ' + (e && e.message)); }
+        // round 4: the kit registry layers class -> subclass -> mastery from the mastery id (p.data.specId stays the subclass)
+        try { k.set(p, api.classId, api.masteryId || api.specId); } catch (e) { warn('kitset', 'kits.set failed: ' + (e && e.message)); }
       }
     }
     function updateNames() {
       const c = api.classId ? classDef(api.classId) : null;
       const s = api.specId ? specDef(api.specId) : null;
+      const m = api.masteryId ? masteryDef(api.masteryId) : null;
       className = c ? c.name : '';
       specName = s ? s.name : '';
+      masteryName = m ? m.name : '';
     }
 
     function setClass(id, opts = {}) {
       const def = classDef(id);
       if (!id || !def || id === 'novice') { warn('class:' + id, 'unknown class ' + id); return false; }
       const before = unlockedSet();
-      if (api.classId !== id) api.specId = null;
+      if (api.classId !== id) { api.specId = null; api.masteryId = null; api.pendingMastery = false; }
       api.classId = id;
       updateNames();
       applyKit();
@@ -723,10 +814,12 @@ export default {
     }
 
     function setSpec(id, opts = {}) {
+      if (isMastery(id)) return setMastery(id, opts);      // round 4: a tier-3 id is a mastery
       const def = specDef(id);
       if (!def) { warn('spec:' + id, 'unknown spec ' + id); return false; }
       if (def.from && api.classId !== def.from) setClass(def.from, { quiet: true });
       const before = unlockedSet();
+      if (api.specId !== id) { api.masteryId = null; api.pendingMastery = false; }
       api.specId = id;
       api.pendingSpec = false;
       updateNames();
@@ -740,6 +833,57 @@ export default {
       }
       emit('spec:set', { specId: id });
       emitUnlocks(before);
+      markMasteryReady(opts.quiet);
+      return true;
+    }
+
+    /**
+     * round 4: equip a tier-3 mastery (`null` removes it). It needs its subclass: when the hero has another one (or
+     * none), the parent subclass and class are set first, quietly (teacher tools, debug). Keeps p.data.specId = the
+     * subclass; the kit registry layers class -> subclass -> mastery.
+     */
+    function setMastery(id, opts = {}) {
+      if (!id) return clearMastery(opts);
+      const def = masteryDef(id);
+      if (!def || !def.from || !specDef(def.from)) { warn('mastery:' + id, 'unknown mastery ' + id); return false; }
+      if (api.specId !== def.from) { api.masteryId = null; setSpec(def.from, { quiet: true }); }
+      if (api.specId !== def.from) return false;
+      const before = unlockedSet();
+      api.masteryId = id;
+      api.pendingMastery = false;
+      updateNames();
+      applyKit();
+      recalc();
+      if (game.player) game.player.hp = game.player.hpMax;
+      refreshLook();
+      if (!opts.quiet) {
+        const col = def.color || '#ffd24a';
+        celebrate(col);
+        const p = game.player;
+        if (p) {
+          game.fx({ type: 'screenFlash', color: col, dur: 0.35 });
+          game.fx({ type: 'shockwave', x: p.x, y: p.y, r: 3.5, color: col });
+          game.fx({ type: 'ring', x: p.x, y: p.y, r: 2.6, color: '#ffffff', dur: 0.8 });
+          if (game.camera) game.camera.shake = Math.max(game.camera.shake || 0, 0.35);
+        }
+        game.toast(`Mastery unlocked: ${def.name}!`, 'good');
+      }
+      emit('mastery:set', { masteryId: id, specId: api.specId });
+      emitUnlocks(before);
+      return true;
+    }
+    function clearMastery(opts = {}) {
+      if (!api.masteryId) return false;
+      const prev = api.masteryId;
+      api.masteryId = null;
+      updateNames();
+      applyKit();
+      recalc();
+      if (game.player) game.player.hp = game.player.hpMax;
+      refreshLook();
+      emit('mastery:set', { masteryId: null, specId: api.specId, prev });
+      markMasteryReady(true);
+      if (!opts.quiet) game.toast('Mastery removed.', 'info');
       return true;
     }
 
@@ -866,6 +1010,69 @@ export default {
       });
     }
 
+    /** round 4: a mastery card for the spec picker (tier 3): name, blurb, passive, upgraded ultimate, preview look. */
+    function masteryEntry(id) {
+      const m = masteryDef(id);
+      const sub = specDef(m.from);
+      const classId = (sub && sub.from) || api.classId;
+      const abilities = masteryAbilities(m).map((a) => ({ slot: a.slot, id: a.id, name: a.name, icon: a.icon, desc: a.desc, unlock: a.unlock }));
+      const ult = abilities.find((a) => a.slot === 'shift') || null;
+      const pv = m.passive && (m.passive.name || m.passive.desc) ? { name: m.passive.name || 'Passive', desc: m.passive.desc || '', icon: m.passive.icon || 'star' } : null;
+      return {
+        id, tier: 3, from: m.from, fromName: (sub && sub.name) || titleCase(m.from), name: m.name, blurb: m.blurb || '',
+        color: m.color || null, look: previewLook(classId, m.from, id), basic: null,
+        passive: pv, ultimate: ult ? { name: ult.name, desc: ult.desc, icon: ult.icon, unlock: ult.unlock } : null, abilities,
+      };
+    }
+
+    let masteryAsking = false;
+    /**
+     * round 4: the mastery picker. A Unit 4 question first (context 'mastery', once per hero): a right answer adds
+     * +5% power for good (MASTERY_TRIAL_BONUS); a wrong one still lets you choose. Then the spec picker modal with
+     * `tier: 3` and the two masteries of the current subclass; the choice is `pickMastery(id)`.
+     */
+    function openMasteryPicker() {
+      if (!api.specId) { warn('masterynospec', 'masteryPicker with no subclass'); return Promise.resolve(null); }
+      if (masteryAsking || (picker && game.modal)) return Promise.resolve(null);
+      const ids = masteryIds(api.specId);
+      if (!ids.length) { warn('nomastery:' + api.specId, 'no masteries for ' + api.specId); return Promise.resolve(null); }
+      const g = gates();
+      let ask;
+      if (api.masteryTrial) ask = Promise.resolve(null);
+      else {
+        masteryAsking = true;
+        ask = g && g.ask ? g.ask({ context: 'mastery', difficulty: 3 }) : Promise.resolve({ correct: true, skipped: true });
+      }
+      return ask.then((r) => {
+        masteryAsking = false;
+        if (r && !api.masteryTrial) {
+          api.masteryTrial = true;
+          if (r.correct) {
+            api.masteryBonus = MASTERY_TRIAL_BONUS;
+            recalc();
+            const p = game.player;
+            if (p) game.fx({ type: 'sparkle', x: p.x, y: p.y, n: 16, r: 1.2, color: '#ffe680' });
+            game.toast(`Correct! Trial bonus: +${Math.round(MASTERY_TRIAL_BONUS * 100)}% power, for good.`, 'good');
+          } else game.toast('Not quite. The choice is still yours.', 'info');
+        }
+        if (!api.specId) return null;
+        const sub = specDef(api.specId);
+        return openPicker('specPicker', {
+          tier: 3, from: api.specId, title: 'CHOOSE YOUR MASTERY',
+          subtitle: `Master the ${(sub && sub.name) || titleCase(api.specId)}: a new look, a passive and an upgraded ultimate.`,
+          options: masteryIds(api.specId).map(masteryEntry),
+        });
+      }, () => { masteryAsking = false; return null; });
+    }
+
+    /** round 4: Tab / the panel nudge while a mastery is pending: the picker after the ceremony, else "see Laporte". */
+    function masteryNudge() {
+      if (!api.pendingMastery || api.masteryId) return Promise.resolve(null);
+      if (game.flags.mastery_ceremony_done) return openMasteryPicker();
+      game.toast('Mr. Laporte wants to see you in his office.', 'quest');
+      return Promise.resolve(null);
+    }
+
     function openLookPicker() {
       const looks = ((data().looks && data().looks.PLAYER_LOOKS) || []).map(clone);
       return openPicker('lookPicker', { name: game.name, looks });
@@ -886,9 +1093,17 @@ export default {
       return true;
     }
     function pickSpec(id) {
+      if (isMastery(id)) return pickMastery(id);      // round 4: the same modal carries the tier-3 choice
       const def = specDef(id);
       if (!def || (api.classId && def.from !== api.classId)) { warn('pickspec:' + id, 'pickSpec: not a spec of ' + api.classId); return false; }
       setSpec(id);
+      finishPicker('specPicker', id);
+      return true;
+    }
+    /** round 4: choose one of the current subclass's masteries (the tier-3 spec picker). */
+    function pickMastery(id) {
+      if (!api.specId || !masteryIds(api.specId).includes(id)) { warn('pickmastery:' + id, 'pickMastery: not a mastery of ' + api.specId); return false; }
+      setMastery(id);
       finishPicker('specPicker', id);
       return true;
     }
@@ -1005,28 +1220,33 @@ export default {
       /** round 2: boon id -> the level it was taken at (a level-down removes boons taken above the new level). */
       boonLevels: {},
       pendingBoons: 0, pendingSpec: false, offer: null, downed: false, downPromise: null,
+      /** round 4: the tier-3 mastery id (null), pending after level 15, the trial bonus (+power) and whether it was asked. */
+      masteryId: null, pendingMastery: false, masteryBonus: 0, masteryTrial: false,
       xpFor: xpNext,
       addXp,
       setLevel(n, opts) { return setLevel(n, opts || {}); },
       boonSlots,
-      setClass, setSpec,
+      setClass, setSpec, setMastery,
       rank() { return rankAt(api.level); },
       rankAt,
       hasBoon(id) { return api.boons.includes(id); },
       offerBoons, chooseBoon, openBoonPicker,
-      openClassPicker, openSpecPicker, openLookPicker,
-      pickClass, pickSpec, pickLook,
+      openClassPicker, openSpecPicker, openLookPicker, openMasteryPicker, masteryNudge,
+      pickClass, pickSpec, pickLook, pickMastery,
       recalc, refreshLook,
       classDef, specDef, classIds, specIds, boonDefs, abilityList, previewLook,
+      masteryDef, masteryIds, masteryEntry, markMasteryReady,
       _names: updateNames,
       className() { return className; },
       specName() { return specName; },
+      masteryName() { return masteryName; },
       handleDown: onDown,
       revive(where = 'here') { wake(where); },
       /** Reset to a fresh level-1 novice (debug reset). */
       reset() {
         api.level = 1; api.xp = 0; api.xpTotal = 0; api.xpNext = xpNext(1); api.classId = null; api.specId = null;
         api.boons = []; api.boonLevels = {}; api.pendingBoons = 0; api.pendingSpec = false; api.offer = null; api.downed = false;
+        api.masteryId = null; api.pendingMastery = false; api.masteryBonus = 0; api.masteryTrial = false; masteryAsking = false;
         api.chestBonus = { power: 0, hp: 0, defense: 0 }; api.bonusBoons = 0;
         lastReviveAsk = -Infinity;
         updateNames(); applyKit(); recalc();
@@ -1039,11 +1259,15 @@ export default {
     if (ops && ops.register) {
       ops.register('xp', (g, a) => { const n = Number(a[1]) || 0; if (n > 0) g.toast(`+${n} XP`, 'good'); addXp(n); });
       ops.register('classPicker', () => openClassPicker());
-      ops.register('specPicker', () => openSpecPicker());
+      ops.register('specPicker', (g, a) => (a && (a[1] === 'mastery' || a[1] === 3) ? openMasteryPicker() : openSpecPicker()));
       ops.register('lookPicker', () => openLookPicker());
+      // round 4: the mastery picker. Story data uses ['specPicker', 'mastery'] (same op name, so the frozen narrative
+      // vocabulary test stays valid); ['masteryPicker'] is the same thing.
+      ops.register('masteryPicker', () => openMasteryPicker());
       ops.registerCond('level', (g, c) => compareCond(api.level, c));
       ops.registerCond('class', (g, c) => (c.length < 2 ? !!api.classId : c[1] === 'none' || c[1] === null ? !api.classId : api.classId === c[1]));
       ops.registerCond('spec', (g, c) => (c.length < 2 ? !!api.specId : c[1] === 'none' || c[1] === null ? !api.specId : api.specId === c[1]));
+      ops.registerCond('mastery', (g, c) => (c.length < 2 ? !!api.masteryId : c[1] === 'none' || c[1] === null ? !api.masteryId : api.masteryId === c[1]));
     }
     game.commands.pickClass = (id) => pickClass(id);
     game.commands.pickSpec = (id) => pickSpec(id);
@@ -1051,6 +1275,9 @@ export default {
     game.commands.pickBoon = (id) => chooseBoon(id);
     game.commands.openBoonPicker = () => openBoonPicker();
     game.commands.openSpecPicker = () => (api.pendingSpec && game.flags.spec_ceremony_done ? openSpecPicker() : Promise.resolve(null));
+    game.commands.pickMastery = (id) => pickMastery(id);
+    game.commands.openMasteryPicker = () => (api.pendingMastery && game.flags.mastery_ceremony_done ? openMasteryPicker() : Promise.resolve(null));
+    game.commands.masteryNudge = () => masteryNudge();
 
     game.bus.on('player:down', () => { onDown(); });
     // round 3: the empowered aura. Every player look refresh (Sim or local) ends with 'look:changed'; from level 14 the
@@ -1088,6 +1315,7 @@ export default {
     if (inp && inp.pressed && inp.pressed.boon && !game.modal && !game.inputLock) {
       if (api.pendingBoons > 0) api.openBoonPicker();
       else if (api.pendingSpec && game.flags.spec_ceremony_done) api.openSpecPicker();
+      else if (api.pendingMastery && !api.pendingSpec) api.masteryNudge();
     }
   },
 
@@ -1098,6 +1326,7 @@ export default {
       boonLevels: Object.assign({}, a.boonLevels),
       pendingBoons: a.pendingBoons, pendingSpec: a.pendingSpec, offer: a.offer ? a.offer.map((o) => Object.assign({}, o)) : null,
       chestBonus: Object.assign({}, a.chestBonus), bonusBoons: a.bonusBoons || 0,
+      masteryId: a.masteryId || null, pendingMastery: !!a.pendingMastery, masteryBonus: a.masteryBonus || 0, masteryTrial: !!a.masteryTrial,
     };
   },
 
@@ -1122,11 +1351,17 @@ export default {
     a.bonusBoons = Math.max(0, j.bonusBoons | 0);
     a.pendingSpec = !!j.pendingSpec;
     a.offer = Array.isArray(j.offer) && j.offer.length ? j.offer : null;
+    // round 4: the mastery (only with its own subclass), the trial bonus
+    const md = j.masteryId && a.specId ? a.masteryDef(j.masteryId) : null;
+    a.masteryId = md && md.from === a.specId ? j.masteryId : null;
+    a.pendingMastery = !!j.pendingMastery && !a.masteryId;
+    a.masteryBonus = Math.max(0, Math.min(0.5, Number(j.masteryBonus) || 0));
+    a.masteryTrial = !!j.masteryTrial;
     const p = game.player;
     if (p) {
-      p.data.classId = a.classId; p.data.specId = a.specId;
+      p.data.classId = a.classId; p.data.specId = a.specId; p.data.masteryId = a.masteryId;
       const k = game.sys.kits;
-      if (k && k.set) { try { k.set(p, a.classId, a.specId); } catch { /* kit stub */ } }
+      if (k && k.set) { try { k.set(p, a.classId, a.masteryId || a.specId); } catch { /* kit stub */ } }
     }
     a.recalc();
     if (p) p.hp = p.hpMax;
@@ -1140,9 +1375,11 @@ export default {
     hp.level = a.level; hp.xp = a.xp; hp.xpNext = a.xpNext;
     hp.classId = a.classId; hp.className = a.className();
     hp.specId = a.specId; hp.specName = a.specName();
+    hp.masteryId = a.masteryId || null; hp.masteryName = a.masteryName();
     const p = game.player;
     if (p && p.stats) { hp.power = p.stats.power || 0; hp.defense = p.stats.defense || 0; hp.speed = p.stats.speed || 0; }
     hud.pendingBoons = a.pendingBoons;
     hud.pendingSpec = a.pendingSpec;
+    hp.pendingMastery = !!a.pendingMastery;     // round 4 (HudState's top-level keys are frozen)
   },
 };

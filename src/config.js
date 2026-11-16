@@ -37,6 +37,7 @@ export const config = {
       levelup: { enabled: true, blocking: false },
       boon: { enabled: true, blocking: false },
       spec: { enabled: true, blocking: false },
+      mastery: { enabled: true, blocking: false },       // round 4: the level-15 mastery trial (right: +5% power)
       gate: { enabled: true, blocking: true },
       chest: { enabled: true, blocking: false },
       scholar_chest: { enabled: true, blocking: false },   // Scholar's chests: a wrong answer leaves the chest locked

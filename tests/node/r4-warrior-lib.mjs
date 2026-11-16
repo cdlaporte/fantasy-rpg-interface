@@ -18,10 +18,17 @@ export const MTARGET = (L) => 62 * Math.pow(L / 12, 1.4) * 1.15 * config.numberS
 const boonsAt = (spec, level) => LOADOUT[spec].slice(0, [4, 6, 8, 10, 12, 14, 16, 18, 20].filter((l) => l <= level).length);
 const dirTo = (dx, dy) => (Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0));
 
+/** Equip mastery m the way the game does (progression.setMastery keeps the kit in sync); kits.set as a fallback. */
+export function equipM(g, m) {
+  const pr = g.game.sys.progression;
+  if (pr && typeof pr.setMastery === 'function') { try { pr.setMastery(m, { quiet: true }); } catch { /* fall through */ } }
+  if (g.p.data.masteryId !== m) g.game.kits.set(g.p, 'warrior', m);
+}
+
 /** A warrior game with mastery `m` equipped (o as kit-warrior mk: level, boons, ring, r, hp, ai, seed, at). */
 export function mkM(m, o = {}) {
   const g = mk(Object.assign({ level: 16 }, o, { spec: PARENT[m] || m }));
-  if (PARENT[m]) g.game.kits.set(g.p, 'warrior', m);
+  if (PARENT[m]) equipM(g, m);
   return g;
 }
 

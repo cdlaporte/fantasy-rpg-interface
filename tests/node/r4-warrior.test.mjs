@@ -464,7 +464,7 @@ test('fuzz: 3000 steps of random input for each mastery with every warrior boon 
       if (i % 400 === 0) { g.setRage(100); g.game.abilities.reset(g.p); }
       if (i % 500 === 250) for (let k = 0; k < 3; k++) g.game.ents.spawn('rat', g.p.x + 2 * Math.cos(k * 2), g.p.y + 2 * Math.sin(k * 2), { level: 16 });
       if (i % 700 === 350) g.game.combat.projectile(g.foes[0].removed ? g.p : g.foes[0], { angle: 0, speed: 10, range: 8, dmg: 1 });
-      if (i === 1500) g.game.kits.set(g.p, 'warrior', m);   // re-equip mid-fight (ceremony / load)
+      if (i === 1500) { const pr = g.game.sys.progression; if (pr.setMastery) pr.setMastery(null, { quiet: true }); g.game.kits.set(g.p, 'warrior', m); if (pr.setMastery) pr.setMastery(m, { quiet: true }); }   // re-equip mid-fight (ceremony / load)
       try { g.step(1, inp); } catch (e) { errs.push(e); break; }
       const p = g.p;
       if (!Number.isFinite(p.x) || !Number.isFinite(p.y) || !Number.isFinite(p.hp) || !Number.isFinite(g.rage()) || !Number.isFinite(p.scale)) { errs.push(new Error('NaN at ' + i)); break; }
@@ -474,7 +474,7 @@ test('fuzz: 3000 steps of random input for each mastery with every warrior boon 
     assert.ok(casts > 20, m + ' casts ' + casts);
     assert.ok(g.dealt > 0);
     // unequip back to the subclass cleans up
-    g.game.kits.set(g.p, 'warrior', PARENT[m]);
+    { const pr = g.game.sys.progression; if (pr.setMastery) pr.setMastery(null, { quiet: true }); g.game.kits.set(g.p, 'warrior', PARENT[m]); }
     g.step(30);
     assert.equal(g.p.scale, 1);
     assert.ok(!kindOf(g, 'rune_ward').length && !kindOf(g, 'warlord_banner').length, m + ' cleaned up');

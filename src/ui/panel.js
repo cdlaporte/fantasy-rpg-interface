@@ -336,8 +336,8 @@ export function createPanel(root, ctx = {}) {
       if (key !== pKey) { pKey = key; blitGrid(portrait, buildPortrait(p.look, { mood, t, bg: 'sky' })); }
       setClass(frame, 'cloaked', !!p.cloaked);
       setText(name, p.name || '');
-      // round 4: "Class · Subclass · Mastery" (the class is dropped when all three would not fit)
-      const clsText = p.className ? (p.masteryName ? `${(p.className + p.specName + p.masteryName).length > 22 ? '' : p.className + ' · '}${p.specName} · ${p.masteryName}`
+      // round 4: with a mastery, "Subclass · Mastery" (one line; the portrait tooltip shows class, subclass, mastery)
+      const clsText = p.className ? (p.masteryName ? `${p.specName} · ${p.masteryName}`
         : p.specName ? `${p.className} · ${p.specName}` : p.className) : (p.cloaked ? 'Mysterious traveler' : 'Novice');
       setText(cls, clsText);
       setText(lv, 'LV ' + (p.level || 1));

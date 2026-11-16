@@ -125,6 +125,12 @@
 @media (max-height: 640px) {
   .tch-tools .hints { display: none; }
 }
+/* round 4: the MASTERY row adds a line; Chromebook height (657) keeps the whole box and its hints on screen */
+@media (max-height: 700px) {
+  .tch-tools { gap: 3px; padding-top: 8px; padding-bottom: 6px; }
+  .tch-lbtns > .tch-btn { padding-top: 4px; padding-bottom: 3px; }
+  .tch-levels .tch-lbtns > .tch-btn { padding-top: 6px; padding-bottom: 5px; }
+}
 /* narrow windows (the HUD panel takes 296 px of the width): the Teacher tools box shrinks to the view, QA round 3 */
 @media (max-width: 1250px) {
   .tch-tools { padding: 8px 10px 6px; }

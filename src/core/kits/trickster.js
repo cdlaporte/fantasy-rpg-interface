@@ -82,9 +82,15 @@ const VANISH = thief.abilities.f;
 const f = Object.assign({}, VANISH, {
   desc: 'Poof! Smoke, caltrops and stealth, and a fake treasure chest that lures enemies, then bursts in confetti.',
   cast(game, p, ctx) {
-    const x = p.x, y = p.y;
     const r = VANISH.cast(game, p, ctx);
-    if (r !== false && p.data.kit.tr) spawnChest(game, p, x, y);
+    if (r !== false && p.data.kit.tr) {
+      // just outside the smoke, toward the nearest enemy (else ahead): the pack runs out of the smoke to it
+      const D = TK(game).chest.dist;
+      const t = game.ents.nearest(p.x, p.y, 8, isEnemy);
+      const a = t ? angleTo(p.x, p.y, t.x, t.y) : ctx.angle;
+      const d = Math.max(0.5, game.world.raycast(p.x, p.y, a, D, false) - 0.4);
+      spawnChest(game, p, p.x + Math.cos(a) * d, p.y + Math.sin(a) * d);
+    }
     return r;
   },
 });

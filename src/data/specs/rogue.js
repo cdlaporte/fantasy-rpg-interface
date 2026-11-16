@@ -127,8 +127,8 @@ export default {
       desc: 'Howl! Three hawks dive on your foes while a wolf pack charges through them.' },
     kit: {
       dmgScale: 0.85, lateScale: [[15, 1.0], [16, 1.0], [18, 0.94], [20, 0.97]],
-      colors: { main: '#8fbf4a', bark: '#7b4a2a', fur: '#6e6a64', cream: '#f1e9da', gold: '#f2c94c', spirit: '#c6f07a' },
-      wolf: { powerMul: 0.6, hpMul: 0.6, speedMul: 1.3, size: 0.8, bite: 1.0, biteCd: 0.7, respawn: 8,
+      colors: { main: '#8fbf4a', bark: '#7b4a2a', fur: '#4a4e57', cream: '#f1e9da', gold: '#f2c94c', spirit: '#c6f07a' },
+      wolf: { powerMul: 0.6, hpMul: 0.6, speedMul: 1.3, size: 1.0, bite: 1.0, biteCd: 0.7, respawn: 8,
         pounce: { every: 3, minDist: 4.5, coef: 1.6 } },
       trap: { r: 0.85, dur: 12, max: 3, coef: 2.0, root: 1.6, snapR: 1.5 },
       hunt: { cd: 30, dur: 6, howlR: 4, wolves: 4, packPowerMul: 0.4, packHpMul: 0.6, spread: 0.9,
@@ -143,7 +143,7 @@ export default {
     mods: { hp: 1, power: 1, speed: 1 },
     look: {
       outfit: { style: 'leather', primary: '#1d2d44', secondary: '#4cc9f0', accent: '#ffd166' },
-      hat: { style: 'feather', color: '#ffd166' },
+      hat: { style: 'cap', color: '#14213d' },
       cape: { color: '#14213d' },
       held: { style: 'bow', color: '#2b2d42', glow: '#4cc9f0' },
       aura: { style: 'glow', color: '#4cc9f0' },
@@ -165,7 +165,7 @@ export default {
     blurb: 'Pranks for days. Leave a fake treasure chest that explodes in confetti, then swap places with your enemies.',
     mods: { hp: 1, power: 1, speed: 1 },
     look: {
-      outfit: { style: 'vest', primary: '#7b2cbf', secondary: '#ffd23f', accent: '#ff70a6' },
+      outfit: { style: 'vest', primary: '#7b2cbf', secondary: '#ffd23f', accent: '#ff70a6' }, hood: false,
       hat: { style: 'wizard', color: '#3c096c' },
       cape: { color: '#9d4edd' },
       held: { style: 'daggers', color: '#f1e9da', glow: '#ff70a6' },
@@ -177,7 +177,7 @@ export default {
     kit: {
       dmgScale: 1, lateScale: [[15, 1.04], [16, 0.95], [18, 1.02], [20, 0.97]],
       colors: { main: '#c44dff', pink: '#ff70a6', gold: '#f2c94c', confetti: ['#ff70a6', '#ffd23f', '#4cc9f0', '#7bdc3a', '#c44dff'] },
-      chest: { ttl: 3, hpMul: 0.6, lure: 7, r: 2.6, coef: 2.6, stun: 1.2, knockback: 6, coins: 8, coinCoef: 0.35, coinRange: 3 },
+      chest: { ttl: 3, hpMul: 0.6, dist: 2.8, lure: 7, r: 2.6, coef: 2.6, stun: 1.2, knockback: 6, coins: 8, coinCoef: 0.35, coinRange: 3 },
       trick: { cd: 30, range: 7.5, targets: 6, step: 0.16, coef: 1.6, coefPerPip: 0.35, stun: 0.9, mark: 5, coins: 4, coinCoef: 0.3,
         coinRange: 2.6, finalCoins: 12, finalCoinCoef: 0.45, finalR: 2.6, finalCoef: 1.2 },
     },
@@ -188,7 +188,7 @@ export default {
     blurb: 'En garde! Roll to parry, answer every blow with a flashy riposte, then spin into a storm of blades.',
     mods: { hp: 1.05, power: 1, speed: 1 },
     look: {
-      outfit: { style: 'vest', primary: '#d62839', secondary: '#f1e9da', accent: '#ffd23f' },
+      outfit: { style: 'vest', primary: '#d62839', secondary: '#f1e9da', accent: '#ffd23f' }, hood: false,
       hat: { style: 'feather', color: '#1d3557' },
       cape: { color: '#9d0208' },
       held: { style: 'sword', color: '#e0e6ed', glow: '#ffd23f' },
@@ -226,7 +226,7 @@ export default {
       colors: { main: '#7fdbff', white: '#e8fbff', sky: '#4ea8de', pale: '#bde0fe' },
       tailwind: { speed: 1.15 },
       blades: { icd: 0.4, w: 1.3, pathCoef: 0.9, n: 3, spread: 40, coef: 0.6, speed: 13, range: 5, size: 1.3 },
-      cyclone: { cd: 30, n: 2, nFull: 3, dur: 7, speed: 6.5, seek: 8, r: 1.5, pullR: 2.6, pull: 5, tick: 0.25, coef: 0.55,
+      cyclone: { cd: 30, n: 2, nFull: 3, dur: 7, speed: 6.5, seek: 8, r: 1.5, pullR: 2.6, pull: 7, tick: 0.4, coef: 0.88,
         endR: 2.2, endCoef: 1.5, scale: 1.15, hpMul: 0.3 },
     },
   },

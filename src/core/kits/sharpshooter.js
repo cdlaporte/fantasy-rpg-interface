@@ -99,6 +99,7 @@ function railFire(game, p) {
     const ex = x + Math.cos(a) * len, ey = y + Math.sin(a) * len;
     game.fx({ type: 'beam', x, y, x2: ex, y2: ey, w: R.w, color: C.main });
     game.fx({ type: 'beam', x, y, x2: ex, y2: ey, w: R.w * 0.35, color: C.core });
+    game.fx({ type: 'bolt', x, y, x2: ex, y2: ey, color: C.gold });
     prev.length = 0;
     for (let i = 0; i < hits.length; i++) {
       prev.push(hits[i].id);

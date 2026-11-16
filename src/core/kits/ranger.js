@@ -31,9 +31,9 @@ export function masteryScale(game, p) { const k = RK(game); return (k.dmgScale !
 
 function wolfLook(game, spirit) {
   const C = RK(game).colors, W = RK(game).wolf;
-  return { rig: 'quadruped', size: spirit ? W.size * 0.9 : W.size,
-    colors: { body: spirit ? '#9aa39a' : C.fur, belly: C.cream, accent: spirit ? C.spirit : C.main, eye: spirit ? C.spirit : C.gold },
-    features: ['ears_pointy', 'tail_bushy'], hero: null };
+  return { rig: 'quadruped', size: spirit ? W.size * 1.1 : W.size,
+    colors: { body: spirit ? '#dff7c8' : C.fur, belly: spirit ? '#ffffff' : C.cream, accent: spirit ? C.spirit : C.main, eye: spirit ? C.main : C.gold },
+    features: ['ears_pointy', 'tail_bushy', 'mane'], hero: null };
 }
 function biteAttack(game) {
   const W = RK(game).wolf, C = RK(game).colors;
@@ -90,7 +90,7 @@ function pounce(game, p, t) {
 function dropTrap(game, p, x, y) {
   const rn = p.data.kit.rn, T = RK(game).trap, C = RK(game).colors;
   while (rn.traps.length >= T.max) { const old = game.ents.get(rn.traps.shift()); if (old && !old.removed) game.ents.remove(old); }
-  const z = game.combat.zone(p, { x, y, r: T.r, dur: T.dur, tick: 0.1, dmg: 0, caltrops: true, color: C.bark, kind: 'ranger_trap',
+  const z = game.combat.zone(p, { x, y, r: T.r, dur: T.dur, tick: 0.1, dmg: 0, caltrops: true, color: C.main, kind: 'ranger_trap',
     onTick(g, ze, list) {
       let t = null;
       for (let i = 0; i < list.length; i++) if (list[i].type === 'enemy') { t = list[i]; break; }
@@ -98,6 +98,7 @@ function dropTrap(game, p, x, y) {
     } });
   rn.traps.push(z.id);
   game.fx({ type: 'burst', x, y, n: 6, r: 0.5, color: C.bark });
+  game.fx({ type: 'ring', x, y, r: T.r, color: C.main, dur: 0.4 });
 }
 function snap(game, p, ze, t) {
   const T = RK(game).trap, C = RK(game).colors;

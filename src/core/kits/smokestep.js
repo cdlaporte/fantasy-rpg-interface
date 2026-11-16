@@ -63,7 +63,7 @@ function assassins(game, p) {
       x, y, brain: 'none', fxTag: 'shadow', ttl: A.dur, power: game.combat.powerOf(p), hp: Math.max(5, Math.round(p.hpMax * A.hpMul)),
       key: 'smoke_assassin', color: C.main, tags: ['clone'], fx: false,
       onExpire: (g, e) => { g.fx({ type: 'smoke', x: e.x, y: e.y, r: 0.8, dur: 0.7 }); } });
-    c.alpha = 0.55;
+    c.alpha = 0.75;
     c.data.untargetable = true;
     c.data.smT = 0.15 + i * (A.every / n);
     sm.assassins.push(c.id);

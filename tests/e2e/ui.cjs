@@ -97,9 +97,19 @@ const OUT = path.join(__dirname, 'out');
       // look picker: names only, no other labels
       await open('lookPicker');
       const lookText = await page.$eval('.look-picker', (n) => n.innerText.replace(/\s+/g, ' ').trim());
-      assert.strictEqual(lookText, 'Rowan Rowan', 'look picker shows only the name twice: ' + lookText);
+      assert.strictEqual(lookText, Array(8).fill('Rowan').join(' '), 'look picker shows only the name, once per look: ' + lookText);
+      assert.strictEqual(await page.$$eval('.look-card', (n) => n.length), 8, 'eight looks');
+      const grid = await page.$$eval('.look-card', (n) => n.map((c) => { const r = c.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top)]; }));
+      assert.strictEqual(new Set(grid.map((g) => g[1])).size, 2, 'two rows');
+      assert.strictEqual(new Set(grid.map((g) => g[0])).size, 4, 'four columns');
       await key('ArrowRight', 'Enter');
       assert.deepStrictEqual(await calls(), [['pickLook', 1]]);
+      await key('ArrowDown', 'ArrowLeft', 'Enter');
+      assert.deepStrictEqual(await calls(), [['pickLook', 4]], 'arrows move through the 4 x 2 grid');
+      await page.hover('.look-card:nth-child(7)');
+      await page.mouse.down(); await page.mouse.up();
+      assert.deepStrictEqual(await calls(), [['pickLook', 6]], 'mouse picks a look');
+      await page.mouse.move(2, 2);
       await close();
 
       await open('classPicker');
@@ -154,6 +164,93 @@ const OUT = path.join(__dirname, 'out');
       await page.close();
     });
 
+    await check('look picker (8 looks) fits the modal area at both sizes', async () => {
+      for (const vp of [{ width: 1366, height: 657 }, { width: 1024, height: 600 }]) {
+        const page = await H.newPage(browser, { viewport: vp });
+        await H.openGame(page, { base: server.url, renderer: '2d' });
+        await installHarness(page);
+        await page.evaluate(() => window.__ui.open('lookPicker'));
+        await page.waitForTimeout(200);
+        const m = await page.evaluate(() => {
+          const r = document.querySelector('.look-picker').getBoundingClientRect();
+          const pl = document.getElementById('panel').getBoundingClientRect();
+          return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, vw: innerWidth, vh: innerHeight, panelRight: pl.right };
+        });
+        assert.ok(m.top >= 0 && m.bottom <= m.vh, `${vp.width}: picker inside the height (${m.top}..${m.bottom} of ${m.vh})`);
+        assert.ok(m.left >= m.panelRight - 1 && m.right <= m.vw, `${vp.width}: picker inside the width (${m.left}..${m.right})`);
+        await H.shot(page, path.join(OUT, `ui-e2e-looks-${vp.width}.png`));
+        await page.close();
+      }
+    });
+
+    await check('tooltips: appear on hover after a short delay, off the cursor, on screen, never steal clicks', async () => {
+      const page = await H.newPage(browser);
+      await H.openGame(page, { base: server.url, renderer: '2d' });
+      await installHarness(page);
+      await page.evaluate(() => window.__ui.setHud(window.__ui.hudFull));
+      await page.waitForTimeout(250);
+      const tipState = () => page.evaluate(() => {
+        const t = document.querySelector('.tooltip');
+        if (!t || t.hidden) return null;
+        const r = t.getBoundingClientRect();
+        return { text: t.innerText.replace(/\s+/g, ' ').trim(), r: [r.left, r.top, r.right, r.bottom], vw: innerWidth, vh: innerHeight, pe: getComputedStyle(t).pointerEvents };
+      });
+      const hoverAt = async (sel, nth = 0) => {
+        const box = await (await page.$$(sel))[nth].boundingBox();
+        const x = box.x + box.width / 2, y = box.y + box.height / 2;
+        await page.mouse.move(x - 40, y - 40); await page.mouse.move(x, y);
+        return [x, y];
+      };
+      const [x0, y0] = await hoverAt('.islot', 0);
+      await page.waitForTimeout(80);
+      assert.strictEqual(await tipState(), null, 'no tooltip before the delay');
+      await page.waitForTimeout(350);
+      let t = await tipState();
+      assert.ok(t, 'item tooltip appears');
+      assert.ok(/potion/i.test(t.text), 'item name in the tip: ' + t.text);
+      assert.strictEqual(t.pe, 'none', 'tooltip ignores the pointer');
+      const covers = (tt, x, y) => x >= tt.r[0] && x <= tt.r[2] && y >= tt.r[1] && y <= tt.r[3];
+      assert.ok(!covers(t, x0, y0), 'tooltip does not cover the cursor');
+      assert.ok(t.r[0] >= 0 && t.r[1] >= 0 && t.r[2] <= t.vw && t.r[3] <= t.vh, 'tooltip on screen');
+      await H.shot(page, path.join(OUT, 'ui-e2e-tip-item.png'));
+      await hoverAt('.aslot', 1);
+      await page.waitForTimeout(450);
+      t = await tipState();
+      assert.ok(t && /Cost|Ready|Cooldown|Unlocks/.test(t.text) && t.text.length > 20, 'ability tooltip: ' + (t && t.text));
+      await H.shot(page, path.join(OUT, 'ui-e2e-tip-ability.png'));
+      for (const sel of ['.stat', '.pnl-basic', '.pnl-quest', '.comp', '.bar-hp']) {
+        await hoverAt(sel);
+        await page.waitForTimeout(400);
+        assert.ok(await tipState(), 'tooltip over ' + sel);
+      }
+      await page.mouse.move(700, 300);
+      await page.waitForTimeout(100);
+      assert.strictEqual(await tipState(), null, 'tooltip hides when the pointer leaves');
+      await hoverAt('.islot', 0);
+      await page.waitForTimeout(400);
+      const active = await page.evaluate(() => document.activeElement && document.activeElement.tagName);
+      assert.ok(active === 'BODY' || active === 'HTML', 'focus untouched: ' + active);
+      await page.evaluate(() => { window.__ui.calls.length = 0; });
+      await page.mouse.down(); await page.mouse.up();
+      assert.deepStrictEqual(await page.evaluate(() => window.__ui.calls.map((c) => c[0])), ['useSlot'], 'click reaches the slot');
+      await page.evaluate(() => window.__ui.open('shop'));
+      await page.waitForTimeout(150);
+      await hoverAt('.shop-row', 1);
+      await page.waitForTimeout(400);
+      t = await tipState();
+      assert.ok(t && /Big Potion/.test(t.text) && /45/.test(t.text), 'shop tooltip: ' + (t && t.text));
+      await H.shot(page, path.join(OUT, 'ui-e2e-tip-shop.png'));
+      await page.evaluate(() => window.__game.game.closeModal());
+      await page.evaluate(() => window.__ui.open('boonPicker'));
+      await page.waitForTimeout(150);
+      await hoverAt('.boon-card', 0);
+      await page.waitForTimeout(400);
+      t = await tipState();
+      assert.ok(t && /Splitting Bolts/.test(t.text), 'boon tooltip: ' + (t && t.text));
+      assert.strictEqual(await page.evaluate(() => [...document.querySelectorAll('[title]')].filter((n) => n.closest('#panel, #modal-root')).length), 0, 'no native title attributes left in the panel and modals');
+      await page.close();
+    });
+
     await check('panel fits 1366x657 and 1024x600 without scrolling', async () => {
       for (const vp of [{ width: 1366, height: 657 }, { width: 1024, height: 600 }]) {
         const page = await H.newPage(browser, { viewport: vp });
@@ -170,6 +267,7 @@ const OUT = path.join(__dirname, 'out');
           const last = [...p.querySelectorAll('.pnl > *')].filter((n) => !n.hidden).pop();
           return { sh: p.scrollHeight, ch: p.clientHeight, bottom: last.getBoundingClientRect().bottom, h: window.innerHeight };
         });
+        await H.shot(page, path.join(OUT, `ui-e2e-panel-${vp.width}.png`));
         assert.ok(m.sh <= m.ch + 1, `${vp.width}x${vp.height}: panel content ${m.sh} fits ${m.ch}`);
         assert.ok(m.bottom <= m.h, `${vp.width}x${vp.height}: last panel block visible (${m.bottom} <= ${m.h})`);
         await H.shot(page, path.join(OUT, `ui-e2e-panel-${vp.width}.png`));

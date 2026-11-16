@@ -2,7 +2,8 @@
 // interact-prompt fallback, letterbox bars, zone fade + title card, low-HP vignette.
 import { el, add, setText, setStyle, setClass, show, clear, keycap } from './dom.js';
 import { iconCanvas } from './icons.js';
-import { roman, frac, howTo, keyLabel } from './format.js';
+import { roman, frac, keyLabel as fmtKey } from './format.js';
+import { keyLabel, onBindingsChange } from '../platform/bindings.js';
 
 const BANNER_MS = 2300;
 
@@ -75,7 +76,7 @@ export function createFeedback(hudEl, viewEl, ctx) {
   // --- prompt fallback (#prompt), used when the overlay cannot place the prompt above its entity
   const promptEl = document.getElementById('prompt') || hudEl;
   const prompt = el('div', 'prompt-fallback px-box');
-  const promptKey = keycap('E', 'big');
+  let promptKey = keycap(keyLabel('interact'), 'big');
   const promptText = el('span', 'prompt-text');
   add(prompt, promptKey, promptText);
   promptEl.appendChild(prompt);
@@ -91,12 +92,23 @@ export function createFeedback(hudEl, viewEl, ctx) {
   const vignette = el('div', 'vignette');
   // integration: "Esc  Skip" hint while a skippable cutscene runs (Story: cutscene.active && cutscene.skippable)
   const skipHint = el('div', 'skip-hint pxfont');
-  skipHint.textContent = 'Esc  Skip';
+  skipHint.textContent = '';
   skipHint.hidden = true;
   hudEl.prepend(vignette, lbTop, lbBot);
   hudEl.append(skipHint);
   hudEl.append(fade, card);
   
+  // The prompt key is the player's Interact key (default E); a core-supplied key other than E is shown as given.
+  let lastPrompt = null;
+  function paintPromptKey() {
+    const k = lastPrompt && lastPrompt.key && lastPrompt.key !== 'E' ? lastPrompt.key : keyLabel('interact');
+    const nk = keycap(k, 'big');
+    if (promptKey.parentNode) promptKey.parentNode.replaceChild(nk, promptKey);
+    promptKey = nk;
+  }
+  const paintSkip = () => { skipHint.textContent = keyLabel('pause') + '  Skip'; };
+  paintSkip();
+  const offBind = onBindingsChange(() => { if (lastPrompt) paintPromptKey(); paintSkip(); });
   let lastHp = -1;
   let lastBasic = '';
 
@@ -127,7 +139,7 @@ export function createFeedback(hudEl, viewEl, ctx) {
         if (sig !== tutSig) {
           tutSig = sig;
           clear(tutKeys);
-          for (const k of t.keys || []) tutKeys.appendChild(keycap(keyLabel(k), 'big'));
+          for (const k of t.keys || []) tutKeys.appendChild(keycap(fmtKey(k), 'big'));
           show(tutKeys, (t.keys || []).length > 0);
           tutText.textContent = t.text || '';
           tut.classList.remove('pop'); void tut.offsetWidth; tut.classList.add('pop');
@@ -147,7 +159,8 @@ export function createFeedback(hudEl, viewEl, ctx) {
     /** Fallback prompt text when the overlay could not anchor it (null hides it). */
     setPromptFallback(pr) {
       show(prompt, !!pr);
-      if (pr) { setText(promptKey, pr.key || 'E'); setText(promptText, pr.text || ''); }
+      lastPrompt = pr || null;
+      if (pr) { paintPromptKey(); setText(promptText, pr.text || ''); }
     },
 
     levelup(e) {
@@ -155,11 +168,13 @@ export function createFeedback(hudEl, viewEl, ctx) {
     },
     abilityUnlocked(e, hud) {
       const a = hud && hud.abilities ? hud.abilities.find((x) => x.slot === e.slot) || {} : {};
-      const key = a.key || { space: 'Space', q: 'Q', f: 'F', shift: 'Shift' }[e.slot] || '';
+      // the key comes from the player's bindings (slot names space / q / f / shift), never from the HUD's fixed label
+      const key = keyLabel(e.slot) || a.key || '';
+      const d = String(a.desc || '').split(/(?<=[.!])\s/)[0];
       const sub = el('div', 'banner-sub');
-      add(sub, el('span', null, howTo(Object.assign({ key }, a))));
+      add(sub, el('span', null, d ? `Press ${key}: ${d}` : `Press ${key} to use it.`));
       const icon = el('div', 'banner-ab');
-      add(icon, iconCanvas(a.icon || 'star', 'icon-xl'), keycap(keyLabel(key), 'big'));
+      add(icon, iconCanvas(a.icon || 'star', 'icon-xl'), keycap(key, 'big'));
       pushBanner(banner('banner-ability', 'NEW ABILITY', a.name || e.id || 'New ability', sub, icon), 3000, null, 2);
     },
     rankUp(e, hud) {
@@ -197,7 +212,7 @@ export function createFeedback(hudEl, viewEl, ctx) {
         return () => card.classList.remove('show');
       } });
     },
-    dispose() { for (const n of [bannerHost, boss, tut, prompt, lbTop, lbBot, fade, card, vignette, skipHint]) n.remove(); },
+    dispose() { offBind(); for (const n of [bannerHost, boss, tut, prompt, lbTop, lbBot, fade, card, vignette, skipHint]) n.remove(); },
   };
   return api;
 }

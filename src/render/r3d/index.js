@@ -4,6 +4,7 @@
 // chunks), models.js + rigs/* (entity models, instanced, shader-posed), fx.js + fxgeo.js (instanced fx).
 import * as THREE from 'three';
 import { VIEW } from '../../contracts.js';
+import { config } from '../../config.js';
 import { createMaterials, disposeMaterials, U } from './toon.js';
 import { prepareZone, buildChunk, buildBorder, CHUNK } from './terrain.js';
 import { createModels, lookKey } from './models.js';
@@ -12,6 +13,8 @@ import { makePose, pose } from './rigs/pose.js';
 import { C } from './kit.js';
 
 const SCALES = [0.6, 0.8, 1];
+const BASE_ZOOM = config.cameraZoom || 1;   // cutscene zooms (camera.zoom, around 1) stay relative to this
+const MODEL_SCALE = config.modelScale || 1; // characters and creatures only
 const DAY = {
   morning: { sun: new THREE.Color(1.0, 0.95, 0.88), sky: new THREE.Color(1.0, 0.97, 0.95), sunI: 2.1, hemiI: 1.75 },
   day: { sun: new THREE.Color(1, 1, 1), sky: new THREE.Color(1, 1, 1), sunI: 2.2, hemiI: 1.8 },
@@ -60,7 +63,7 @@ export function create() {
     // Distance chosen so the framing matches the 2D view at the focus (see skeleton note 17).
     const tilesH = h / VIEW.TILE_PX;
     const fov = VIEW.CAMERA_FOV_DEG * Math.PI / 180;
-    const d = tilesH / (2 * Math.tan(fov / 2)) / (camState.zoom || 1);
+    const d = tilesH / (2 * Math.tan(fov / 2)) / ((camState.zoom || 1) * BASE_ZOOM);
     camera.position.set(camState.x, Math.sin(pitch) * d, camState.y + Math.cos(pitch) * d);
     camera.lookAt(camState.x, 0, camState.y);
     camera.updateMatrixWorld();
@@ -182,7 +185,9 @@ export function create() {
     const x = e.px + (e.x - e.px) * a;
     const y = e.py + (e.y - e.py) * a;
     const z = e.z || 0;
-    const size = (look.size || 1) * (e.scale === undefined ? 1 : e.scale);
+    const solid = rig !== 'projectile' && rig !== 'effect';
+    const ms = solid ? MODEL_SCALE : 1;
+    const size = (look.size || 1) * (e.scale === undefined ? 1 : e.scale) * ms;
     let yaw = Math.PI / 2 - (e.angle || 0);
     let gy = z;
     if (rig === 'projectile') {
@@ -231,7 +236,7 @@ export function create() {
 
     // shadow
     const H = (meta.height || 0.6) * size;
-    const R = Math.max(0.22, (e.radius || 0.3) * 1.15) * (rig === 'humanoid' ? size : 1) + (rig === 'golem' ? 0.12 * size : 0);
+    const R = Math.max(0.22, (e.radius || 0.3) * 1.15) * (rig === 'humanoid' ? size : ms) + (rig === 'golem' ? 0.12 * size : 0);
     if (rig !== 'effect' && rig !== 'projectile') {
       const air = Math.max(0, (meta.flyer ? 0.7 : 0) + z);
       fx.shadow(x, y, R * (1 - Math.min(0.5, air * 0.2)), (0.5 - Math.min(0.3, air * 0.15)) * alpha);
@@ -491,9 +496,9 @@ export function create() {
       if (pl && zd) {
         const px = pl.px + (pl.x - pl.px) * a, py = pl.py + (pl.y - pl.py) * a;
         sp.set(px, 0.55 + (pl.z || 0), py).project(camera);
-        const pxPerTile = bh / (h / VIEW.TILE_PX / (camState.zoom || 1));
+        const pxPerTile = bh / (h / VIEW.TILE_PX / ((camState.zoom || 1) * BASE_ZOOM));
         U.uCutPos.value.set(px, 0, py);
-        U.uCutScreen.value.set((sp.x * 0.5 + 0.5) * Math.round(w * scale), (sp.y * 0.5 + 0.5) * bh, pxPerTile * 1.35);
+        U.uCutScreen.value.set((sp.x * 0.5 + 0.5) * Math.round(w * scale), (sp.y * 0.5 + 0.5) * bh, pxPerTile * 1.35 * MODEL_SCALE);
       } else U.uCutScreen.value.z = 0;
       r.viewRect(rectTmp);
 

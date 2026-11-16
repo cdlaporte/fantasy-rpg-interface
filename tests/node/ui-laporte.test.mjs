@@ -275,7 +275,7 @@ const wall = (x, y) => (y < 21 ? ((x + y) % 8 === 0 ? '#41607f' : '#3b5875') : y
 test('laporte port: identical figure pixels to the original (calm, full hair)', () => {
   const orig = makeOriginal();
   const ref = orig.build({ state: 'title', hair: 100, t: 1 });
-  const port = buildLaporteFace({ mood: 'calm', t: 1, hairFrac: 1, bg: 'academy' });
+  const port = buildLaporteFace({ mood: 'calm', t: 1, hairFrac: 1, bg: 'academy', attire: false });
   assert.equal(PORT_OUTLINE, orig.OUTLINE);
   let figure = 0;
   for (let y = 0; y < 32; y++) {
@@ -297,12 +297,12 @@ test('laporte port: with the cafeteria backdrop the whole grid matches the origi
   for (const [state, expr] of [['title', 'calm'], ['upgrade', 'happy'], ['caught', 'shocked']]) {
     for (const t of [1, 3.75, 0.5]) {
       const ref = orig.build({ state, hair: 100, t });
-      const port = buildLaporteFace({ expr, t, hairFrac: 1, bg: 'cafeteria' });
+      const port = buildLaporteFace({ expr, t, hairFrac: 1, bg: 'cafeteria', attire: false });
       assert.deepEqual(port, ref, `${expr} t=${t}`);
     }
   }
   const ref = orig.build({ state: 'title', hair: 40, t: 2 });
-  assert.deepEqual(buildLaporteFace({ expr: 'calm', t: 2, hairFrac: 0.4, bg: 'cafeteria' }), ref, 'thinning hair');
+  assert.deepEqual(buildLaporteFace({ expr: 'calm', t: 2, hairFrac: 0.4, bg: 'cafeteria', attire: false }), ref, 'thinning hair');
 });
 
 test('laporte port: every game mood renders and differs from calm', () => {
@@ -314,4 +314,18 @@ test('laporte port: every game mood renders and differs from calm', () => {
   }
   // blink closes the eyes at t = 0
   assert.notEqual(JSON.stringify(buildLaporteFace({ mood: 'calm', t: 0 })), calm);
+});
+
+test('laporte portrait: wizard attire is the default and leaves the face untouched', () => {
+  const on = buildLaporteFace({ mood: 'calm', t: 1 });
+  const off = buildLaporteFace({ mood: 'calm', t: 1, attire: false });
+  assert.notDeepEqual(on, off, 'attire changes the portrait');
+  // face box (eyes, brows, nose, mouth, stubble): x 12..19, y 9..23 identical
+  for (let y = 9; y <= 23; y++) for (let x = 12; x <= 19; x++) assert.equal(on[y][x], off[y][x], `face pixel ${x},${y}`);
+  // hat: navy crown at the top, gold band, maroon cape at a shoulder, gold clasp, glowing crystal on the right
+  assert.equal(on[0][15], '#243a66');
+  assert.ok(on[2].includes('#f0c24a'), 'gold band');
+  assert.equal(on[28][15], '#f0c24a', 'gold clasp');
+  assert.equal(on[30][2], '#7a2e3b', 'maroon cape at the shoulder');
+  assert.ok(on[5].includes('#9fe6ff'), 'staff crystal');
 });

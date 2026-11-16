@@ -4,6 +4,7 @@ import { el, add, setText, setClass, keycap } from './dom.js';
 import { iconCanvas } from './icons.js';
 import { fmtNum } from './format.js';
 import { K, selectable, livePortrait, hints, shake } from './modalKit.js';
+import { tip } from './tooltip.js';
 
 export function createShopUI(modal, ctx, prev) {
   const game = ctx.game;
@@ -35,6 +36,15 @@ export function createShopUI(modal, ctx, prev) {
     const price = el('span', 'shop-price pxfont');
     add(price, iconCanvas('coin', 'icon-sm'), el('span', null, fmtNum(s.price || 0)));
     add(r, iconCanvas(s.icon || 'potion', 'icon-md'), el('span', 'shop-item', s.name || s.id), price);
+    tip(r, () => {
+      const cs = (cur.stock || []).find((q) => q.id === s.id) || s;
+      const have = (game.data && game.data.items && game.data.items[s.id]) || {};
+      const meta = [`Price ${fmtNum(cs.price || 0)} gold`];
+      if (have.cd > 1) meta.push(`Cooldown ${have.cd}s`);
+      const lines = [cs.desc || have.desc || ''];
+      if (cs.canBuy === false) lines.push((cur.gold ?? 0) < (cs.price || 0) ? 'You do not have enough gold yet.' : 'You cannot buy this right now.');
+      return { title: cs.name || s.id, meta, lines };
+    });
     list.appendChild(r);
     return r;
   });

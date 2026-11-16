@@ -5,30 +5,37 @@
 //
 // Inputs: addText(fxEvent) for every FxEvent of type 'text' (fed by the UI from each FrameState), render(frame, hud).
 
+import { config } from '../config.js';
+import { keyLabel } from '../platform/bindings.js';
+
 const FONT_PX = '"Press Start 2P", ui-monospace, monospace';
 const FONT_BODY = '"Pixelify Sans", ui-monospace, monospace';
 const OUT = '#1e1a22';
 const POOL = 48;
 const BUBBLES = 8;
 
+// Round 2: bigger numbers (damage 18, crit 26) with a dark outline.
 const STYLE = {
-  dmg: { size: 12, color: '#ffffff', dur: 0.85, rise: 1.0 },
-  crit: { size: 18, color: '#ffd23f', dur: 1.1, rise: 1.25 },
-  heal: { size: 12, color: '#7dff9a', dur: 1.0, rise: 1.0 },
-  xp: { size: 10, color: '#c9a6ff', dur: 1.3, rise: 1.3 },
-  gold: { size: 10, color: '#ffd166', dur: 1.2, rise: 1.1 },
-  miss: { size: 10, color: '#c8ccd8', dur: 0.8, rise: 0.8 },
-  info: { size: 10, color: '#ffffff', dur: 1.6, rise: 0.9 },
+  dmg: { size: 18, color: '#ffffff', dur: 0.85, rise: 1.0 },
+  crit: { size: 26, color: '#ffd23f', dur: 1.1, rise: 1.25 },
+  heal: { size: 18, color: '#7dff9a', dur: 1.0, rise: 1.0 },
+  xp: { size: 14, color: '#c9a6ff', dur: 1.3, rise: 1.3 },
+  gold: { size: 14, color: '#ffd166', dur: 1.2, rise: 1.1 },
+  miss: { size: 14, color: '#c8ccd8', dur: 0.8, rise: 0.8 },
+  info: { size: 14, color: '#ffffff', dur: 1.6, rise: 0.9 },
 };
 
+/** Characters and creatures are drawn config.modelScale times bigger in the 3D renderer only. */
+export const MODEL_SCALE_3D = config.modelScale || 1;
+
 /** Head height in tiles for an entity view, from its look rig and size. */
-export function headHeight(v) {
+export function headHeight(v, mul = 1) {
   const look = v.look || {};
   const size = (look.size || 1) * (v.scale || 1);
   const rig = look.rig || 'humanoid';
   const base = rig === 'humanoid' ? 1.55 : rig === 'quadruped' ? 0.95 : rig === 'blob' ? 0.85 : rig === 'flyer' ? 1.45
     : rig === 'plant' ? 1.15 : rig === 'golem' ? 1.75 : 0.6;
-  return base * size + (v.z || 0);
+  return base * size * mul + (v.z || 0);
 }
 
 /** Text shown for a floating number (prefixes by style). */
@@ -46,6 +53,7 @@ export function createWorldOverlay(canvas, ctx = {}) {
   let renderer = null;
   let w = 0, h = 0;
   let drewLast = false;
+  let hmul = 1; // head height multiplier of the current renderer (3D scales models)
   const pt = { x: 0, y: 0, on: false };
   const tops = new Map(); // entity id -> screen y above its nameplate / prompt (this frame)
 
@@ -68,7 +76,7 @@ export function createWorldOverlay(canvas, ctx = {}) {
   }
 
   function measureLines(text, maxW) {
-    g.font = `15px ${FONT_BODY}`;
+    g.font = `bold 16px ${FONT_BODY}`;
     const words = String(text || '').split(/\s+/).filter(Boolean);
     const lines = [];
     let line = '', wmax = 0;
@@ -81,7 +89,7 @@ export function createWorldOverlay(canvas, ctx = {}) {
   }
 
   const api = {
-    setRenderer(r) { renderer = r; resize(); },
+    setRenderer(r) { renderer = r; hmul = r && r.id === '3d' ? MODEL_SCALE_3D : 1; resize(); },
     resize,
 
     /** Feed one FxEvent of type 'text' ({x, y, z, text, style, ent}). */
@@ -90,7 +98,7 @@ export function createWorldOverlay(canvas, ctx = {}) {
       if (style === 'bubble') {
         let b = fx.ent != null ? bubbles.find((q) => q.on && q.ent === fx.ent) : null;
         if (!b) b = bubbles.find((q) => !q.on) || bubbles.reduce((a, q) => (q.t0 < a.t0 ? q : a));
-        const m = measureLines(fx.text, 190);
+        const m = measureLines(fx.text, 220);
         b.on = true; b.ent = fx.ent; b.x = fx.x; b.y = fx.y; b.lines = m.lines; b.wmax = m.wmax; b.t0 = now;
         b.dur = (fx.dur > 0 ? fx.dur : 2.2 + String(fx.text || '').length * 0.045) * 1000;
         return;
@@ -150,23 +158,23 @@ export function createWorldOverlay(canvas, ctx = {}) {
         }
         if (!isEnemyHurt && !near && !isPrompt) continue;
         const x = v.px + (v.x - v.px) * alpha, y = v.py + (v.y - v.py) * alpha;
-        renderer.project(x, y, headHeight(v) + 0.15, pt);
+        renderer.project(x, y, headHeight(v, hmul) + 0.15, pt);
         if (pt.x < -80 || pt.y < -40 || pt.x > w + 80 || pt.y > h + 80) continue;
         let top = Math.round(pt.y);
         const cx = Math.round(pt.x);
         if (isEnemyHurt || (v.type === 'companion' && near)) {
           drawHpBar(cx, top, v.hpFrac, v.type === 'enemy');
-          top -= 8;
+          top -= 10;
         }
         if ((near || (isEnemyHurt && v.name)) && v.name && !isPrompt) {
-          drawName(cx, top - 2, v.name, v.type === 'enemy' ? '#ffb4a8' : v.team === 'town' && hud && hud.player && hud.player.wanted ? '#ff8a7a' : '#fff6df');
-          top -= 16;
+          drawName(cx, top - 3, v.name, v.type === 'enemy' ? '#ffb4a8' : v.team === 'town' && hud && hud.player && hud.player.wanted ? '#ff8a7a' : '#fff6df');
+          top -= 20;
         }
         if (isPrompt) {
-          if (v.name) { drawName(cx, top - 2, v.name, '#fff6df'); top -= 16; }
+          if (v.name) { drawName(cx, top - 2, v.name, '#fff6df'); top -= 20; }
           drawPrompt(cx, top - 4, prompt, now);
           promptPlaced = true;
-          top -= 32;
+          top -= 36;
         }
         tops.set(v.id, top);
       }
@@ -183,7 +191,7 @@ export function createWorldOverlay(canvas, ctx = {}) {
           let found = null;
           for (let k = 0; k < n; k++) if (frame.ents[k].id === b.ent) { found = frame.ents[k]; break; }
           if (!found) continue;
-          bx = found.px + (found.x - found.px) * alpha; by = found.py + (found.y - found.py) * alpha; hh = headHeight(found);
+          bx = found.px + (found.x - found.px) * alpha; by = found.py + (found.y - found.py) * alpha; hh = headHeight(found, hmul);
         }
         renderer.project(bx, by, hh + 0.35, pt);
         const top = b.ent != null && tops.has(b.ent) ? Math.min(pt.y, tops.get(b.ent) + 4) : pt.y;
@@ -210,7 +218,7 @@ export function createWorldOverlay(canvas, ctx = {}) {
         const x = Math.round(pt.x), y = Math.round(pt.y);
         g.fillStyle = OUT;
         g.fillText(o.text, x + 2, y + 2);
-        g.lineWidth = 3;
+        g.lineWidth = size >= 20 ? 6 : 5;
         g.strokeStyle = OUT;
         g.strokeText(o.text, x, y);
         g.fillStyle = o.color;
@@ -225,7 +233,7 @@ export function createWorldOverlay(canvas, ctx = {}) {
   };
 
   function drawHpBar(cx, y, f, enemy) {
-    const bw = 34, bh = 6;
+    const bw = 44, bh = 8;
     const x = cx - bw / 2;
     g.fillStyle = OUT;
     g.fillRect(x - 1, y - 1, bw + 2, bh + 2);
@@ -238,9 +246,9 @@ export function createWorldOverlay(canvas, ctx = {}) {
   }
 
   function drawName(cx, y, name, color) {
-    g.font = `600 14px ${FONT_BODY}`;
+    g.font = `bold 16px ${FONT_BODY}`;
     g.textBaseline = 'alphabetic';
-    g.lineWidth = 3;
+    g.lineWidth = 4;
     g.strokeStyle = OUT;
     g.strokeText(name, cx, y);
     g.fillStyle = color;
@@ -249,12 +257,14 @@ export function createWorldOverlay(canvas, ctx = {}) {
 
   function drawPrompt(cx, y, pr, now) {
     const bob = Math.floor(now / 300) % 2;
-    const key = pr.key || 'E';
+    const key = pr.key && pr.key !== 'E' ? pr.key : keyLabel('interact');
     const text = pr.text || '';
-    g.font = `600 15px ${FONT_BODY}`;
+    g.font = `bold 17px ${FONT_BODY}`;
     const tw = Math.ceil(g.measureText(text).width);
-    const kw = 22, pad = 6;
-    const W = kw + pad * 3 + tw, H = 26;
+    g.font = `10px ${FONT_PX}`;
+    const kw = Math.max(28, Math.ceil(g.measureText(key).width) + 12), pad = 7;
+    g.font = `bold 17px ${FONT_BODY}`;
+    const W = kw + pad * 3 + tw, H = 32;
     const x = Math.round(cx - W / 2), yy = Math.round(y - H - bob);
     // notched parchment box with outline + hard shadow
     box(x, yy, W, H, '#f7e6c4');
@@ -266,11 +276,11 @@ export function createWorldOverlay(canvas, ctx = {}) {
     g.fillStyle = '#d9c7a4';
     g.fillRect(x + pad, yy + H - 6, kw, 2);
     g.fillStyle = '#3b2a1e';
-    g.font = `9px ${FONT_PX}`;
+    g.font = `10px ${FONT_PX}`;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.fillText(key.length > 2 ? key.slice(0, 1) : key, x + pad + kw / 2, yy + H / 2 - 1);
-    g.font = `600 15px ${FONT_BODY}`;
+    g.fillText(key, x + pad + kw / 2, yy + H / 2 - 1);
+    g.font = `bold 17px ${FONT_BODY}`;
     g.textAlign = 'left';
     g.fillText(text, x + pad * 2 + kw, yy + H / 2);
     g.textAlign = 'center';
@@ -293,7 +303,7 @@ export function createWorldOverlay(canvas, ctx = {}) {
   }
 
   function drawBubble(cx, y, b, a) {
-    const lh = 17, pad = 8;
+    const lh = 20, pad = 9;
     const W = Math.ceil(b.wmax) + pad * 2, H = b.lines.length * lh + pad * 2 - 3;
     const x = Math.max(4, Math.min(w - W - 4, cx - Math.round(W / 2)));
     const yy = Math.max(4, y - H - 8);
@@ -309,7 +319,7 @@ export function createWorldOverlay(canvas, ctx = {}) {
     g.fillRect(tx - 2, yy + H - 2, 6, 3);
     g.fillRect(tx, yy + H + 1, 2, 2);
     g.fillStyle = '#3b2a1e';
-    g.font = `15px ${FONT_BODY}`;
+    g.font = `bold 16px ${FONT_BODY}`;
     g.textAlign = 'left';
     g.textBaseline = 'top';
     for (let i = 0; i < b.lines.length; i++) g.fillText(b.lines[i], x + pad, yy + pad - 1 + i * lh);

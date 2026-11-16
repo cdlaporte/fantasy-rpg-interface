@@ -15,15 +15,43 @@ export function humanoid(o) {
 
 const fit = (style, primary, secondary, accent) => ({ style, primary, secondary, accent });
 
-/** Two player bases: ambiguous ethnicity, medium-brown skin tones, neutral starter outfits. Never labeled. */
+/**
+ * Eight player looks (round 2): two builds (a broader, b slighter) x four skin tones (light, medium, dark, storybook
+ * green). Never labeled. Index 0 and 1 are the original two looks (old saves store the index); the rest are mixed
+ * in a fixed order with varied hair and outfit colors.
+ */
 export const PLAYER_LOOKS = [
-  humanoid({
+  humanoid({ // 0: medium (original)
     build: 'a', skin: '#a8714a', hair: { style: 'curly', color: '#2b1d14' },
     outfit: fit('tunic', '#3f8f8a', '#efe2c4', '#d9a441'),
   }),
-  humanoid({
+  humanoid({ // 1: medium (original)
     build: 'b', skin: '#b98256', hair: { style: 'ponytail', color: '#3a2416' },
     outfit: fit('tunic', '#5a7fc0', '#efe2c4', '#e0b24a'),
+  }),
+  humanoid({ // 2: green, build b
+    build: 'b', skin: '#7fbf6a', hair: { style: 'bun', color: '#2c5a3a' }, ears: 'pointed',
+    outfit: fit('tunic', '#8a5ac0', '#efe2c4', '#f0c24a'),
+  }),
+  humanoid({ // 3: light, build a
+    build: 'a', skin: '#f1cba6', hair: { style: 'spiky', color: '#c4622d' },
+    outfit: fit('tunic', '#c8503c', '#efe2c4', '#e8c24a'),
+  }),
+  humanoid({ // 4: dark, build b
+    build: 'b', skin: '#5e3b27', hair: { style: 'braids', color: '#171112' },
+    outfit: fit('tunic', '#e0a030', '#f4ecd8', '#3f8f8a'),
+  }),
+  humanoid({ // 5: green, build a
+    build: 'a', skin: '#8cc77a', hair: { style: 'short', color: '#1f3a2a' },
+    outfit: fit('tunic', '#3d6fb8', '#efe2c4', '#ffd24a'),
+  }),
+  humanoid({ // 6: light, build b
+    build: 'b', skin: '#f6d9bd', hair: { style: 'long', color: '#8a5a2b' },
+    outfit: fit('tunic', '#4a9a5a', '#f4ecd8', '#e07a8a'),
+  }),
+  humanoid({ // 7: dark, build a
+    build: 'a', skin: '#6f4630', hair: { style: 'short', color: '#2a1a10' },
+    outfit: fit('tunic', '#7a4fb0', '#efe2c4', '#7fd6e0'),
   }),
 ];
 
@@ -40,6 +68,9 @@ export const LAPORTE_LOOK = humanoid({
   build: 'a', size: 1.05, skin: LAPORTE.skin[0],
   hair: { style: 'm_hairline', color: LAPORTE.hair[0] }, facial: 'goatee',
   outfit: fit('quarterzip', LAPORTE.quarterZipNavy[0], LAPORTE.quarterZipGray[0], LAPORTE.collar),
+  // Round 2 wizard attire (matches the portrait): navy hat with a gold band, set back on the head so the M hairline
+  // still shows (the rig reads the hat; see rigs/humanoid.js), the headmaster's cape and his glowing staff.
+  hat: { style: 'wizard', color: '#243a66' },
   cape: { color: '#7a2e3b' },
   held: { style: 'staff', color: LAPORTE.hair[2], glow: '#9fe6ff' },
   hero: 'laporte',

@@ -163,6 +163,59 @@ export function faceExtras(out, expr, t) {
   }
 }
 
+
+// ---- Round 2: wizard attire (the in-world model wears the same: navy hat with a gold band, maroon cape and a high
+// mantle collar with a gold clasp, glowing crystal staff). Painted around the original figure; `attire: false` skips it.
+const CAPE = '#7a2e3b', CAPE_DK = '#5a1f2b', CAPE_HI = '#9a4452', GOLD = '#f0c24a', GOLD_DK = '#b98a20';
+const HAT = '#243a66', HAT_DK = '#182848', HAT_HI = '#3a548c';
+
+/** Cape at the shoulders and the high mantle collar around the neck (painted before the head, which covers overlaps). */
+function paintMantle(set, row) {
+  // shoulders of the cape, outside the sweater
+  const cape = [[26, 3, 8], [27, 2, 6], [28, 1, 4], [29, 0, 3], [30, 0, 3], [31, 0, 3]];
+  for (const [y, x0, x1] of cape) {
+    for (let x = x0; x <= x1; x++) {
+      set(x, y, x === x0 ? GOLD_DK : (x + y) % 5 === 0 ? CAPE_HI : x === x1 ? CAPE_DK : CAPE);
+      set(31 - x, y, x === x0 ? GOLD_DK : (x + y) % 5 === 0 ? CAPE_HI : x === x1 ? CAPE_DK : CAPE);
+    }
+  }
+  // high mantle collar: two upright wings beside the jaw that sweep down to the clasp
+  const wing = [[20, 8, 10], [21, 8, 11], [22, 8, 11], [23, 9, 11], [24, 9, 11], [25, 9, 11], [26, 9, 11], [27, 10, 14]];
+  for (const [y, x0, x1] of wing) {
+    for (let x = x0; x <= x1; x++) {
+      const c = x === x0 ? CAPE_DK : x === x1 ? CAPE_HI : CAPE;
+      set(x, y, c); set(31 - x, y, c);
+    }
+  }
+  row(8, 10, 20, GOLD_DK); row(21, 23, 20, GOLD_DK);   // gold trim on the standing collar tops
+  // gold clasp at the throat, with the chain links
+  set(14, 28, GOLD_DK); set(17, 28, GOLD_DK);
+  row(14, 17, 27, CAPE_DK);
+  set(15, 28, GOLD); set(16, 28, GOLD); set(15, 29, GOLD_DK); set(16, 29, GOLD_DK);
+}
+
+/** Wizard hat (crown in rows 0-1, band, wide brim rows 3-4, set back so the M hairline and brows show) and the staff. */
+function paintHatAndStaff(set, row) {
+  // crown, tip flopping to the right
+  row(12, 19, 0, HAT); set(12, 0, HAT_DK); row(20, 23, 0, HAT_HI);
+  row(10, 21, 1, HAT); set(10, 1, HAT_DK); row(22, 25, 1, HAT_HI);
+  set(26, 2, HAT_HI); set(27, 3, HAT_DK);
+  // gold band
+  row(9, 22, 2, GOLD); set(9, 2, GOLD_DK); set(22, 2, GOLD_DK); set(14, 2, '#fff1a8'); set(15, 2, '#fff1a8');
+  // brim
+  row(5, 26, 3, HAT_HI); row(4, 27, 4, HAT); set(4, 4, HAT_DK); set(27, 4, HAT_DK);
+  row(8, 23, 4, HAT_DK);
+  for (let x = 8; x <= 23; x++) if (x % 2 === 0) set(x, 4, HAT);
+  // staff with its glowing crystal on the right
+  for (let y = 9; y < 32; y++) { set(28, y, '#8a5a33'); set(29, y, '#4a2e17'); }
+  set(27, 12, '#8a5a33'); set(30, 12, '#4a2e17'); set(27, 13, '#8a5a33'); set(30, 13, '#4a2e17');
+  set(28, 3, '#bff3ff');
+  row(27, 29, 4, '#9fe6ff'); set(28, 4, '#ffffff');
+  row(27, 29, 5, '#9fe6ff'); set(28, 5, '#e8fbff');
+  row(27, 29, 6, '#7fd6f0'); set(28, 6, '#bff3ff');
+  set(28, 7, '#5fc8e8'); set(28, 8, '#4aa8c8');
+}
+
 /**
  * Build Laporte's face.
  * @param {Object} [o]
@@ -172,12 +225,14 @@ export function faceExtras(out, expr, t) {
  * @param {number} [o.hairFrac]  1 = full hair (default)
  * @param {string} [o.bg]        backdrop name (default 'academy'; 'cafeteria' = the original wall)
  * @param {boolean} [o.blink]    false disables blinking
+ * @param {boolean} [o.attire]   false = the original studyHallSim figure (golden test); default true = wizard attire
  * @returns {string[][]}
  */
 export function buildLaporteFace(o = {}) {
   const expr = o.expr && FACES[o.expr] ? o.expr : exprForMood(o.mood || 'calm');
   const t = o.t || 0;
   const hairFrac = o.hairFrac ?? 1;
+  const attire = o.attire !== false;
   const bgFn = backdropFn(o.bg || 'academy');
   const g = [], fig = [];
   for (let y = 0; y < 32; y++) { g.push(new Array(32).fill(null)); fig.push(new Array(32).fill(false)); }
@@ -221,6 +276,7 @@ export function buildLaporteFace(o = {}) {
   }
   set(15, 28, '#d0d4d6'); set(16, 28, '#d0d4d6');
   for (let y = 29; y < 32; y++) { set(15, y, '#3a3d42'); set(16, y, '#b9bec2'); }
+  if (attire) paintMantle(set, row);
   // Ears
   for (const [ex] of [[6, 7], [25, 24]]) {
     for (let y = 13; y <= 16; y++) set(ex, y, skin);
@@ -264,6 +320,8 @@ export function buildLaporteFace(o = {}) {
   if (hairFrac < 0.6) {
     for (const [x, y] of [[12, 6], [13, 5], [14, 5]]) if (!visible.has(y * 32 + x)) set(x, y, '#fff1dc');
   }
+
+  if (attire) paintHatAndStaff(set, row);
 
   // Dark outline around the figure, then the extras on top
   const out = outlineGrid(g, fig, OUTLINE);

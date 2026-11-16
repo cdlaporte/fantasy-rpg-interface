@@ -5,6 +5,8 @@ import { el, add, setText, setClass, clear, keycap } from './dom.js';
 import { iconCanvas, setIcon } from './icons.js';
 import { normalizeItems, normalizeCosmetics } from './format.js';
 import { K, selectable, hints, shake } from './modalKit.js';
+import { tip } from './tooltip.js';
+import { keyLabel } from '../platform/bindings.js';
 
 export function createInventoryUI(modal, ctx, prev) {
   const game = ctx.game;
@@ -24,8 +26,9 @@ export function createInventoryUI(modal, ctx, prev) {
   for (let i = 0; i < 6; i++) {
     const s = el('div', 'islot inv-hslot');
     const ic = iconCanvas(null, 'icon-md');
-    add(s, ic, el('span', 'islot-key pxfont', String(i + 1)));
+    add(s, ic, el('span', 'islot-key pxfont', keyLabel('item' + (i + 1))));
     s.addEventListener('click', () => assign(i));
+    tip(s, () => { const it = ((ctx.getHud && ctx.getHud()) || {}).items; const sl = it && it[i]; return sl ? { title: sl.name || sl.id, tag: keyLabel('item' + (i + 1)), meta: [`You have ${sl.count ?? 1}`], lines: ['Click here to replace it with the selected item.'] } : { title: 'Empty hotbar slot', tag: keyLabel('item' + (i + 1)), lines: ['Pick an item, then click here or press its number to put it in this slot.'] }; });
     hot.appendChild(s);
     hotSlots.push({ s, ic });
   }
@@ -55,6 +58,12 @@ export function createInventoryUI(modal, ctx, prev) {
       add(r, iconCanvas(it.icon, 'icon-md'), el('span', 'inv-name', it.name));
       if (tab === 'items') r.appendChild(el('span', 'inv-count pxfont', 'x' + it.count));
       else if (it.equipped) r.appendChild(el('span', 'inv-badge pxfont', 'WORN'));
+      tip(r, () => {
+        const meta = tab === 'items' ? [`You have ${it.count}`] : [it.equipped ? 'Worn now' : 'Not worn'];
+        const d = defs[it.id] || {};
+        if (tab === 'items' && d.cd > 1) meta.push(`Cooldown ${d.cd}s`);
+        return { title: it.name, meta, lines: [it.desc || d.desc || '', tab === 'items' && (!it.type || it.type === 'consumable') ? `Press ${keyLabel('item1')} to ${keyLabel('item6')} to put it on your hotbar.` : ''] };
+      });
       list.appendChild(r);
       return r;
     });

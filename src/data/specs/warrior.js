@@ -37,7 +37,7 @@ export default {
       aegis: { r: 4.4, dur: 5, dmgTaken: -0.8, push: 3.5, endR: 4.4, endDmg: 1.4 },
     },
     // round 3: outgoing damage x this table by level (linear between points; 1 up to 12). docs/notes/r3a.md.
-    balance: { dmgMul: [[12, 1], [14, 1], [16, 1], [18, 1], [20, 1]] },
+    balance: { dmgMul: [[12, 1], [14, 1.05], [16, 1.02], [18, 1.04], [20, 1.12]] },
   },
   berserker: {
     id: 'berserker', from: 'warrior', name: 'Berserker', color: '#d7263d',
@@ -71,7 +71,7 @@ export default {
       whirlwind: { need: 20, drain: 20, speedMul: 0.8, r: 2.0, dmg: 0.085, tick: 0.2, knockback: 0 },
       skyfall: { dist: 5, range: 7, dur: 0.7, height: 3, r: 3.75, dmg: 0.75, stun: 1, knockback: 9, frenzyR: 5.25, frenzyMult: 1.3, coneDeg: 100 },
     },
-    balance: { dmgMul: [[12, 1], [14, 1], [16, 1], [18, 1], [20, 1]] },
+    balance: { dmgMul: [[12, 1], [14, 1.15], [16, 1.12], [18, 1.12], [20, 1.03]] },
   },
   battlemage: {
     id: 'battlemage', from: 'warrior', name: 'Battlemage', color: '#ff7a2f',
@@ -107,6 +107,6 @@ export default {
       rune_shift: { r: 2.75, dmg: 0.2, knockback: 5 },
       runestorm: { dur: 3, r: 6.25, dmg: 0.45, times: [0.3, 1.3, 2.3], encoreAt: 3.0, bolts: 6, pillars: 6, pillarR: 3.0 },
     },
-    balance: { dmgMul: [[12, 1], [14, 1], [16, 1], [18, 1], [20, 1]] },
+    balance: { dmgMul: [[12, 1], [14, 0.97], [16, 0.94], [18, 0.92], [20, 0.95]] },
   },
 };

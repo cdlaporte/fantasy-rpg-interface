@@ -9,24 +9,24 @@ import data from '../../src/data/index.js';
 import { scriptedInput } from '../../src/platform/input.js';
 import { DT } from '../../src/contracts.js';
 
-const TARGET = Object.fromEntries(Object.entries({ 3: 11, 5: 19.5, 8: 35, 10: 47, 12: 62 }).map(([k, v]) => [k, v * config.numberScale]));   // round 2 band (docs/notes/r2c.md: the CLASSES band x the +25% power-per-level growth) x number scale
+export const TARGET = Object.fromEntries(Object.entries({ 3: 11, 5: 19.5, 8: 35, 10: 47, 12: 62, 14: 77, 16: 93, 18: 109, 20: 127 }).map(([k, v]) => [k, v * config.numberScale]));   // round 2 band (docs/notes/r2c.md: the CLASSES band x the +25% power-per-level growth) x number scale
 const BAND = 0.15;
-const SEEDS = [7, 11, 23, 31, 42, 57, 64, 99];
+export const SEEDS = [7, 11, 23, 31, 42, 57, 64, 99];
 // Sensible picks, in the order they are offered at levels 4 / 6 / 8 / 10 / 12.
-const PICKS = {
-  rogue: ['venom_edge', 'boomerang_blade', 'blade_flurry', 'lucky_streak', 'quick_hands'],
-  archer: ['venom_edge', 'boomerang_blade', 'hawk', 'split_arrow', 'rain_of_fire'],
-  thief: ['venom_edge', 'lucky_streak', 'loaded_dice', 'coin_toss', 'vanishing_act'],
-  ninja: ['venom_edge', 'boomerang_blade', 'explosive_tags', 'blade_storm', 'clone_mastery'],
+export const PICKS = {
+  rogue: ['venom_edge', 'boomerang_blade', 'blade_flurry', 'lucky_streak', 'quick_hands', 'toxic_fan', 'backflip_knives', 'adrenaline_rush', 'roll_strike'],
+  archer: ['venom_edge', 'boomerang_blade', 'hawk', 'split_arrow', 'rain_of_fire', 'ricochet_arrows', 'explosive_arrow', 'adrenaline_rush', 'toxic_fan'],
+  thief: ['venom_edge', 'lucky_streak', 'loaded_dice', 'coin_toss', 'vanishing_act', 'sleight_of_hand', 'golden_touch', 'adrenaline_rush', 'toxic_fan'],
+  ninja: ['venom_edge', 'boomerang_blade', 'explosive_tags', 'blade_storm', 'clone_mastery', 'kunai_fan', 'smoke_screen', 'adrenaline_rush', 'toxic_fan'],
 };
 
-function setup(spec, level, seed) {
+export function setup(spec, level, seed) {
   const game = createGame({ data, name: 'Tester', seed, zone: 'test', marker: 'start' });
   const pr = game.sys.progression;
   pr.setLevel(level, { quiet: true, boons: false });
   pr.setClass('rogue', { quiet: true });
   if (spec) pr.setSpec(spec, { quiet: true });
-  const n = [4, 6, 8, 10, 12].filter((l) => l <= level).length;
+  const n = [4, 6, 8, 10, 12, 14, 16, 18, 20].filter((l) => l <= level).length;   // round 3: boons to level 20
   for (const b of PICKS[spec || 'rogue'].slice(0, n)) pr.boons.push(b);
   game.setFlag('look_chosen', true);
   const p = game.player;
@@ -35,7 +35,7 @@ function setup(spec, level, seed) {
 }
 
 /** One tough enemy (elite: x2.5 hp) and four weak ones of level L that fight back; returns hp removed per second. */
-function mixedFight(spec, level, seed) {
+export function mixedFight(spec, level, seed) {
   const { game, p } = setup(spec, level, seed);
   const cx = 30, cy = 21;
   game.physics.teleport(p, cx - 3, cy);
@@ -157,3 +157,20 @@ for (const spec of [null, 'archer', 'thief', 'ninja']) {
     game.hudState();
   });
 }
+
+// round 3 (levels 13-20): the band continues at a constant time to kill (62 x (L/12)^1.4: 77 / 93 / 109 / 127, docs/notes/r3a.md).
+test('round 3: each rogue spec at levels 14 / 16 / 18 / 20 inside the band (+-15%) and within +-15% of each other', (t) => {
+  const bad = [];
+  for (const L of [14, 16, 18, 20]) {
+    const v = [];
+    for (const spec of ['archer', 'thief', 'ninja']) {
+      const dps = SEEDS.reduce((s, sd) => s + mixedFight(spec, L, sd), 0) / SEEDS.length;
+      v.push(dps);
+      t.diagnostic(`${spec} L${L}: ${dps.toFixed(1)} (${(dps / TARGET[L] * 100).toFixed(0)}%)`);
+      if (Math.abs(dps / TARGET[L] - 1) > BAND) bad.push(`${spec} L${L}: ${dps.toFixed(1)} vs ${TARGET[L]}`);
+    }
+    const mean = v.reduce((a, b) => a + b, 0) / v.length;
+    for (const x of v) if (Math.abs(x / mean - 1) > 0.15) bad.push(`L${L} spread ${v.map((y) => y.toFixed(1))}`);
+  }
+  assert.deepEqual(bad, []);
+});

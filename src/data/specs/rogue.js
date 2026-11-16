@@ -21,7 +21,7 @@ export default {
     ranks: { 3: 'Longbow', 4: 'Twin Arrows', 5: 'Burning Shot' },
     kit: {
       dmgScale: 0.38,   // replaces the class dmgScale for this spec (measured, docs/notes/kit-rogue.md)
-      lateScale: [[12, 1], [14, 1], [16, 1], [18, 1], [20, 1]],   // round 3: x dmgScale by level (docs/notes/r3a.md)
+      lateScale: [[12, 1], [14, 0.77], [16, 0.79], [18, 0.86], [20, 0.855]],   // round 3: x dmgScale by level (docs/notes/r3a.md)
       colors: { main: '#3fa34d', gold: '#f2c94c', star: '#fff1a8', fire: '#ff7a2f' },
       eagleEye: { minDist: 1, maxDist: 7, bonus: 0.6, pipDist: 5 },
       // Longbow: release under `tapMax` s = quick arrow; longer = Power Shot (coef grows to `coefMax` at `drawFull` s).
@@ -58,7 +58,7 @@ export default {
     ranks: { 3: 'Cutpurse Daggers', 4: 'Jackpot', 5: 'Coin Storm' },
     kit: {
       dmgScale: 0.27,   // replaces the class dmgScale for this spec (measured, docs/notes/kit-rogue.md)
-      lateScale: [[12, 1], [14, 1], [16, 1], [18, 1], [20, 1]],
+      lateScale: [[12, 1], [14, 1.0], [16, 0.9], [18, 0.89], [20, 0.925]],
       colors: { main: '#2a9d8f', gold: '#f2c94c', smoke: '#5d6b78' },
       daggers: { coef: 0.6 },
       stickyFingers: { chance: 0.35, min: 1, max: 3, maxPerEnemy: 4, goldMul: 1.5 },
@@ -93,13 +93,13 @@ export default {
     ranks: { 3: 'Shuriken', 4: 'Shuriken Storm', 5: 'Shuriken Halo' },
     kit: {
       dmgScale: 0.14,   // replaces the class dmgScale for this spec (measured, docs/notes/kit-rogue.md)
-      lateScale: [[12, 1], [14, 1], [16, 1], [18, 1], [20, 1]],
+      lateScale: [[12, 1], [14, 0.93], [16, 1], [18, 1], [20, 0.97]],
       colors: { main: '#3d348b', sash: '#e63946', steel: '#cfd8dc', shadow: '#6a5acd' },
       afterimage: { every: 0.22, critWindow: 1 },
       shuriken: { n: 3, spread: 30, range: 6, coef: 0.5, speed: 12, interval: 0.3, catchCdr: 0.3 },
       shurikenIV: { n: 5, spread: 60, bounce: 1, bounceRange: 3.5 },
       // round 3, rank V: every third throw is a full halo of returning shuriken
-      shurikenV: { every: 3, n: 10, range: 5, coef: 0.5 },
+      shurikenV: { every: 3, n: 10, range: 4.5, coef: 1.0 },
       shadowStep: { cd: 6, range: 7, behind: 0.75, ahead: 4, pips: 2,
         decoy: { ttl: 2.5, hpMul: 0.5, r: 2.25, coef: 2.0 } },
       clones: { cd: 30, n: 2, nFull: 3, dur: 8, mult: 0.6, dist: 1.3, hpMul: 0.3 },

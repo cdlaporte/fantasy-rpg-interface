@@ -248,6 +248,12 @@ export const LEVEL_CAP = 20;
  * for l >= from; levels 1-10 (the tutorial and the forest, tuned in round 2) are unchanged. See docs/notes/r3a.md.
  */
 export const XP_LATE = Object.freeze({ from: 11, mul: 2, perLevel: 0.3 });
+/**
+ * round 3: enemy hits grow 2 + 1.5L while class hp grows a fixed amount per level, so without help a level-18 hero
+ * survives ~15% fewer hits than a level-8 one. From level 13 the hero gains +0.3 defense per level (defense divides
+ * damage by 1 + def / 10): hits-to-down at 18 match level 8 again (docs/notes/r3a.md).
+ */
+export const LATE_TOUGHNESS = Object.freeze({ from: 12, defensePerLevel: 0.3 });
 export const AURA_STYLES = { warrior: 'flame', mage: 'sparkle', rogue: 'shadow' };
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -499,6 +505,7 @@ export default {
       let defense = (b.defense || 0) + (b.defensePerLevel || 0) * L;
       const s = api.specId ? specDef(api.specId) : null;
       if (s) { hp *= s.mods.hp; power *= s.mods.power; speed *= s.mods.speed; defense *= s.mods.defense; }
+      if (api.classId && L > LATE_TOUGHNESS.from) defense += LATE_TOUGHNESS.defensePerLevel * (L - LATE_TOUGHNESS.from);
       const mods = p.data && p.data.statMods;
       if (mods) {
         for (const k in mods) {

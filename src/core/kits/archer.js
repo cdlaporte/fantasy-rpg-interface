@@ -63,6 +63,8 @@ function quickArrow(game, p, angle, rank) {
 }
 
 function ricoHit(game, t, dealt, pr) {
+  const pd = pr.data.proj;
+  if (!pd.ricoHalf) { pd.ricoHalf = true; pd.dmg *= 0.5; }   // the ricochet hits for half
   game.fx({ type: 'sparkle', x: t.x, y: t.y, n: 5, r: 0.4, color: ak(game).colors.gold });
   const ar = game.ents.get(pr.owner);
   if (ar && ar.data.kit && ar.data.kit.ar) ar.data.kit.ar.ricos = (ar.data.kit.ar.ricos || 0) + 1;
@@ -98,20 +100,20 @@ function powerShot(game, p, angle, heldT, rank) {
   let first = true;
   const shot = game.abilities.use('projectile', p, {
     angle, look: arrowLook(burning ? C.fire : full ? C.gold : C.main, full ? '#ffffff' : C.gold, size), speed: D.speed, range: D.range, radius: 0.22,
-    onExpire: boom ? (g, pr) => {
-      // round 3 boon Explosive Arrow
-      g.combat.aoe(p, { x: pr.x, y: pr.y, r: boom.r || 2, dmg: boom.coef || 1, knockback: 6, type: 'ranged', fx: 'meteor', color: C.gold,
-        shake: 0.3, tags: TAG_STAR });
-      g.fx({ type: 'shockwave', x: pr.x, y: pr.y, r: boom.r || 2, color: C.gold });
-      const a = p.data.kit && p.data.kit.ar;
-      if (a) a.booms = (a.booms || 0) + 1;
-    } : null,
     dmg: coef, pierce: true, knockback: D.knockback * (0.4 + 0.6 * f), crit, tags: TAG_BASIC, anim: 'attack', hitStop: full ? 0.05 : 0,
     status: pin ? { root: pin.root || 2 } : null,
     onHit(g, t, dealt, pr) {
       if (pin) g.fx({ type: 'ring', x: t.x, y: t.y, r: 0.6, color: C.gold, dur: 0.5 });
       if (!first) return;
       first = false;
+      if (boom) {
+        // round 3 boon Explosive Arrow: a golden blast on the first enemy hit
+        g.combat.aoe(p, { x: t.x, y: t.y, r: boom.r || 2, dmg: boom.coef || 1, knockback: 6, type: 'ranged', fx: 'meteor', color: C.gold,
+          shake: 0.3, tags: TAG_STAR });
+        g.fx({ type: 'shockwave', x: t.x, y: t.y, r: boom.r || 2, color: C.gold });
+        const a = p.data.kit && p.data.kit.ar;
+        if (a) a.booms = (a.booms || 0) + 1;
+      }
       if (splinter) {
         const shots = g.abilities.use('multishot', p, { x: t.x, y: t.y, angle: pr.angle, n: splinter.n, spread: splinter.arc, model: 'arrow',
           color: C.gold, size: 0.7, speed: D.speed * 0.8, range: splinter.range, amount: pr.data.proj.dmg * splinter.dmgMul, knockback: 1,

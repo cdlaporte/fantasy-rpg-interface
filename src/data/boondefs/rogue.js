@@ -38,7 +38,7 @@ export default {
   ricochet_arrows: { id: 'ricochet_arrows', spec: 'archer', name: 'Ricochet Arrows', icon: 'bow', tags: ['basic'],
     desc: 'Quick arrows ricochet off their target into another enemy.', bounce: 1, bounceRange: 4.5 },
   explosive_arrow: { id: 'explosive_arrow', spec: 'archer', name: 'Explosive Arrow', icon: 'bomb', tags: ['power_shot'],
-    desc: 'A fully drawn Power Shot explodes in a golden blast where it stops.', r: 2.0, coef: 1.0 },
+    desc: 'A fully drawn Power Shot explodes in a golden blast on the first enemy it hits.', r: 2.0, coef: 1.0 },
 
   // ---- Thief (4) ----
   coin_toss: { id: 'coin_toss', spec: 'thief', name: 'Coin Toss', icon: 'coin', tags: ['gold'],

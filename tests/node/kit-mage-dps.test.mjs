@@ -10,7 +10,7 @@ import { createRng } from '../../src/core/rng.js';
 import { mk, ring, meanDps, DT } from './kit-mage-lib.test.mjs';
 
 // Round 2 band (docs/notes/r2c.md): level 3 ~11, 5 ~19.5, 8 ~35, 10 ~47, 12 ~62 (+-15%; the CLASSES band x the power growth).
-const TARGET = Object.fromEntries(Object.entries({ 3: 11, 5: 19.5, 8: 35, 10: 47, 12: 62 }).map(([k, v]) => [k, v * config.numberScale]));   // round 2 band (docs/notes/r2c.md: the CLASSES band x the +25% power-per-level growth) x number scale
+export const TARGET = Object.fromEntries(Object.entries({ 3: 11, 5: 19.5, 8: 35, 10: 47, 12: 62, 14: 77, 16: 93, 18: 109, 20: 127 }).map(([k, v]) => [k, v * config.numberScale]));   // round 2 band (docs/notes/r2c.md: the CLASSES band x the +25% power-per-level growth) x number scale
 const ROWS = [[null, 3], [null, 5], ['conjurer', 8], ['conjurer', 10], ['conjurer', 12], ['sorcerer', 8], ['sorcerer', 10],
   ['sorcerer', 12], ['monk', 8], ['monk', 10], ['monk', 12]];
 
@@ -82,4 +82,22 @@ test('save / load of class, spec, boons and level restores a working kit', () =>
     for (let i = 0; i < 40; i++) { inp.attackReleased = -1; g2.step(DT, inp); }
     assert.ok(r.hp < 999, spec + ' attacks after load');
   }
+});
+
+// round 3 (levels 13-20): the band continues at a constant time to kill (62 x (L/12)^1.4: 77 / 93 / 109 / 127, docs/notes/r3a.md).
+test('round 3: each mage spec at levels 14 / 16 / 18 / 20 inside the band (+-15%) and within +-15% of each other', () => {
+  const table = [];
+  for (const lvl of [14, 16, 18, 20]) {
+    const v = [];
+    for (const spec of ['conjurer', 'sorcerer', 'monk']) {
+      const r = meanDps(spec, lvl);
+      v.push(r.dps);
+      table.push(`${spec.padEnd(8)} L${lvl} ${r.dps.toFixed(1).padStart(6)} (target ${TARGET[lvl]})`);
+      assert.ok(r.cleared >= 0.75, `${spec} L${lvl} clears the fight`);
+      assert.ok(r.dps >= TARGET[lvl] * 0.85 && r.dps <= TARGET[lvl] * 1.15, `${spec} L${lvl} DPS ${r.dps.toFixed(1)} vs ${TARGET[lvl]}`);
+    }
+    const mean = v.reduce((a, b) => a + b, 0) / v.length;
+    for (const x of v) assert.ok(Math.abs(x - mean) / mean <= 0.15, `L${lvl} spread ${v.map((n) => n.toFixed(1))}`);
+  }
+  console.log('# mage DPS table (round 3)\n# ' + table.join('\n# '));
 });

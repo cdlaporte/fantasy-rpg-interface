@@ -37,13 +37,19 @@ function windBlades(game, p, x0, y0) {
   const x1 = p.x, y1 = p.y;
   const len = Math.hypot(x1 - x0, y1 - y0);
   const a = len > 0.2 ? angleTo(x0, y0, x1, y1) : p.angle;
+  const hit = ww.hit; hit.length = 0;
   if (len > 0.2) {
-    game.combat.aoe(p, { x: x0, y: y0, shape: 'line', angle: a, len, w: B.w, dmg: B.pathCoef, knockback: 2, type: 'melee', fx: false, tags: TAG_BLADE });
+    const h = game.combat.aoe(p, { x: x0, y: y0, shape: 'line', angle: a, len, w: B.w, dmg: B.pathCoef, knockback: 2, type: 'melee', fx: false, tags: TAG_BLADE });
+    for (let i = 0; i < h.length; i++) hit.push(h[i].id);
     game.fx({ type: 'trail', x: x0, y: y0, x2: x1, y2: y1, color: C.white });
     game.fx({ type: 'slash', x: (x0 + x1) / 2, y: (y0 + y1) / 2, angle: a + Math.PI / 2, arc: 60, r: Math.max(0.8, len / 2), color: C.main, style: 'crescent' });
   }
+  // a gust where you land (what you stepped around), then three crescents at the nearest enemy (else straight on)
+  game.combat.aoe(p, { x: x1, y: y1, r: B.gustR, dmg: B.pathCoef, knockback: 3, type: 'melee', fx: false, tags: TAG_BLADE, exclude: hit });
+  const t = game.ents.nearest(x1, y1, B.range, isEnemy);
+  const fa = t && Math.hypot(t.x - x1, t.y - y1) > 0.3 ? angleTo(x1, y1, t.x, t.y) : a;
   if (!bladeLook || bladeLook.color !== C.white) bladeLook = { rig: 'projectile', model: 'crescent', color: C.white, glow: C.main, size: B.size, trail: true };
-  game.abilities.use('multishot', p, { x: x1, y: y1, angle: a, n: B.n, spread: B.spread, look: bladeLook, speed: B.speed, range: B.range,
+  game.abilities.use('multishot', p, { x: x1, y: y1, angle: fa, n: B.n, spread: B.spread, look: bladeLook, speed: B.speed, range: B.range,
     dmg: B.coef, pierce: true, knockback: 1.5, tags: TAG_BLADE, anim: false });
   game.fx({ type: 'ring', x: x1, y: y1, r: 1, color: C.pale, dur: 0.3 });
   game.fx({ type: 'sparkle', x: x1, y: y1, n: 8, r: 0.6, color: C.white });
@@ -172,7 +178,7 @@ export default {
   id: ID, parent: 'ninja', tier: 3,
 
   onEquip(game, p) {
-    p.data.kit.ww = { bladeT: -9, rollT: 0, rollX: 0, rollY: 0, clones: [], scratch: [], blades: 0, casts: 0 };
+    p.data.kit.ww = { hit: [], bladeT: -9, rollT: 0, rollX: 0, rollY: 0, clones: [], scratch: [], blades: 0, casts: 0 };
   },
   onUnequip(game, p) {
     if (p.data.kit.ww) endCyclones(game, p, false);

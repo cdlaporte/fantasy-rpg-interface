@@ -3,7 +3,7 @@
 // at full draw; a full-draw Power Shot always crits (x2.4), flies 1.8x as far and 1.35x as fast, as a bigger cyan
 // arrow with a tracer line. The Longbow itself is the Archer's (wrapped, not copied).
 // Ultimate Rail Shot (Shift, level 15): a 0.45 s charge (pillar, sparks), then an instant piercing beam that ricochets
-// four times, off walls or onto the next enemy, with a `meteor` + `ring` at every bounce, a screen flash and a big
+// four times (five beams), off walls or onto the next enemy, with a `meteor` + `ring` at every bounce, a screen flash and a big
 // camera shake, and a shockwave where it ends.
 // Numbers: data.specs.sharpshooter.kit. State: p.data.kit.ss.
 import archer from './archer.js';

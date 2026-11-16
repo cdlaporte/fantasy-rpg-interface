@@ -102,7 +102,7 @@ function flourish(game, p) {
   game.fx({ type: 'ring', x: p.x, y: p.y, r: 2, color: C.gold, dur: 0.4 });
   game.fx({ type: 'sparkle', x: p.x, y: p.y, n: 20, r: 1.2, color: C.gold });
   game.fx({ type: 'text', x: p.x, y: p.y, z: 1.8, text: 'Flourish!', style: 'crit' });
-  game.camera.shake = Math.max(game.camera.shake, 0.3);
+  game.camera.shake = Math.max(game.camera.shake, 0.45);
   sw.flourishes++;
 }
 function flourishStep(game, p, dt) {
@@ -121,8 +121,10 @@ function flourishStep(game, p, dt) {
   }
   if (fl.spinT <= 0) {
     fl.spinT = F.spinEvery;
-    game.combat.aoe(p, { r: F.spinR, dmg: F.spinCoef, knockback: 1.5, type: 'melee', fx: false, tags: TAG_FLOURISH });
+    game.combat.aoe(p, { r: F.spinR, dmg: F.spinCoef, critChance: F.spinCrit, knockback: 1.5, type: 'melee', fx: false, tags: TAG_FLOURISH });
     game.fx({ type: 'slash', x: p.x, y: p.y, angle: fl.a, arc: 360, r: F.spinR, color: (fl.n & 1) ? C.gold : C.main, style: 'spin' });
+    game.fx({ type: 'slash', x: p.x, y: p.y, angle: fl.a + 1.2, arc: 70, r: F.spinR * 0.8, color: C.steel, style: 'sword' });
+    if ((fl.n & 3) === 0) game.fx({ type: 'ring', x: p.x, y: p.y, r: F.spinR, color: C.gold, dur: 0.3 });
     if (p.anim !== 'spin') game.ents.setAnim(p, 'spin', fl.t);
   }
   if (fl.t <= 0) {

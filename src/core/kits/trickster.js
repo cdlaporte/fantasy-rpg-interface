@@ -39,11 +39,11 @@ function confetti(game, x, y, r) {
   }
   game.fx({ type: 'sparkle', x, y, n: 24, r: r * 0.9, color: C.gold });
 }
-function coinRing(game, p, x, y, n, coef, range, returns) {
+function coinRing(game, p, x, y, n, coef, range, returns, tags) {
   for (let i = 0; i < n; i++) {
     const a = (i / n) * Math.PI * 2 + game.rng.next() * 0.4;
     game.combat.projectile(p, { x, y, angle: a, speed: 9, range, dmg: coef, look: COIN_LOOK, radius: 0.18, returns: !!returns, maxHits: 2,
-      knockback: 1, tags: TAG_CHEST });
+      knockback: 1, tags: tags || TAG_CHEST });
   }
 }
 
@@ -59,7 +59,8 @@ function spawnChest(game, p, x, y) {
   tr.chestId = c.id;
   // Everything nearby wants the treasure.
   const list = game.ents.inRadius(x, y, Ch.lure, isEnemy, tr.scratch);
-  for (let i = 0; i < list.length; i++) { const e = list[i]; if (e.ai) { e.ai.target = c.id; e.ai.provoked = true; } }
+  // (the smoke blinds them to you, not to the treasure: it re-blinds whoever still stands inside it)
+  for (let i = 0; i < list.length; i++) { const e = list[i]; if (e.ai) { e.ai.blindT = 0; e.ai.target = c.id; e.ai.provoked = true; } }
   game.fx({ type: 'sparkle', x, y, n: 14, r: 0.7, color: K.colors.gold });
   game.fx({ type: 'text', x, y, z: 1.3, text: 'Ooh, treasure!', style: 'bubble', ent: c.id, dur: 1.4 });
   tr.chests++;
@@ -82,8 +83,15 @@ const VANISH = thief.abilities.f;
 const f = Object.assign({}, VANISH, {
   desc: 'Poof! Smoke, caltrops and stealth, and a fake treasure chest that lures enemies, then bursts in confetti.',
   cast(game, p, ctx) {
+    const n0 = game.ents.all.length;
     const r = VANISH.cast(game, p, ctx);
     if (r !== false && p.data.kit.tr) {
+      // The smoke still hides you (stealth) and slows, but no longer blinds: everyone can see the treasure.
+      const all = game.ents.all;
+      for (let i = n0; i < all.length; i++) {
+        const zd = all[i].owner === p.id && all[i].data.zone;
+        if (zd && zd.o && zd.o.smoke) zd.o = Object.assign({}, zd.o, { smoke: false });
+      }
       // just outside the smoke, toward the nearest enemy (else ahead): the pack runs out of the smoke to it
       const D = TK(game).chest.dist;
       const t = game.ents.nearest(p.x, p.y, 8, isEnemy);
@@ -136,7 +144,7 @@ function trickStep(game, p, dt) {
   if (h.i >= h.ids.length) {
     // The finale: a ring of coins and a confetti blast where you ended up.
     game.combat.aoe(p, { r: M.finalR, dmg: M.finalCoef, knockback: 6, type: 'magic', fx: false, tags: TAG_TRICK });
-    coinRing(game, p, p.x, p.y, M.finalCoins, M.finalCoinCoef, M.finalR + 1.5, true);
+    coinRing(game, p, p.x, p.y, M.finalCoins, M.finalCoinCoef, M.finalR + 1.5, true, TAG_TRICK);
     confetti(game, p.x, p.y, M.finalR);
     game.fx({ type: 'shockwave', x: p.x, y: p.y, r: M.finalR, color: C.main });
     game.fx({ type: 'screenFlash', color: C.gold, dur: 0.16 });
@@ -158,12 +166,12 @@ function trickStep(game, p, dt) {
   game.physics.resolve(t);
   game.physics.resolve(p);
   p.angle = angleTo(p.x, p.y, t.x, t.y);
-  t.angle = angleTo(t.x, t.y, p.x, p.y);   // the dazed victim spins round to face you (no Backstab roll on the swap)
+  t.angle = angleTo(p.x, p.y, t.x, t.y);   // the dazed victim is spun around, its back to you: the swap strike is a Backstab
   game.ents.setAnim(p, 'attack', 0.12);
   game.combat.damage(t, h.coef * game.combat.powerOf(p), { source: p, type: 'magic', knockback: 0, tags: TAG_TRICK, hitStop: 0.03, color: C.pink,
     status: { stun: M.stun } });
   if (t.alive && !t.removed) game.combat.status(t, 'mark', M.mark, 0.3, p);
-  coinRing(game, p, t.x, t.y, M.coins, M.coinCoef, M.coinRange, false);
+  coinRing(game, p, t.x, t.y, M.coins, M.coinCoef, M.coinRange, false, TAG_TRICK);
   game.fx({ type: 'poof', x: px, y: py, color: C.pink });
   game.fx({ type: 'poof', x: tx, y: ty, color: C.main });
   game.fx({ type: 'sparkle', x: t.x, y: t.y, n: 12, r: 0.7, color: C.gold });

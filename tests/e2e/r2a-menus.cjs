@@ -146,6 +146,13 @@ async function teacherFlow(browser, base) {
   await pause(400);
   await shot(page, path.join(OUT, 'r2a-pause.png'));
   check(!(await page.evaluate(() => [...document.querySelectorAll('.pause-row')].some((r) => /Look/.test(r.textContent)))), 'pause: no look choice');
+  // Settings from the pause menu, by keyboard: Down, Enter; Esc returns to the pause menu
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await page.waitForSelector('.pause .settings');
+  await shot(page, path.join(OUT, 'r2a-pause-settings.png'));
+  await page.keyboard.press('Escape');
+  check(!(await page.$('.pause .settings')) && !!(await page.$('.pause-box:not([hidden])')), 'pause settings: Esc returns to the pause menu');
   await page.click('.pause-row[data-id="teacher"]');
   await page.waitForSelector('.tch-tools');
   await shot(page, path.join(OUT, 'r2a-teacher-tools.png'));
@@ -185,6 +192,15 @@ async function teacherFlow(browser, base) {
   await page.click('.tbtn-opt');
   await page.click('.opt-item:has-text("Teacher options")');
   check(!!(await page.$('.tch-opts')), 'same session: no PIN asked again');
+  // continue the teacher save in teacher mode
+  await page.click('.tch-play:has-text("Continue")');
+  await page.waitForSelector('.tch-save');
+  await shot(page, path.join(OUT, 'r2a-teacher-continue.png'));
+  await page.click('.tch-save');
+  await waitGame(page);
+  s = await state(page);
+  const nm2 = await page.evaluate(() => window.__game.game.name);
+  check(s.teacher === true && s.level === 3 && s.classId === 'mage' && nm2 === 'Laporte (teacher)', `continued in teacher mode (${nm2}, level ${s.level}, ${s.classId})`);
   await page.context().close();
 }
 

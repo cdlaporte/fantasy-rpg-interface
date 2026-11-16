@@ -127,3 +127,5 @@
 .title-screen.sub-big .tch-opts { width: 820px; }
 .set-btn, .tch-back { font-family: var(--body); font-size: 18px; font-weight: 600; }
 .title-screen.sub-big .title-foot { display: none; }
+.title-main .controls-card { width: 340px; }
+.pause .settings { max-height: calc(100vh - 20px); overflow: auto; }

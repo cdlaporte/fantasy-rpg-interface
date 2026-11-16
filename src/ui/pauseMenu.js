@@ -1,10 +1,10 @@
-// Pause modal ({}): Resume, Settings (keys, sound, graphics), Sound, Save, Controls, Teacher tools (teacher games
-// only), Quit to title. Round 2: the 2D/3D look choice is gone (3D only; 2D is an automatic fallback).
+// Pause modal ({}): Resume, Settings (keys, sound, graphics), Graphics and Sound (quick cycles), Save, Controls,
+// Teacher tools (teacher games only), Quit to title. Round 2: the 2D/3D look choice is gone (3D only; 2D is an automatic fallback).
 // Commands: closeModal(), setQuality(q), saveNow(), quitToTitle().
 import { el, add, setText, clear } from './dom.js';
 import { iconCanvas } from './icons.js';
 import { K, selectable, hints, controlsCard } from './modalKit.js';
-import { createSettings } from './settings.js';
+import { createSettings, QUALITY_NAMES, QUALITY_KEY } from './settings.js';
 import { createTeacherTools } from './teacher.js';
 
 export function createPauseMenu(modal, ctx) {
@@ -22,6 +22,7 @@ export function createPauseMenu(modal, ctx) {
   const items = [
     { id: 'resume', icon: 'up', label: () => 'Resume' },
     { id: 'settings', icon: 'key', label: () => 'Settings (keys, sound, graphics)' },
+    { id: 'quality', icon: 'orb', label: () => `Graphics: ${QUALITY_NAMES[ctx.quality()] || 'Medium'}`, cycle: true },
     { id: 'sound', icon: 'bolt', label: () => `Sound: ${muted() ? 'Off' : 'On'}`, cycle: true },
     { id: 'save', icon: 'book', label: () => 'Save game' },
     { id: 'controls', icon: 'rune', label: () => 'Controls' },
@@ -64,7 +65,7 @@ export function createPauseMenu(modal, ctx) {
     renderLabels();
   }
 
-  function act(i) {
+  function act(i, dir = 1) {
     const it = items[i];
     if (it.id !== 'quit') confirmQuit.armed = false;
     switch (it.id) {
@@ -83,6 +84,13 @@ export function createPauseMenu(modal, ctx) {
         if (game.teacher !== true) return;
         openSub(() => createTeacherTools(game, { sfx: ctx.sfx, onClose: () => closeSub() }));
         return;
+      case 'quality': {
+        const q = (ctx.quality() + (dir > 0 ? 1 : 2)) % 3;
+        game.commands.setQuality(q);
+        ctx.setQualityLocal(q);
+        try { if (game.storage) game.storage.set(QUALITY_KEY, String(q)); } catch { /* ignore */ }
+        break;
+      }
       case 'sound':
         if (ctx.audio && ctx.audio.toggleMute) ctx.audio.toggleMute();
         break;
@@ -129,7 +137,7 @@ export function createPauseMenu(modal, ctx) {
         game.commands.closeModal();
         return true;
       }
-      if ((K.left(c) || K.right(c)) && items[sel.index].cycle) { if (!e.repeat) { ctx.sfx('ui_move'); act(sel.index); } return true; }
+      if ((K.left(c) || K.right(c)) && items[sel.index].cycle) { if (!e.repeat) { ctx.sfx('ui_move'); act(sel.index, K.right(c) ? 1 : -1); } return true; }
       if (K.up(c) || K.down(c)) { confirmQuit.armed = false; renderLabels(); }
       return sel.key(e);
     },

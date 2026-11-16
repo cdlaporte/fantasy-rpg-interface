@@ -13,7 +13,7 @@ export function createFeedback(hudEl, viewEl, ctx) {
   // One queue for every centered announcement (zone card, level up, ability, rank, quest): only one shows at a time.
   // Lower prio shows first (zone card 0, level 1, ability 2, rank 3, quest 4); a backlog shortens each item's time.
   const queue = [];
-  let curUntil = 0, cur = null;
+  let curUntil = 0, cur = null, pausedAt = 0;
 
   function enqueue(item) {
     queue.push(item);
@@ -101,7 +101,12 @@ export function createFeedback(hudEl, viewEl, ctx) {
   let lastBasic = '';
 
   const api = {
-    tick(now) { if (queue.length || cur) nextBanner(now); },
+    tick(now, held) {
+      // Announcements wait while a menu, dialogue or question is open, and pick up where they left off after.
+      if (held) { if (!pausedAt) { pausedAt = now; bannerHost.style.visibility = 'hidden'; } return; }
+      if (pausedAt) { curUntil += now - pausedAt; pausedAt = 0; bannerHost.style.visibility = ''; }
+      if (queue.length || cur) nextBanner(now);
+    },
 
     update(hud) {
       // boss

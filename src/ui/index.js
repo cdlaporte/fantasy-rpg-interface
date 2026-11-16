@@ -185,7 +185,7 @@ export function createUI(rootEl, opts = {}) {
       modals.sync(game);
       if (now - lastPoll >= POLL_MS) { lastPoll = now; poll(now); }
       modals.tick(now);
-      feedback.tick(now);
+      feedback.tick(now, !!(game && game.modal && game.modal.type !== 'dialogue'));
       overlay.render(lastFrame, hud, now);
       if (perfEl) {
         perfFrames++;

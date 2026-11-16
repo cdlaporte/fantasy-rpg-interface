@@ -96,6 +96,15 @@ test('mastery data: six tier-3 entries with the shapes Core reads, closed icons 
     if (L.aura) assert.ok(LOOK.aura.includes(L.aura.style), `${id} aura`);
     assert.ok(L.cape && /^#[0-9a-f]{6}$/i.test(L.cape.color), `${id} cape`);
     for (const k of Object.keys(L)) assert.ok(['outfit', 'hat', 'held', 'aura', 'cape', 'hood'].includes(k), `${id} look key ${k}`);
+    // the level-10+ aura (player.js reads `aura`, not `look.aura`) matches the look's aura
+    assert.ok(m.aura && LOOK.aura.includes(m.aura.style), `${id} top-level aura`);
+    if (L.aura) assert.deepEqual(m.aura, L.aura, `${id} aura matches look.aura`);
+    // HUD text for subclass abilities the mastery changes lives in data, and the kit uses it
+    const kit = (createGame({ data, name: 'T', seed: 1, zone: 'test', marker: 'start' })).kits.registry[id];
+    for (const [slot, desc] of Object.entries(m.descs || {})) {
+      assert.ok(typeof desc === 'string' && desc.length > 10, `${id}.descs.${slot}`);
+      assert.equal(kit.abilities[slot].desc, desc, `${id} ${slot} desc comes from data`);
+    }
   }
   // masteries never show in the level-8 picker
   const g = createGame({ data, name: 'T', seed: 1, zone: 'test', marker: 'start' });

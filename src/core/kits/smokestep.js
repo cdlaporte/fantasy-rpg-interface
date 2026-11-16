@@ -30,7 +30,7 @@ function masteryScale(game, p) { const k = MK(game); return (k.dmgScale != null 
 // ---------- Shadowmeld (wraps Shadow Step) ----------
 const STEP = ninja.abilities.f;
 const f = Object.assign({}, STEP, {
-  desc: 'Appear behind the nearest enemy and vanish for 2 seconds; your next hit is an Assassinate. A decoy takes your place.',
+  desc: specdefs[ID].descs.f,
   cast(game, p, ctx) {
     const r = STEP.cast(game, p, ctx);
     const sm = p.data.kit.sm;

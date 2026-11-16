@@ -81,7 +81,7 @@ function burstChest(game, p, c) {
 }
 const VANISH = thief.abilities.f;
 const f = Object.assign({}, VANISH, {
-  desc: 'Poof! Smoke, caltrops and stealth, and a fake treasure chest that lures enemies, then bursts in confetti.',
+  desc: specdefs[ID].descs.f,
   cast(game, p, ctx) {
     const n0 = game.ents.all.length;
     const r = VANISH.cast(game, p, ctx);

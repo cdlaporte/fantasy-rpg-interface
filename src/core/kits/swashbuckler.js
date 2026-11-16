@@ -75,7 +75,7 @@ function parry(game, p, src) {
 }
 const ROLL = rogue.abilities.space;
 const space = Object.assign({}, ROLL, {
-  desc: 'Roll away, untouchable, and stand en garde: parry the next attack and riposte with a big critical.',
+  desc: specdefs[ID].descs.space,
   cast(game, p, ctx) {
     const r = ROLL.cast(game, p, ctx);
     const sw = p.data.kit.sw;

@@ -122,9 +122,12 @@ export default {
       held: { style: 'bow', color: '#6b3f1d', glow: '#c6f07a' },
       aura: { style: 'sparkle', color: '#8fbf4a' },
     },
+    aura: { style: 'sparkle', color: '#8fbf4a' },   // the level-10+ aura (same as look.aura; player.js reads `aura` for specs)
     passive: { name: 'Wild Companion', desc: 'A wolf joins you (it comes back if it falls) and pounces on what you hit from far away. Dodge Roll leaves a snare trap.' },
     ultimate: { id: 'wild_hunt', name: 'Wild Hunt', icon: 'star', unlock: 15, cd: 30,
       desc: 'Howl! Three hawks dive on your foes while a wolf pack charges through them.' },
+    // the subclass abilities this mastery changes (HUD text)
+    descs: { space: 'Roll away, untouchable, and leave a snare trap where you stood. Your next attack is a sure critical.' },
     kit: {
       dmgScale: 0.85, lateScale: [[15, 1.0], [16, 1.0], [18, 0.94], [20, 0.97]],
       colors: { main: '#8fbf4a', bark: '#7b4a2a', fur: '#4a4e57', cream: '#f1e9da', gold: '#f2c94c', spirit: '#c6f07a' },
@@ -148,6 +151,7 @@ export default {
       held: { style: 'bow', color: '#2b2d42', glow: '#4cc9f0' },
       aura: { style: 'glow', color: '#4cc9f0' },
     },
+    aura: { style: 'glow', color: '#4cc9f0' },   // the level-10+ aura (same as look.aura; player.js reads `aura` for specs)
     passive: { name: 'Deadeye', desc: 'A laser sight shows your aim while you draw. Full-draw shots always crit hard and pierce much farther.' },
     ultimate: { id: 'rail_shot', name: 'Rail Shot', icon: 'bolt', unlock: 15, cd: 28,
       desc: 'Charge up, then fire a piercing lightning beam that ricochets off walls and enemies five times.' },
@@ -171,9 +175,12 @@ export default {
       held: { style: 'daggers', color: '#f1e9da', glow: '#ff70a6' },
       aura: { style: 'sparkle', color: '#ff70a6' },
     },
+    aura: { style: 'sparkle', color: '#ff70a6' },   // the level-10+ aura (same as look.aura; player.js reads `aura` for specs)
     passive: { name: 'Prank Chest', desc: 'Smoke Vanish leaves a fake treasure chest. Enemies forget you and rush it, and it bursts in confetti that stuns them.' },
     ultimate: { id: 'magic_trick', name: 'Magic Trick', icon: 'coin', unlock: 15, cd: 30,
       desc: 'Finisher: swap places with up to six enemies, dazing each one, with coins flying everywhere.' },
+    // the subclass abilities this mastery changes (HUD text)
+    descs: { f: 'Poof! Smoke, caltrops and stealth, and a fake treasure chest that lures enemies, then bursts in confetti.' },
     kit: {
       dmgScale: 1, lateScale: [[15, 1.0], [16, 0.88], [18, 0.87], [20, 0.85]],
       colors: { main: '#c44dff', pink: '#ff70a6', gold: '#f2c94c', confetti: ['#ff70a6', '#ffd23f', '#4cc9f0', '#7bdc3a', '#c44dff'] },
@@ -194,9 +201,12 @@ export default {
       held: { style: 'sword', color: '#e0e6ed', glow: '#ffd23f' },
       aura: { style: 'glow', color: '#ffd23f' },
     },
+    aura: { style: 'glow', color: '#ffd23f' },   // the level-10+ aura (same as look.aura; player.js reads `aura` for specs)
     passive: { name: 'Parry & Riposte', desc: 'Dodge Roll opens a parry window. An attack in that window is parried and you lunge back with a huge critical riposte.' },
     ultimate: { id: 'flourish', name: 'Flourish', icon: 'sword', unlock: 15, cd: 28,
       desc: 'Finisher: spin into a storm of rapier blades that spiral out around you, then end it with a Touche blast.' },
+    // the subclass abilities this mastery changes (HUD text)
+    descs: { space: 'Roll away, untouchable, and stand en garde: parry the next attack and riposte with a big critical.' },
     kit: {
       dmgScale: 1, lateScale: [[15, 1.17], [16, 1.115], [18, 1.105], [20, 1.12]],
       colors: { main: '#d62839', gold: '#ffd23f', steel: '#e0e6ed', cream: '#f1e9da' },
@@ -218,9 +228,12 @@ export default {
       held: { style: 'shuriken', color: '#e8fbff', glow: '#7fdbff' },
       aura: { style: 'storm', color: '#bde0fe' },
     },
+    aura: { style: 'storm', color: '#bde0fe' },   // the level-10+ aura (same as look.aura; player.js reads `aura` for specs)
     passive: { name: 'Tailwind', desc: 'You move 15% faster. Dodge Roll and Shadow Step cut a wind blade along your path, gust where you land and fling three wind crescents.' },
     ultimate: { id: 'cyclone_clones', name: 'Cyclone Clones', icon: 'storm', unlock: 15, cd: 30,
       desc: 'Finisher: two spinning tornado clones (three at full pips) hunt enemies, pull them in and shred them.' },
+    // the subclass abilities this mastery changes (HUD text)
+    descs: { space: 'Roll away, untouchable, cutting a wind blade along the way. Your next attack is a sure critical.', f: 'Appear behind the nearest enemy in a gust: a wind blade cuts the path. A decoy takes your place, then explodes.' },
     kit: {
       dmgScale: 1, lateScale: [[15, 0.93], [16, 0.97], [18, 0.93], [20, 1.0]],
       colors: { main: '#7fdbff', white: '#e8fbff', sky: '#4ea8de', pale: '#bde0fe' },
@@ -241,9 +254,12 @@ export default {
       held: { style: 'shuriken', color: '#8d99ae', glow: '#ff4d6d' },
       aura: { style: 'shadow', color: '#6b5b95' },
     },
+    aura: { style: 'shadow', color: '#6b5b95' },   // the level-10+ aura (same as look.aura; player.js reads `aura` for specs)
     passive: { name: 'Shadowmeld', desc: 'Shadow Step turns you invisible for 2 seconds, and your next hit is an Assassinate: a huge critical.' },
     ultimate: { id: 'smoke_assassins', name: 'Smoke Assassins', icon: 'smoke', unlock: 15, cd: 30,
       desc: 'Finisher: three smoke assassins (four at full pips) teleport from enemy to enemy, striking from the shadows.' },
+    // the subclass abilities this mastery changes (HUD text)
+    descs: { f: 'Appear behind the nearest enemy and vanish for 2 seconds; your next hit is an Assassinate. A decoy takes your place.' },
     kit: {
       dmgScale: 1, lateScale: [[15, 1.18], [16, 1.12], [18, 1.1], [20, 1.18]],
       colors: { main: '#6b5b95', blood: '#ff4d6d', smoke: '#2b2440', pale: '#b8a9e0' },

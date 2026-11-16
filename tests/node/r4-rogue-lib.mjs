@@ -43,9 +43,12 @@ export function setup(sub, mastery, level, seed, { boons = true } = {}) {
 /** Equip a mastery: Core's `debug.setMastery` / progression when present, else the kit layer directly. */
 export function equipMastery(game, mastery) {
   const p = game.player;
+  const pr = game.sys.progression;
   const dbg = game.debug || (game.sys && game.sys.debug);
-  if (dbg && typeof dbg.setMastery === 'function') { try { dbg.setMastery(mastery); } catch { /* fall through */ } }
-  if (!p.data.masteryId || p.data.masteryId !== mastery) game.kits.set(p, 'rogue', mastery);
+  // feature-detect Core's round-4 API (progression.setMastery / debug.setMastery); else set the kit layer directly
+  if (pr && typeof pr.setMastery === 'function') { try { pr.setMastery(mastery, { quiet: true }); } catch { /* fall through */ } }
+  if (p.data.masteryId !== mastery && dbg && typeof dbg.setMastery === 'function') { try { dbg.setMastery(mastery); } catch { /* fall through */ } }
+  if (p.data.masteryId !== mastery) game.kits.set(p, 'rogue', mastery);
 }
 
 /** One tough enemy (elite: x2.5 hp) and four weak ones of level L that fight back; returns hp removed per second. */

@@ -256,7 +256,7 @@ function updateHunt(game, p, dt) {
 // ---------- Dodge Roll + trap ----------
 const ROLL = rogue.abilities.space;
 const space = Object.assign({}, ROLL, {
-  desc: 'Roll away, untouchable, and leave a snare trap where you stood. Your next attack is a sure critical.',
+  desc: specdefs[ID].descs.space,
   cast(game, p, ctx) {
     const x0 = p.x, y0 = p.y;
     const r = ROLL.cast(game, p, ctx);

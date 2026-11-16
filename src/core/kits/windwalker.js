@@ -57,7 +57,7 @@ function windBlades(game, p, x0, y0) {
 }
 const ROLL = rogue.abilities.space;
 const space = Object.assign({}, ROLL, {
-  desc: 'Roll away, untouchable, cutting a wind blade along the way. Your next attack is a sure critical.',
+  desc: specdefs[ID].descs.space,
   cast(game, p, ctx) {
     const ww = p.data.kit.ww;
     const x0 = p.x, y0 = p.y;
@@ -68,7 +68,7 @@ const space = Object.assign({}, ROLL, {
 });
 const STEP = ninja.abilities.f;
 const f = Object.assign({}, STEP, {
-  desc: 'Appear behind the nearest enemy in a gust: a wind blade cuts the path. A decoy takes your place, then explodes.',
+  desc: specdefs[ID].descs.f,
   cast(game, p, ctx) {
     const x0 = p.x, y0 = p.y;
     const r = STEP.cast(game, p, ctx);

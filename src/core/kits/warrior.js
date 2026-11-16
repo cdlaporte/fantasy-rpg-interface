@@ -86,6 +86,7 @@ export const W = {
   afterBasic(game, p, angle) {
     const k = p.data.kit;
     k.wBasics = (k.wBasics || 0) + 1;
+    if (W.has(game, p, 'thunder_clap')) thunderClap(game, p, angle, k);
     if (!W.has(game, p, 'cleaving_wind')) return;
     const b = W.bnums(game, 'cleaving_wind');
     if (k.wBasics % (b.every || 4) !== 0) return;
@@ -99,6 +100,66 @@ export const W = {
   /** Fallback for spec layers at ranks I-II (spec equipped below level 8 via debug / tests). */
   classBasic(game, p, ctx) { return KIT.basic(game, p, ctx); },
 };
+
+/** round 3: the balance multiplier for levels past 12 (spec `balance.dmgMul`, linear between points; 1 when absent). */
+function interp(tab, lv) {
+  if (!tab || !tab.length) return 1;
+  if (lv <= tab[0][0]) return tab[0][1];
+  for (let i = 1; i < tab.length; i++) {
+    const a = tab[i - 1], b = tab[i];
+    if (lv <= b[0]) return a[1] + (b[1] - a[1]) * (lv - a[0]) / (b[0] - a[0]);
+  }
+  return tab[tab.length - 1][1];
+}
+export function lateMul(game, p) {
+  const sid = p.data.specId;
+  const d = sid ? W.sdef(game, sid) : W.cdef(game);
+  const tab = d && d.balance && d.balance.dmgMul;
+  return tab ? interp(tab, game.kits.level(p)) : 1;
+}
+
+/** round 3 boon Thunder Clap: every fifth swing, lightning strikes the nearest enemy in front. */
+const CLAP_PICK = { range: 3.5, mode: 'nearest', cone: 120, angle: 0, los: true, out: { x: 0, y: 0 } };
+function thunderClap(game, p, angle, k) {
+  const b = W.bnums(game, 'thunder_clap');
+  if (k.wBasics % (b.every || 5) !== 0) return;
+  CLAP_PICK.range = b.range; CLAP_PICK.angle = angle;
+  const t = game.abilities.pickTarget(p, CLAP_PICK);
+  const x = t ? t.x : p.x + Math.cos(angle) * 1.6, y = t ? t.y : p.y + Math.sin(angle) * 1.6;
+  game.fx({ type: 'bolt', x, y, color: b.color });
+  game.fx({ type: 'bolt', x: x + 0.3, y: y - 0.2, color: '#ffffff' });
+  game.combat.aoe(p, { x, y, r: b.r, dmg: b.dmg, knockback: 3, status: { stun: b.stun }, type: 'magic', element: 'storm', tags: TAG_SKILL,
+    fx: { type: 'ring', r: b.r, color: b.color, dur: 0.3 }, color: b.color, shake: 0.2 });
+  game.fx({ type: 'burst', x, y, n: 14, r: b.r, color: b.color });
+  k.claps = (k.claps || 0) + 1;
+}
+
+/** round 3 boon War Banner: a flaming banner planted by War Cry (an effect entity + an enemy-burning zone). */
+function plantBanner(game, p, k) {
+  const b = W.bnums(game, 'war_banner'), col = W.colors(game);
+  if (k.bannerEnt && !k.bannerEnt.removed) game.ents.remove(k.bannerEnt);
+  k.bannerEnt = game.ents.create({ kind: 'war_banner', type: 'effect', team: p.team, owner: p.id, x: p.x, y: p.y, solid: false,
+    look: { rig: 'effect', model: 'totem', color: col.rage, r: 0.5 }, ttl: b.dur });
+  k.bannerX = p.x; k.bannerY = p.y; k.bannerUntil = game.t + b.dur; k.bannerT = 0;
+  game.combat.zone(p, { x: p.x, y: p.y, r: b.r, dur: b.dur, tick: b.tick, dmg: 0, element: 'fire', color: col.ember, id: 'war_banner',
+    status: { id: 'burn', t: 1.5, p: b.burn * game.combat.powerOf(p) } });
+  game.fx({ type: 'pillar', x: p.x, y: p.y, r: 0.9, color: col.ember, dur: 0.8 });
+  game.fx({ type: 'ring', x: p.x, y: p.y, r: b.r, color: col.gold, dur: 0.6 });
+  k.banners = (k.banners || 0) + 1;
+}
+function updateBanner(game, p, k, dt) {
+  if (!(k.bannerUntil > game.t)) { if (k.bannerOn) { k.bannerOn = false; game.combat.removeMod(p, 'war_banner'); } return; }
+  const b = W.bnums(game, 'war_banner');
+  const dx = p.x - k.bannerX, dy = p.y - k.bannerY;
+  const inside = dx * dx + dy * dy <= b.r * b.r;
+  if (inside) { k.bannerMods.power = b.power; game.combat.addMod(p, 'war_banner', k.bannerMods, 0.3); }
+  k.bannerOn = inside;
+  k.bannerT -= dt;
+  if (k.bannerT <= 0) {
+    k.bannerT = 1;
+    W.fx(game, 'sparkle', k.bannerX, k.bannerY, b.r * 0.7, W.colors(game).ember, 8);
+  }
+}
 
 function desiredAura(game, p) {
   const k = p.data.kit;
@@ -149,6 +210,13 @@ function bashEnd(game, c, hits) {
         status: { id: 'burn', t: 2, p: b.burn * game.combat.powerOf(c) }, color: '#ff7a2f', id: 'blazing_bash' });
     }
     game.fx({ type: 'burst', x: c.x, y: c.y, n: 12, r: 0.8, color: '#ff7a2f' });
+  }
+  if (k.jugg) {
+    const b = W.bnums(game, 'juggernaut'), col = W.colors(game);
+    k.jugg = false;
+    game.fx({ type: 'shockwave', x: c.x, y: c.y, r: b.endR, color: col.gold });
+    game.fx({ type: 'trail', x: x0, y: y0, x2: c.x, y2: c.y, color: col.gold });
+    game.camera.shake = Math.max(game.camera.shake, 0.3);
   }
   W.layers(game, c, 'onBashEnd', x0, y0, c.x, c.y, hits);
   if (hits && hits.length && !k.bashChained && W.has(game, c, 'ricochet_bash')) {
@@ -222,11 +290,14 @@ const KIT = {
     k.spikeT = 0; k.swT = -1e9;
     k.unst = false;
     k.bashX0 = p.x; k.bashY0 = p.y; k.bashRaged = false; k.bashChained = false; k.ricoAt = 0; k.ricoT = null;
+    k.bannerEnt = null; k.bannerUntil = 0; k.bannerOn = false; k.bannerMods = { power: 0 };
     W.refresh(game, p);
   },
   onUnequip(game, p) {
     const k = p.data.kit;
     game.combat.removeMod(p, 'unstoppable');
+    game.combat.removeMod(p, 'war_banner');
+    if (k.bannerEnt && !k.bannerEnt.removed) game.ents.remove(k.bannerEnt);
     if (k.unst) p.glow = null;
   },
 
@@ -239,6 +310,7 @@ const KIT = {
       if (r && r.value > 0) r.value = Math.max(0, r.value - N.decay * dt);
     }
     if (k.ricoAt > 0 && game.t >= k.ricoAt) ricochetStart(game, p);
+    if (k.bannerUntil) updateBanner(game, p, k, dt);
     // War Cry aura flare ends
     if (k.cryOn && game.t >= k.cryUntil) { k.cryOn = false; W.refresh(game, p); }
     // Unstoppable: above 50 Rage, immune to knockback and slows, steady glow
@@ -293,6 +365,18 @@ const KIT = {
         BASH_PICK.range = N.dist + 0.6; BASH_PICK.angle = ctx.moveAngle;
         const t = game.abilities.pickTarget(p, BASH_PICK);
         const a = t ? Math.atan2(t.y - p.y, t.x - p.x) : ctx.moveAngle;
+        if (W.has(game, p, 'juggernaut')) {
+          // round 3 boon Juggernaut: a longer charge that plows through everything (no stop on the first hit).
+          const b = W.bnums(game, 'juggernaut');
+          k.jugg = true;
+          game.abilities.use('dash', p, {
+            angle: a, dist: N.dist * b.distMul, speed: N.speed * 1.15, dmg: N.dmg * b.dmgMul, stopOnHit: false, through: true,
+            status: { stun: N.stun }, knockback: N.knockback, hitRadius: N.hitRadius + 0.15, color: col.gold, onHit: bashHit, onEnd: bashEnd,
+          });
+          game.fx({ type: 'ring', x: p.x, y: p.y, r: 1.1, color: col.gold, dur: 0.3 });
+          return undefined;
+        }
+        k.jugg = false;
         game.abilities.use('dash', p, {
           angle: a, dist: N.dist, speed: N.speed, dmg: N.dmg, stopOnHit: true, status: { stun: N.stun },
           knockback: N.knockback, hitRadius: N.hitRadius, color: col.rage, hitStop: 0.06, onHit: bashHit, onEnd: bashEnd,
@@ -320,6 +404,7 @@ const KIT = {
           game.combat.aoe(p, { x: p.x, y: p.y, r: b.r, dmg: b.dmg, knockback: b.knockback, delay: b.delay, telegraph: false,
             fx: 'shockwave', color: col.gold, shake: 0.4, type: 'melee', tags: TAG_SKILL });
         }
+        if (W.has(game, p, 'war_banner')) plantBanner(game, p, k);
         if (W.has(game, p, 'battle_hymn')) {
           const b = W.bnums(game, 'battle_hymn');
           game.abilities.use('heal', p, { pct: b.heal, allies: b.r });
@@ -341,6 +426,8 @@ const KIT = {
   },
 
   hooks: {
+    // round 3: levels 13-20 balance (data `balance.dmgMul`, 1 up to level 12).
+    onOutgoing(game, p, info) { const m = lateMul(game, p); if (m !== 1) info.amount *= m; },
     onHit(game, p, e) {
       const k = p.data.kit;
       if (!k || e.target === p) return;

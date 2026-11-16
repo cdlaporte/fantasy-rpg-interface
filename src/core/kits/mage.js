@@ -167,6 +167,50 @@ export function nova(game, p, x, y, o) {
   }
   game.combat.aoe(p, params);
   if (o && o.orbit) fireOrbs(game, p);
+  if (o && o.orbit && boon(game, 'comet_nova')) cometNova(game, p, x, y);
+}
+
+// ---------------------------------------------------------------------------------------------- round 3 class boons
+/** Comet Nova: little comets fall around the cast point after the Nova (telegraphed circles). */
+function cometNova(game, p, x, y) {
+  const cn = N(game).comet_nova, col = N(game).colors;
+  for (let i = 0; i < cn.n; i++) {
+    const a = (i / cn.n) * TAU + game.rng.next() * 0.6, d = cn.rMin + game.rng.next() * (cn.rMax - cn.rMin);
+    game.combat.aoe(p, { x: x + Math.cos(a) * d, y: y + Math.sin(a) * d, r: cn.r, dmg: cn.dmg, delay: cn.delay + i * cn.gap,
+      telegraph: 'circle', telegraphColor: col.cyan, meteor: true, fx: 'meteor', color: col.violet, knockback: 3, type: 'magic',
+      shake: 0.12, tags: ['comet_nova'] });
+  }
+  game.fx({ type: 'sparkle', x, y, n: 16, color: col.cyan, r: cn.rMax });
+  const k = p.data.kit;
+  k.m_comets = (k.m_comets || 0) + cn.n;
+}
+/** Arcane Chain: every `every`-th direct hit arcs to `jumps` more enemies (deferred out of the combat loop). */
+function arcaneChain(game, p, e) {
+  const k = p.data.kit;
+  if (k.m_chaining || e.dot || !(e.amount > 0) || e.target === p || !e.target) return;
+  if (game.t < (k.m_chainT || 0)) return;
+  const ac = N(game).arcane_chain;
+  k.m_chainN = (k.m_chainN || 0) + 1;
+  if (k.m_chainN % ac.every !== 0) return;
+  k.m_chainT = game.t + ac.icd;
+  const t = e.target;
+  const x = t.x, y = t.y;
+  defer(p, () => {
+    if (p.removed) return;
+    k.m_chaining = true;
+    const hits = game.abilities.use('chain', p, { x, y, jumps: ac.jumps, range: ac.range, dmg: ac.dmg, exclude: [t.id], color: ac.color, element: 'storm' });
+    k.m_chaining = false;
+    if (hits && hits.length) {
+      game.fx({ type: 'bolt', x: p.x, y: p.y, x2: x, y2: y, color: '#ffffff' });
+      k.m_chains = (k.m_chains || 0) + 1;
+    }
+  });
+}
+/** Mana Shield: above `above` x max, a hit spends Mana instead of a third of its damage. */
+function manaShieldOn(game, p) {
+  if (!boon(game, 'mana_shield')) return false;
+  const r = resOf(game, p);
+  return r.max > 0 && r.value >= r.max * N(game).mana_shield.above;
 }
 
 // ---------------------------------------------------------------------------------------------- arcane orbit
@@ -303,6 +347,7 @@ const kit = {
     clearOrbs(game, p);
     const k = p.data.kit;
     k.m_orbs = null;
+    if (k.m_shieldOn) game.ents.setFxTag(p, 'shield', false);
   },
   update(game, p, dt) {
     const k = p.data.kit;
@@ -312,6 +357,8 @@ const kit = {
     runQueue(p);
     updateCharges(game, p, dt);
     updateOrbs(game, p, dt);
+    const shield = manaShieldOn(game, p);
+    if (shield !== !!k.m_shieldOn) { k.m_shieldOn = shield; game.ents.setFxTag(p, 'shield', shield); }
     // Mana Surge ready: the staff glows white (visible cue that the next bolt is giant).
     const surge = boon(game, 'mana_surge') && resOf(game, p).value >= resOf(game, p).max && resOf(game, p).max > 0;
     if (surge !== !!k.m_surge) {
@@ -354,6 +401,17 @@ const kit = {
     // Balance multiplier (see data `balance.dmgMul`) for the player's and the familiars' hits.
     onOutgoing(game, p, info) { info.amount *= dmgMul(game, p); },
     onMinionOutgoing(game, p, info) { info.amount *= dmgMul(game, p); },
+    onHit(game, p, e) { if (e.source === p && boon(game, 'arcane_chain')) arcaneChain(game, p, e); },
+    onIncoming(game, p, info) {
+      if (info.target !== p || !(info.amount > 0) || (info.opts && info.opts.dot) || !manaShieldOn(game, p)) return;
+      const ms = N(game).mana_shield;
+      game.kits.spend(p, Math.min(resOf(game, p).value, ms.manaPerHit));
+      info.amount *= 1 - ms.absorb;
+      game.fx({ type: 'ring', x: p.x, y: p.y, r: 0.9, color: ms.color, dur: 0.25 });
+      game.fx({ type: 'sparkle', x: p.x, y: p.y, n: 6, color: N(game).colors.cyan, r: 0.6 });
+      const k = p.data.kit;
+      k.m_soaked = (k.m_soaked || 0) + 1;
+    },
   },
 };
 

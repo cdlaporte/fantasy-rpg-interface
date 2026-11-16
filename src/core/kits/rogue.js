@@ -33,10 +33,21 @@ export function hasBoon(game, id) {
 }
 export const boonData = (game, id) => (game.data.boons && game.data.boons[id]) || {};
 export const rg = (p) => p.data.kit.rg;
+function interp(tab, lv) {
+  if (!tab || !tab.length) return 1;
+  if (lv <= tab[0][0]) return tab[0][1];
+  for (let i = 1; i < tab.length; i++) {
+    const a = tab[i - 1], b = tab[i];
+    if (lv <= b[0]) return a[1] + (b[1] - a[1]) * (lv - a[0]) / (b[0] - a[0]);
+  }
+  return tab[tab.length - 1][1];
+}
 export function dmgScale(game, p) {
   const sk = specKit(game, p);
   const v = sk && sk.dmgScale != null ? sk.dmgScale : classKit(game).dmgScale;
-  return v != null ? v : 1;
+  // round 3: levels 13-20 balance table (`lateScale`, 1 up to level 12; docs/notes/r3a.md)
+  const late = (sk && sk.lateScale) || classKit(game).lateScale;
+  return (v != null ? v : 1) * (late ? interp(late, game.kits.level(p)) : 1);
 }
 export function addPips(game, p, n) {
   if (!(n > 0)) return;
@@ -45,9 +56,25 @@ export function addPips(game, p, n) {
 }
 /** Spend every pip (finishers); returns how many were spent. */
 export function spendPips(game, p) {
-  const v = Math.floor(game.kits.resource(p).value);
+  const r = game.kits.resource(p);
+  const v = Math.floor(r.value);
   game.kits.setResource(p, 0);
+  if (v >= r.max && r.max > 0 && hasBoon(game, 'adrenaline_rush')) adrenaline(game, p);
   return v;
+}
+const ADRENALINE_MODS = { attackSpeed: 0 };
+/** round 3 boon Adrenaline Rush: a 5-pip finisher makes you a blur (attack speed + haste, afterimages). */
+function adrenaline(game, p) {
+  const b = boonData(game, 'adrenaline_rush'), C = classKit(game).colors;
+  ADRENALINE_MODS.attackSpeed = b.attackSpeed || 0.3;
+  game.combat.addMod(p, 'adrenaline_rush', ADRENALINE_MODS, b.dur || 4);
+  game.combat.status(p, 'haste', b.dur || 4, b.haste || 0.25);
+  const s = rg(p);
+  s.rushUntil = game.t + (b.dur || 4);
+  s.rushes = (s.rushes || 0) + 1;
+  game.fx({ type: 'ring', x: p.x, y: p.y, r: 1.4, color: C.main, dur: 0.4 });
+  game.fx({ type: 'sparkle', x: p.x, y: p.y, n: 16, r: 1, color: C.crit });
+  game.fx({ type: 'text', x: p.x, y: p.y, z: 1.6, text: 'Adrenaline!', style: 'info', ent: p.id });
 }
 export const pipsFull = (game, p) => { const r = game.kits.resource(p); return r.max > 0 && r.value >= r.max; };
 
@@ -109,6 +136,9 @@ export const flurryOn = (game, p) => hasBoon(game, 'blade_flurry') && pipsFull(g
 export function afterBasic(game, p, angle) {
   const s = rg(p);
   s.basicCount++;
+  // round 3: per-layer extension (Thief rank V Coin Storm)
+  const L = game.kits.active(p);
+  for (let i = 0; i < L.layers.length; i++) { const f = L.layers[i].onBasic; if (typeof f === 'function') f(game, p, angle, s.basicCount); }
   if (hasBoon(game, 'boomerang_blade')) {
     const b = boonData(game, 'boomerang_blade');
     if (s.basicCount % (b.every || 5) === 0) {
@@ -168,6 +198,14 @@ function dodgeRoll(game, p, ctx) {
     } : null,
   });
   grantCrit(game, p, R.critWindow);
+  if (hasBoon(game, 'backflip_knives')) {
+    // round 3 boon: knives flung back toward where you rolled from
+    const b = boonData(game, 'backflip_knives');
+    game.abilities.use('multishot', p, { x: sx, y: sy, angle: a + Math.PI, n: b.n || 3, spread: b.spread || 40, model: 'knife', color: C.main,
+      glow: C.steel, size: 1.1, speed: b.speed || 13, range: b.range || 5, dmg: b.coef || 0.6, knockback: 1, tags: TAG_FAN, anim: 'dash' });
+    game.fx({ type: 'slash', x: sx, y: sy, angle: a + Math.PI, arc: b.spread || 40, r: 1, color: C.main, style: 'dagger' });
+    rg(p).backflips = (rg(p).backflips || 0) + 1;
+  }
   if (hasBoon(game, 'shadow_roll')) {
     const b = boonData(game, 'shadow_roll');
     const r = b.r || 1.8;
@@ -210,6 +248,16 @@ function fanOfKnives(game, p, ctx) {
       g.fx({ type: 'sparkle', x: p.x, y: p.y, n: 6, r: 0.5, color: C.main });
     } : null,
   });
+  if (hasBoon(game, 'toxic_fan')) {
+    // round 3 boon: a poison cloud around you (venom stacks), bigger with more pips
+    const b = boonData(game, 'toxic_fan');
+    const r = (b.r || 1.8) + (b.rPerPip || 0.25) * pips;
+    enemyZone(game, p, { x: p.x, y: p.y, r, dur: b.dur || 3, tick: b.tick || 0.5, type: 'magic', silent: true, color: C.venom, tags: TAG_VENOM,
+      status: { id: 'venom', t: 2, p: (b.dps || 0.15) * game.combat.powerOf(p) } });
+    game.fx({ type: 'burst', x: p.x, y: p.y, n: 14, r, color: C.venom });
+    game.fx({ type: 'ring', x: p.x, y: p.y, r, color: C.venom, dur: 0.5 });
+    rg(p).clouds = (rg(p).clouds || 0) + 1;
+  }
   // Bigger finisher, bigger effect.
   game.fx({ type: 'slash', x: p.x, y: p.y, angle, arc: spread, r: 1.2, color: C.main, style: ring ? 'spin' : 'dagger' });
   game.fx({ type: 'burst', x: p.x, y: p.y, n: 6 + pips * 3, r: 0.6 + pips * 0.2, color: C.main });
@@ -271,12 +319,12 @@ export default {
 
   onEquip(game, p) {
     const K = classKit(game);
-    p.data.kit.rg = { lastHitT: -99, lastBasicT: -99, chain: 0, basicCount: 0, critUntil: 0, volley: 0, paidVolley: 0, luckyT: -99, scratch: [] };
+    p.data.kit.rg = { lastHitT: -99, lastBasicT: -99, chain: 0, basicCount: 0, critUntil: 0, volley: 0, paidVolley: 0, luckyT: -99, rushUntil: 0, scratch: [] };
     p.data.kit.rgGlow = null;
     const r = p.data.resource;
     if (r && r.id === 'combo') { r.max = K.combo.max; r.color = K.colors.main; r.value = Math.min(r.value, r.max); }
   },
-  onUnequip(game, p) { p.data.kit.lookPatch = null; },
+  onUnequip(game, p) { p.data.kit.lookPatch = null; game.combat.removeMod(p, 'adrenaline_rush'); },
 
   update(game, p) {
     const k = p.data.kit, s = k.rg;
@@ -288,6 +336,7 @@ export default {
       game.fx({ type: 'poof', x: p.x, y: p.y, color: classKit(game).colors.shadow });
     }
     if (s.critUntil > 0 && game.t > s.critUntil) { s.critUntil = 0; setHeldGlow(game, p, null); }
+    if (s.rushUntil > game.t && (game.tick % 6) === 0) game.fx({ type: 'afterimage', x: p.x, y: p.y, ent: p.id, color: classKit(game).colors.main });
   },
 
   hud(game, p, hud) {

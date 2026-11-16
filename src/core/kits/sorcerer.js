@@ -41,6 +41,7 @@ function fireFireball(game, p, angle, rank) {
     landZone: { r: iv ? iv.fireR : f.fireR, dur: iv ? iv.fireDur : f.fireDur, dmg: f.fireDmg, element: 'fire', color: s.color,
       status: { id: 'burn', t: 1, p: f.burn * pw * 0.5 }, tags: ['ground_fire'] },
     onExpire(g, proj) { g.fx({ type: 'ring', x: proj.x, y: proj.y, r, color: s.gold, dur: 0.35 }); },
+    onHit: boon(game, 'living_bomb') ? stickBomb : null,
   });
   game.fx({ type: 'burst', x: p.x + Math.cos(angle) * 0.5, y: p.y + Math.sin(angle) * 0.5, n: 8, color: s.gold, r: 0.4 });
   return 'fireball';
@@ -56,6 +57,21 @@ function fireLance(game, p, angle, rank) {
   const len = game.world.raycast(p.x, p.y, angle, l.range, true);
   const ex = p.x + Math.cos(angle) * len, ey = p.y + Math.sin(angle) * len;
   game.fx({ type: 'bolt', x: p.x, y: p.y, x2: ex, y2: ey, color: '#ffffff' });
+  if (rank >= 5) {
+    // round 3, rank V Triple Lance: two more lances fan out beside the first.
+    const tr = s.triple;
+    for (let i = -1; i <= 1; i += 2) {
+      const a = angle + i * tr.spread * Math.PI / 180;
+      game.abilities.use('beam', p, { angle: a, range: l.range, w: l.w * 0.8, dmg: l.dmg * tr.sideMul, pierce: true, knockback: l.knockback,
+        color: s.storm, type: 'magic', element: 'storm', anim: false, tags: ['arc_lance', 'triple_lance'] });
+      const sl = game.world.raycast(p.x, p.y, a, l.range, true);
+      game.fx({ type: 'bolt', x: p.x, y: p.y, x2: p.x + Math.cos(a) * sl, y2: p.y + Math.sin(a) * sl, color: '#e9dcff' });
+    }
+    game.fx({ type: 'shockwave', x: p.x, y: p.y, r: 1.4, color: s.storm });
+    game.camera.shake = Math.max(game.camera.shake, l.shake * 1.5);
+    const kk = p.data.kit;
+    kk.so_triples = (kk.so_triples || 0) + 1;
+  }
   game.fx({ type: 'sparkle', x: ex, y: ey, n: 12, color: s.storm, r: 0.6 });
   game.fx({ type: 'ring', x: p.x, y: p.y, r: 0.9, color: s.storm, dur: 0.3 });
   game.camera.shake = Math.max(game.camera.shake, l.shake);
@@ -112,6 +128,52 @@ function setCharging(game, p, on) {
   k.so_charging = on;
   game.ents.setFxTag(p, 'charge', on);
   if (!on) { p.glow = null; k.so_tier = -1; setPatch(game, p, 'so_charge', null); }
+}
+
+// ---------------------------------------------------------------------------------------------- round 3 boons
+/** Living Bomb: the fireball sticks to its target and explodes again `delay` s later. */
+function stickBomb(game, t, dealt, proj) {
+  const p = game.ents.get(proj.owner);
+  if (!p || !p.data.kit || !t) return;
+  const k = p.data.kit;
+  (k.so_bombs || (k.so_bombs = [])).push({ id: t.id, x: t.x, y: t.y, at: game.t + S(game).living_bomb.delay, pulse: 0 });
+}
+function updateBombs(game, p, dt) {
+  const k = p.data.kit, list = k.so_bombs;
+  if (!list || !list.length) return;
+  const s = S(game), lb = s.living_bomb;
+  for (let i = list.length - 1; i >= 0; i--) {
+    const b = list[i];
+    const t = game.ents.get(b.id);
+    if (t && !t.removed && t.alive) { b.x = t.x; b.y = t.y; }
+    b.pulse -= dt;
+    if (b.pulse <= 0) { b.pulse = 0.25; game.fx({ type: 'ring', x: b.x, y: b.y, r: 0.6, color: s.color, dur: 0.2 }); }
+    if (game.t < b.at) continue;
+    list.splice(i, 1);
+    game.combat.aoe(p, { x: b.x, y: b.y, r: lb.r, dmg: lb.dmg, knockback: 5, type: 'magic', element: 'fire', fx: 'meteor', color: s.color,
+      shake: 0.2, tags: ['living_bomb'] });
+    game.fx({ type: 'burst', x: b.x, y: b.y, n: 20, color: s.gold, r: lb.r });
+    k.so_bombsBlown = (k.so_bombsBlown || 0) + 1;
+  }
+}
+/** Phoenix: once per `icd`, a knockout hit is survived: heal, then a fiery blast (deferred out of the damage pipeline). */
+function phoenix(game, p, info) {
+  const k = p.data.kit;
+  if (!boon(game, 'phoenix') || p.data.down || game.t < (k.so_phoenixT || 0)) return;
+  const s = S(game), ph = s.phoenix;
+  k.so_phoenixT = game.t + ph.icd;
+  game.combat.heal(p, Math.round(p.hpMax * ph.heal), { source: p });
+  if (p.hp - info.dealt < 1) info.dealt = Math.max(0, p.hp - 1);
+  const pw = game.combat.powerOf(p);
+  defer(p, () => {
+    game.combat.aoe(p, { x: p.x, y: p.y, r: ph.r, dmg: ph.dmg, knockback: 10, type: 'magic', element: 'fire', fx: 'shockwave', color: s.color,
+      status: { id: 'burn', t: 3, p: ph.burn * pw }, shake: 0.5, tags: ['phoenix'] });
+    game.fx({ type: 'pillar', x: p.x, y: p.y, r: 1.5, color: s.gold, dur: 1.2 });
+    game.fx({ type: 'burst', x: p.x, y: p.y, n: 36, color: s.color, r: ph.r });
+    game.fx({ type: 'screenFlash', color: s.color, dur: 0.3 });
+    game.fx({ type: 'text', x: p.x, y: p.y, z: 1.7, text: 'Phoenix!', style: 'info', ent: p.id });
+  });
+  k.so_phoenixes = (k.so_phoenixes || 0) + 1;
 }
 
 // ---------------------------------------------------------------------------------------------- meteors
@@ -266,10 +328,11 @@ const sorcerer = {
     const r = (sdata(game, 'sorcerer') || DEF).ranks || DEF.ranks;
     const k = p.data.kit;
     if (rank < 3) return mage.basicInfo(game, p, rank);
-    return rank >= 4 ? r[4] : r[3];
+    return rank >= 5 && r[5] ? r[5] : rank >= 4 ? r[4] : r[3];
   },
   onEquip(game, p) {
     const k = p.data.kit;
+    k.so_bombs = [];
     k.so_charging = false; k.so_charge = 0; k.so_tier = -1; k.so_readyT = 0; k.so_lines = []; k.so_cata = null; k.so_autoT = 0;
   },
   onUnequip(game, p) {
@@ -281,6 +344,7 @@ const sorcerer = {
     if (k.so_charging && !boon(game, 'quick_study')) k.speedMul *= S(game).charge.speedMul;
     updateCataclysm(game, p, dt);
     updateLines(game, p, dt);
+    updateBombs(game, p, dt);
   },
   hud(game, p, hud) {
     const k = p.data.kit;
@@ -342,6 +406,7 @@ const sorcerer = {
   },
   hooks: {
     onKill(game, p, e) { wildfire(game, p, e.ent); },
+    onLethal(game, p, info) { phoenix(game, p, info); },
   },
 };
 

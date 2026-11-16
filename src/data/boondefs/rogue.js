@@ -18,6 +18,13 @@ export default {
     desc: 'Critical hits sparkle and instantly reset Dodge Roll.', icd: 0.8 },
   boomerang_blade: { id: 'boomerang_blade', class: 'rogue', name: 'Boomerang Blade', icon: 'dagger', tags: ['basic'],
     desc: 'Every fifth attack throws a spinning dagger that flies out and back.', every: 5, coef: 0.9, range: 5, speed: 11 },
+  // round 3 (levels 13-20)
+  toxic_fan: { id: 'toxic_fan', class: 'rogue', name: 'Toxic Fan', icon: 'knives', tags: ['fan', 'venom'],
+    desc: 'Fan of Knives leaves a green poison cloud around you. More pips, bigger cloud.', r: 1.8, rPerPip: 0.25, dur: 3, dps: 0.15, tick: 0.5 },
+  backflip_knives: { id: 'backflip_knives', class: 'rogue', name: 'Backflip Knives', icon: 'roll', tags: ['roll'],
+    desc: 'Dodge Roll flings three knives back at whatever you rolled away from.', n: 3, spread: 40, coef: 0.6, range: 5, speed: 13 },
+  adrenaline_rush: { id: 'adrenaline_rush', class: 'rogue', name: 'Adrenaline Rush', icon: 'star', tags: ['finisher'],
+    desc: 'Cashing in five pips turns you into a green blur: faster moves and attacks for 4 s.', dur: 4, attackSpeed: 0.3, haste: 0.25 },
 
   // ---- Archer (4) ----
   split_arrow: { id: 'split_arrow', spec: 'archer', name: 'Split Arrow', icon: 'bow', tags: ['power_shot'],
@@ -28,6 +35,10 @@ export default {
     desc: 'Arrow Rain turns into flaming arrows that set the ground on fire.', burnDps: 0.35, burnDur: 3 },
   hawk: { id: 'hawk', spec: 'archer', name: 'Hawk', icon: 'star', tags: ['pet'],
     desc: 'A hawk rides with you and dives on your last target every 4 seconds.', every: 4, coef: 1.4, range: 9, diveSpeed: 14 },
+  ricochet_arrows: { id: 'ricochet_arrows', spec: 'archer', name: 'Ricochet Arrows', icon: 'bow', tags: ['basic'],
+    desc: 'Quick arrows ricochet off their target into another enemy.', bounce: 1, bounceRange: 4.5 },
+  explosive_arrow: { id: 'explosive_arrow', spec: 'archer', name: 'Explosive Arrow', icon: 'bomb', tags: ['power_shot'],
+    desc: 'A fully drawn Power Shot explodes in a golden blast where it stops.', r: 2.0, coef: 1.0 },
 
   // ---- Thief (4) ----
   coin_toss: { id: 'coin_toss', spec: 'thief', name: 'Coin Toss', icon: 'coin', tags: ['gold'],
@@ -39,6 +50,10 @@ export default {
     items: ['cheese', 'bread', 'potion_small', 'smoke_pellet'] },
   caltrop_trail: { id: 'caltrop_trail', spec: 'thief', name: 'Caltrop Trail', icon: 'roll', tags: ['roll'],
     desc: 'Dodge Roll scatters spiky caltrops along its path.', n: 3, r: 0.9, dur: 4, coef: 0.12, slow: 0.35 },
+  golden_touch: { id: 'golden_touch', spec: 'thief', name: 'Golden Touch', icon: 'heart', tags: ['gold'],
+    desc: 'Every 10 gold you pick up heals you a little, in a shower of sparkles.', per: 10, healPct: 0.04 },
+  sleight_of_hand: { id: 'sleight_of_hand', spec: 'thief', name: 'Sleight of Hand', icon: 'dagger', tags: ['backstab'],
+    desc: 'Backstabs steal speed: your victim slows down and you speed up.', dur: 2.5, slow: 0.45, haste: 0.3 },
 
   // ---- Ninja (4) ----
   explosive_tags: { id: 'explosive_tags', spec: 'ninja', name: 'Explosive Tags', icon: 'bomb', tags: ['decoy'],
@@ -49,4 +64,8 @@ export default {
     desc: 'Every 12 seconds the next hit misses: you poof into a log and reappear nearby.', cd: 12, dist: 2 },
   clone_mastery: { id: 'clone_mastery', spec: 'ninja', name: 'Clone Mastery', icon: 'shadow', tags: ['clones'],
     desc: 'Your shadow clones copy Shadow Step too, leaving decoys of their own.', decoyCoef: 0.6 },
+  kunai_fan: { id: 'kunai_fan', spec: 'ninja', name: 'Kunai Fan', icon: 'shuriken', tags: ['step'],
+    desc: 'Shadow Step throws a fan of five kunai from the spot you vanished.', n: 5, spread: 50, coef: 0.6, range: 6, speed: 14 },
+  smoke_screen: { id: 'smoke_screen', spec: 'ninja', name: 'Smoke Screen', icon: 'smoke', tags: ['step'],
+    desc: 'Shadow Step leaves a big smoke cloud: enemies inside are slowed and lose you.', r: 2.4, dur: 3, slow: 0.4 },
 };

@@ -98,11 +98,12 @@ function jackpot(game, p, t) {
   const J = tk(game).jackpot, th = p.data.kit.th;
   if (game.t - th.jackpotT < J.icd) return;
   th.jackpotT = game.t;
+  const coins = J.coins * (game.kits.rank(p) >= 5 ? tk(game).coinStorm.jackpotMul : 1);
   // Coins fly at the nearby enemies first (one each), the rest burst outward in a ring.
   const near = game.ents.inRadius(t.x, t.y, J.range + 0.5, isEnemy, th.scratch);
   let k = 0;
-  for (let i = 0; i < J.coins; i++) {
-    let a = (i / J.coins) * Math.PI * 2 + game.rng.next() * 0.3;
+  for (let i = 0; i < coins; i++) {
+    let a = (i / coins) * Math.PI * 2 + game.rng.next() * 0.3;
     while (k < near.length && (near[k] === t || !game.combat.canHit(p, near[k]))) k++;
     if (k < near.length) { a = angleTo(t.x, t.y, near[k].x, near[k].y); k++; }
     const c = game.combat.projectile(p, { x: t.x, y: t.y, angle: a, speed: J.speed, range: J.range, dmg: J.coef, look: COIN_LOOK, radius: 0.18,
@@ -112,6 +113,19 @@ function jackpot(game, p, t) {
   game.fx({ type: 'burst', x: t.x, y: t.y, n: 18, r: 1.2, color: tk(game).colors.gold });
   game.fx({ type: 'ring', x: t.x, y: t.y, r: J.range, color: tk(game).colors.gold, dur: 0.35 });
   game.fx({ type: 'text', x: t.x, y: t.y, z: 1.9, text: 'JACKPOT!', style: 'crit' });
+}
+
+// ---------- round 3 ----------
+/** Rank V Coin Storm: every third attack flings a fan of returning coins forward. */
+function coinStorm(game, p, angle, n) {
+  if (game.kits.rank(p) < 5) return;
+  const CS = tk(game).coinStorm, th = p.data.kit.th;
+  if (!th || n % CS.every !== 0) return;
+  game.abilities.use('multishot', p, { angle, n: CS.n, spread: CS.spread, look: COIN_LOOK, speed: CS.speed, range: CS.range, dmg: CS.coef,
+    radius: 0.18, returns: true, maxHits: 2, knockback: 1, tags: TAG_COIN, anim: 'attack' });
+  game.fx({ type: 'sparkle', x: p.x + Math.cos(angle) * 0.6, y: p.y + Math.sin(angle) * 0.6, n: 10, r: 0.6, color: tk(game).colors.gold });
+  game.fx({ type: 'slash', x: p.x, y: p.y, angle, arc: CS.spread, r: 1.1, color: tk(game).colors.gold, style: 'crescent' });
+  th.storms = (th.storms || 0) + 1;
 }
 
 // ---------- abilities ----------
@@ -193,6 +207,8 @@ function heistStep(game, p, dt) {
 
 export default {
   id: 'thief', parent: 'rogue',
+  /** rogue.js afterBasic extension hook (round 3). */
+  onBasic(game, p, angle, n) { coinStorm(game, p, angle, n); },
 
   onEquip(game, p) {
     p.data.kit.th = { swapped: [], scratch: [], jackpotT: -99, bsT: -1, bsTarget: 0, bsStealth: false, heist: null, picks: 0, noticed: 0,
@@ -202,6 +218,17 @@ export default {
     const offs = [];
     SUBS.set(p, offs);
     offs.push(game.bus.on('pickup', (e) => {
+      if (e && e.kind === 'gold' && hasBoon(game, 'golden_touch')) {
+        // round 3 boon Golden Touch: every `per` gold picked up heals you
+        const b = boonData(game, 'golden_touch');
+        th.goldAcc = (th.goldAcc || 0) + (e.n || 1);
+        while (th.goldAcc >= (b.per || 10)) {
+          th.goldAcc -= b.per || 10;
+          game.combat.heal(p, Math.max(1, Math.round(p.hpMax * (b.healPct || 0.04))), { source: p });
+          game.fx({ type: 'sparkle', x: p.x, y: p.y, n: 12, r: 0.8, color: tk(game).colors.gold });
+          th.goldHeals = (th.goldHeals || 0) + 1;
+        }
+      }
       if (!e || e.kind !== 'gold' || !hasBoon(game, 'coin_toss')) return;
       const b = boonData(game, 'coin_toss');
       if (game.rng.next() >= (b.chance || 0.6)) return;
@@ -275,6 +302,14 @@ export default {
         game.fx({ type: 'text', x: t.x, y: t.y, z: 1.6, text: 'Backstab!', style: 'crit' });
         game.fx({ type: 'burst', x: t.x, y: t.y, n: 10, r: 0.7, color: C.main });
         if (th.bsStealth) addPips(game, p, tk(game).backstab.stealthPips);
+        if (hasBoon(game, 'sleight_of_hand') && t.alive && !t.removed) {
+          // round 3 boon Sleight of Hand: steal the victim's speed
+          const b = boonData(game, 'sleight_of_hand');
+          game.combat.status(t, 'slow', b.dur || 2.5, b.slow || 0.45, p);
+          game.combat.status(p, 'haste', b.dur || 2.5, b.haste || 0.3);
+          game.fx({ type: 'trail', x: t.x, y: t.y, x2: p.x, y2: p.y, color: C.main });
+          th.steals = (th.steals || 0) + 1;
+        }
         if (game.kits.rank(p) >= 4 && e.tags !== TAG_HEIST) jackpot(game, p, t);
         if (hasBoon(game, 'loaded_dice') && lootable(t)) {
           const b = boonData(game, 'loaded_dice');

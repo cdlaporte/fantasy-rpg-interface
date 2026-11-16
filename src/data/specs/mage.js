@@ -22,12 +22,14 @@ export default {
       hat: { style: 'circlet', color: TEAL },
     },
     aura: { style: 'sparkle', color: TEAL },
-    ranks: { 3: { name: 'Spirit Bolt', icon: 'orb' }, 4: { name: 'Spirit Bolt: Soul Chase', icon: 'orb' } },
+    ranks: { 3: { name: 'Spirit Bolt', icon: 'orb' }, 4: { name: 'Spirit Bolt: Soul Chase', icon: 'orb' },
+      5: { name: 'Spirit Chain', icon: 'orb', desc: 'Spirit Bolts chain to two more enemies and mark them all.' } },
     kit: {
       color: TEAL, light: '#bff7ee',
       spiritBolt: { speed: 10, range: 7, dmg: 0.9, interval: 0.45, radius: 0.2, size: 1.1, markT: 4, markPower: 0.1 },
       markBonus: 0.5,                         // familiars deal +50% to marked targets
       spirit: { dmg: 1.5, speed: 8, range: 10, homing: 6, homingRange: 9, size: 1.2 },   // rank IV soul chase
+      chain: { jumps: 2, range: 4.5, dmg: 0.5 },                                          // round 3, rank V Spirit Chain
       summon: { cd: 6, cost: 30, max: 3, replaceHeal: 0.1 },
       familiars: {
         fox: { name: 'Spirit Fox', powerMul: 0.55, hpMul: 0.35, speedMul: 1.45, radius: 0.28,
@@ -54,8 +56,11 @@ export default {
       soul_link: { mana: 2, burstR: 1.8, burstDmg: 1.2, heal: 0.08 },
       spirit_swap: { r: 2.2, dmgMul: 0.6, range: 12 },
       echo: { dmg: 0.35, speed: 10, range: 6, size: 0.6 },
+      // round 3 spec boons
+      wild_hunt: { icd: 4, ttl: 5, max: 2, powerMul: 0.5, hpMul: 0.3 },
+      spirit_totem: { r: 3, dur: 6, healPct: 0.015, tick: 0.5 },
     },
-    balance: { dmgMul: [[8, 0.66], [10, 0.72], [12, 0.48]] },
+    balance: { dmgMul: [[8, 0.66], [10, 0.72], [12, 0.48], [14, 0.48], [16, 0.48], [18, 0.48], [20, 0.48]] },
   },
 
   // ------------------------------------------------------------------------------------------------ SORCERER
@@ -74,7 +79,8 @@ export default {
       hat: { style: 'wizard', color: '#7a0f22' },
     },
     aura: { style: 'sparkle', color: EMBER },
-    ranks: { 3: { name: 'Overcharge', icon: 'fire' }, 4: { name: 'Overcharge: Forked Lance', icon: 'storm' } },
+    ranks: { 3: { name: 'Overcharge', icon: 'fire' }, 4: { name: 'Overcharge: Forked Lance', icon: 'storm' },
+      5: { name: 'Overcharge: Triple Lance', icon: 'storm', desc: 'A full charge fires three Arc Lances in a fan.' } },
     kit: {
       color: EMBER, storm: STORM, gold: '#ffb347',
       charge: { mid: 0.3, full: 1.0, speedMul: 0.7, quick: 1.3, recover: 0.12, emberGap: 0.22 },
@@ -84,6 +90,7 @@ export default {
       fireballIV: { r: 1.7, fireR: 1.8, fireDur: 5 },
       lance: { cost: 25, dmg: 2.8, range: 8, w: 0.6, knockback: 3, shake: 0.22 },
       fork: { dmg: 1.0, range: 3.5 },
+      triple: { spread: 14, sideMul: 0.6 },                                              // round 3, rank V Triple Lance
       meteor: { cd: 10, cost: 40, dist: 4, range: 9, delay: 0.9, r: 3.1, dmg: 4.5, knockback: 7, shake: 0.45,
         fireR: 2.5, fireDur: 4, fireDmg: 0.35 },
       cataclysm: { cd: 40, cost: 80, n: 5, every: 0.55, delay: 0.85, r: 3.0, dmg: 3.5, range: 9, densR: 3.0, shake: 0.6 },
@@ -92,8 +99,11 @@ export default {
       storm_lance: { dur: 2, tick: 0.25, dmg: 0.3, w: 0.5 },
       meteor_echo: { n: 3, gap: 1.6, delay: 0.3, r: 1.5, dmg: 2.0 },
       quick_study: { rate: 1.3 },
+      // round 3 spec boons
+      living_bomb: { delay: 0.9, r: 1.6, dmg: 1.2 },
+      phoenix: { icd: 90, heal: 0.4, r: 3, dmg: 2.0, burn: 0.3 },
     },
-    balance: { dmgMul: [[8, 0.32], [10, 0.37], [12, 0.285]] },
+    balance: { dmgMul: [[8, 0.32], [10, 0.37], [12, 0.285], [14, 0.285], [16, 0.285], [18, 0.285], [20, 0.285]] },
   },
 
   // ------------------------------------------------------------------------------------------------ MONK
@@ -113,7 +123,8 @@ export default {
     },
     aura: { style: 'sparkle', color: GOLD },
     resource: { id: 'ki', name: 'Ki', max: 100, color: GOLD, start: 0 },
-    ranks: { 3: { name: 'Four-Beat Combo', icon: 'fist' }, 4: { name: 'Five-Beat Combo', icon: 'fist' } },
+    ranks: { 3: { name: 'Four-Beat Combo', icon: 'fist' }, 4: { name: 'Five-Beat Combo', icon: 'fist' },
+      5: { name: 'Dragon Fist', icon: 'fist', desc: 'The final uppercut unleashes a ki dragon that snakes through enemies.' } },
     kit: {
       color: GOLD, jade: JADE,
       combo: { beat: 0.18, palmPause: 0.3, reset: 0.7, kiPerHit: 8 },
@@ -125,6 +136,8 @@ export default {
         { name: 'Rising Uppercut', arc: 90, range: 0.95, dmg: 1.2, knockback: 1, stun: 0.9, pop: 0.6, popH: 1.2 },
       ],
       wave: { dmg: 1.0, speed: 10, range: 5, radius: 0.3, size: 1.4 },
+      // round 3, rank V Dragon Fist: a big head wave + a tail of ki orbs that snake behind it
+      dragon: { dmg: 1.4, speed: 9, range: 7, radius: 0.5, size: 2.4, tail: 4, tailDmg: 0.3, tailGap: 0.09, wiggle: 0.35 },
       deflect: { arc: 150, range: 1.7, window: 0.35, ki: 4 },
       meditate: { after: 1.5, hp: 0.03, ki: 6 },
       kick: { cd: 5, cost: 20, dist: 4, speed: 16, dmg: 1.4, chains: 3, chainRange: 4, grow: 0.2, knockback: 6 },
@@ -137,7 +150,10 @@ export default {
       // class boons as they apply to the Monk's fists (Splitting Bolts / Mana Surge read these)
       splitKi: { n: 2, arc: 50, dmg: 0.45, speed: 10, range: 4 },
       surgeKi: { cost: 30, dmg: 2.6, speed: 12, range: 8, radius: 0.4, size: 2.2 },
+      // round 3 spec boons
+      palm_echo: { delay: 0.35, rMul: 1.3, dmgMul: 0.6 },
+      jade_lotus: { r: 3, dur: 5, healPct: 0.02, slow: 0.4, tick: 0.5 },
     },
-    balance: { dmgMul: [[8, 0.33], [10, 0.37], [12, 0.33]] },
+    balance: { dmgMul: [[8, 0.33], [10, 0.37], [12, 0.33], [14, 0.33], [16, 0.33], [18, 0.33], [20, 0.33]] },
   },
 };

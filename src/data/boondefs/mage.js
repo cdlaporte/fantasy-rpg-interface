@@ -14,22 +14,32 @@ export default {
   mana_surge: c('mana_surge', 'Mana Surge', 'bolt', 'At full Mana your next shot is a giant bolt that goes through everything.', ['basic']),
   gravity_well: c('gravity_well', 'Gravity Well', 'nova', 'Arcane Nova sucks enemies in, then blasts them away.', ['nova']),
   phase_shift: c('phase_shift', 'Phase Shift', 'blink', 'Blinking through enemies zaps and marks them.', ['blink']),
+  // round 3 (levels 13-20)
+  arcane_chain: c('arcane_chain', 'Arcane Chain', 'storm', 'Every third hit you land arcs lightning to two more enemies.', ['basic', 'storm']),
+  comet_nova: c('comet_nova', 'Comet Nova', 'meteor', 'Arcane Nova also calls five little comets down around you.', ['nova']),
+  mana_shield: c('mana_shield', 'Mana Shield', 'shield', 'Above half Mana, a magic bubble soaks up a third of every hit.', ['defense']),
 
   // Conjurer (4)
   pack_leader: s('conjurer', 'pack_leader', 'Pack Leader', 'summon', 'A fourth familiar slot. Marking an enemy makes your pack faster.', ['familiar']),
   soul_link: s('conjurer', 'soul_link', 'Soul Link', 'heart', 'Familiar hits refill Mana. A fallen familiar bursts and heals you.', ['familiar']),
   spirit_swap: s('conjurer', 'spirit_swap', 'Spirit Swap', 'blink', 'Blink swaps you with your nearest familiar, and you both blast a Nova.', ['blink', 'familiar']),
   echo: s('conjurer', 'echo', 'Echo', 'orb', 'Every familiar copies your Spirit Bolt with a mini-bolt.', ['familiar', 'basic']),
+  wild_hunt: s('conjurer', 'wild_hunt', 'Wild Hunt', 'summon', 'Marking an enemy calls a ghost wolf that pounces on it.', ['familiar']),
+  spirit_totem: s('conjurer', 'spirit_totem', 'Spirit Totem', 'heart', 'Summoning also plants a totem that heals you and your pets.', ['familiar', 'support']),
 
   // Sorcerer (4)
   wildfire: s('sorcerer', 'wildfire', 'Wildfire', 'fire', 'Burning enemies explode when they drop, and the fire spreads.', ['fire']),
   storm_lance: s('sorcerer', 'storm_lance', 'Storm Lance', 'storm', 'Arc Lance leaves a crackling line of lightning for 2 seconds.', ['lance']),
   meteor_echo: s('sorcerer', 'meteor_echo', 'Meteor Echo', 'meteor', 'Three smaller meteors follow your Meteor in a line.', ['meteor']),
   quick_study: s('sorcerer', 'quick_study', 'Quick Study', 'book', 'Charge spells 30% faster, and charging no longer slows you down.', ['charge']),
+  living_bomb: s('sorcerer', 'living_bomb', 'Living Bomb', 'bomb', 'Fireballs stick to what they hit and blow up a second time.', ['fire']),
+  phoenix: s('sorcerer', 'phoenix', 'Phoenix', 'fire', 'Once every 90 s, a knockout hit makes you explode in flames and rise again.', ['defense', 'fire']),
 
   // Monk (4)
   iron_skin: s('monk', 'iron_skin', 'Iron Skin', 'shield', 'Palm Strike wraps you in a golden shield for 2 seconds.', ['palm']),
   wind_step: s('monk', 'wind_step', 'Wind Step', 'kick', 'Flying Kick bounces two more times and makes you faster.', ['kick']),
   dragon_wave: s('monk', 'dragon_wave', 'Dragon Wave', 'fist', 'At full Ki your next Palm Strike is a giant wave that goes through everything.', ['palm']),
   deflect_mastery: s('monk', 'deflect_mastery', 'Deflect Mastery', 'fist', 'Swatted shots split into two homing ki blasts.', ['deflect']),
+  palm_echo: s('monk', 'palm_echo', 'Palm Echo', 'fist', 'Palm Strike echoes: a bigger second shockwave booms right after.', ['palm']),
+  jade_lotus: s('monk', 'jade_lotus', 'Jade Lotus', 'heart', 'Thousand Palms ends by blooming a lotus that heals you and slows foes.', ['palm', 'support']),
 };

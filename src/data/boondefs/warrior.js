@@ -27,6 +27,16 @@ export default {
   second_wind: { id: 'second_wind', class: 'warrior', name: 'Second Wind', icon: 'heart', tags: ['passive'],
     desc: 'Once a minute, dropping below 25% health heals 30% and blasts enemies away.',
     nums: { below: 0.25, heal: 0.3, icd: 60, r: 3, knockback: 12 } },
+  // round 3 (levels 13-20)
+  thunder_clap: { id: 'thunder_clap', class: 'warrior', name: 'Thunder Clap', icon: 'storm', tags: ['basic', 'storm'],
+    desc: 'Every fifth swing calls lightning down on the enemy in front of you. KRAK!',
+    nums: { every: 5, range: 3.5, r: 1.4, dmg: 0.5, stun: 0.3, color: '#ffe14d' } },
+  juggernaut: { id: 'juggernaut', class: 'warrior', name: 'Juggernaut', icon: 'dash', tags: ['space'],
+    desc: 'Shield Bash goes much farther and plows straight through every enemy in the way.',
+    nums: { distMul: 1.6, dmgMul: 0.8, endR: 1.8 } },
+  war_banner: { id: 'war_banner', class: 'warrior', name: 'War Banner', icon: 'roar', tags: ['q', 'fire'],
+    desc: 'War Cry plants a flaming banner: enemies near it burn, and you hit harder beside it.',
+    nums: { r: 2.6, dur: 6, burn: 0.12, power: 0.2, tick: 0.5 } },
 
   // ---- Knight ----
   mirror_shield: { id: 'mirror_shield', spec: 'knight', name: 'Mirror Shield', icon: 'shield', tags: ['f'],
@@ -41,6 +51,12 @@ export default {
   oathkeeper: { id: 'oathkeeper', spec: 'knight', name: 'Oathkeeper', icon: 'shield', tags: ['shift', 'support'],
     desc: 'Aegis lasts 2 s longer and heals everyone inside.',
     nums: { extra: 2, healCoef: 0.6 } },
+  hallowed_ground: { id: 'hallowed_ground', spec: 'knight', name: 'Hallowed Ground', icon: 'heart', tags: ['f', 'support'],
+    desc: 'Shield Slam blesses the ground: it heals you and burns enemies who step on it.',
+    nums: { r: 2.4, dur: 4, dmg: 0.12, healPct: 0.012, tick: 0.5 } },
+  judgement: { id: 'judgement', spec: 'knight', name: 'Judgement', icon: 'star', tags: ['basic'],
+    desc: 'Every 6 seconds your next cleave calls a pillar of light down on what it hits.',
+    nums: { icd: 6, r: 1.5, dmg: 0.9, stun: 0.6 } },
 
   // ---- Berserker ----
   cyclone: { id: 'cyclone', spec: 'berserker', name: 'Cyclone', icon: 'axe', tags: ['f'],
@@ -55,6 +71,12 @@ export default {
   undying: { id: 'undying', spec: 'berserker', name: 'Undying', icon: 'heart', tags: ['passive'],
     desc: 'During Frenzy your health cannot drop below 1. Nothing stops you.',
     nums: {} },
+  rampage: { id: 'rampage', spec: 'berserker', name: 'Rampage', icon: 'axe', tags: ['passive'],
+    desc: 'Every enemy you defeat during Frenzy makes it last longer and explodes in bone shards.',
+    nums: { extend: 1, maxExtra: 6, r: 1.6, dmg: 0.3 } },
+  whirling_axes: { id: 'whirling_axes', spec: 'berserker', name: 'Whirling Axes', icon: 'axe', tags: ['f'],
+    desc: 'While you Whirlwind, axes fly out of the spin and boomerang back to you.',
+    nums: { every: 0.5, dmg: 0.08, range: 4, speed: 10 } },
 
   // ---- Battlemage ----
   elemental_overlap: { id: 'elemental_overlap', spec: 'battlemage', name: 'Elemental Overlap', icon: 'storm', tags: ['passive'],
@@ -69,4 +91,10 @@ export default {
   encore: { id: 'encore', spec: 'battlemage', name: 'Encore', icon: 'storm', tags: ['shift'],
     desc: 'Runestorm adds a fourth surprise pulse of a random element.',
     nums: {} },
+  trinity_slash: { id: 'trinity_slash', spec: 'battlemage', name: 'Trinity Slash', icon: 'rune', tags: ['basic'],
+    desc: 'Every fifth slash bursts with fire, frost AND storm at the same time.',
+    nums: { every: 5, r: 2.0, dmg: 0.3 } },
+  elemental_crown: { id: 'elemental_crown', spec: 'battlemage', name: 'Elemental Crown', icon: 'storm', tags: ['passive'],
+    desc: 'Your element circles you and strikes the nearest enemy every 1.5 seconds.',
+    nums: { every: 1.5, range: 4.5, dmg: 0.3 } },
 };

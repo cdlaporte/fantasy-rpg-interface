@@ -10,6 +10,7 @@ export default {
     ranks: {
       3: { name: "Knight's Cleave", icon: 'sword', desc: 'A wide cleave; every fourth swing adds a free shield punch.' },
       4: { name: 'Dawn Cleave', icon: 'sword', desc: 'Every third cleave launches a piercing crescent of light.' },
+      5: { name: 'Twin Dawn', icon: 'sword', desc: 'Every third cleave sends a wide twin wave of light through everything.' },
     },
     abilities: [
       { slot: 'f', id: 'shield_wall', name: 'Shield Wall', icon: 'shield', unlock: 8, cd: 0, cost: 0,
@@ -29,10 +30,14 @@ export default {
       cleave: { arc: 120, range: 1.35, dmg: 0.4, interval: 0.44, knockback: 6 },
       punch: { every: 4, delay: 0.12, arc: 80, range: 1.3, dmg: 0.3, stun: 0.5, knockback: 9, lunge: 0.4, setupKnockback: 1.5 },
       crescent: { every: 3, dmg: 0.35, range: 5, speed: 12, radius: 0.35 },
+      // round 3, rank V: the crescent becomes a wide twin wave (two big crescents side by side + a gold wave)
+      twinWave: { dmg: 0.3, range: 6.5, speed: 12, radius: 0.5, spread: 0.16, side: 0.45, size: 1.9, waveDmg: 0.2, waveSize: 2.2 },
       shield_wall: { arc: 120, reduce: 0.85, perfect: 0.25, stunAttacker: 1, speedMul: 0.6, perfectRage: 20 },
       shield_slam: { r: 3.0, arc: 110, dmg: 0.4, blockedFrac: 0.4, capCoef: 3, knockback: 9 },
       aegis: { r: 4.4, dur: 5, dmgTaken: -0.8, push: 3.5, endR: 4.4, endDmg: 1.4 },
     },
+    // round 3: outgoing damage x this table by level (linear between points; 1 up to 12). docs/notes/r3a.md.
+    balance: { dmgMul: [[12, 1], [14, 1], [16, 1], [18, 1], [20, 1]] },
   },
   berserker: {
     id: 'berserker', from: 'warrior', name: 'Berserker', color: '#d7263d',
@@ -42,6 +47,7 @@ export default {
     ranks: {
       3: { name: 'Twin Axes', icon: 'axe', desc: 'Lightning-fast left-right axe chops. +8 Rage per hit.' },
       4: { name: 'Boomerang Axes', icon: 'axe', desc: 'Every fourth chop hurls a spinning axe that flies back.' },
+      5: { name: 'Splitting Axes', icon: 'axe', desc: 'Every third chop hurls an axe that splits into three when it hits.' },
     },
     abilities: [
       { slot: 'f', id: 'whirlwind', name: 'Whirlwind', icon: 'axe', unlock: 8, cd: 0, cost: 0, need: 20,
@@ -60,9 +66,12 @@ export default {
       frenzy: { at: 100, dur: 6, attackSpeed: 0.4, lifesteal: 0.08, afterimage: 0.1 },
       axes: { arc: 90, range: 1.15, dmg: 0.125, interval: 0.26, knockback: 2.5, rage: 8, swing: 0.22 },
       throw: { every: 4, dmg: 0.12, range: 5, speed: 10, radius: 0.3 },
+      // round 3, rank V: a thrown axe every third chop; on its first hit it splits into a fan of small axes
+      splitAxe: { every: 3, n: 3, arc: 80, dmg: 0.08, range: 3.5, speed: 11, size: 0.9 },
       whirlwind: { need: 20, drain: 20, speedMul: 0.8, r: 2.0, dmg: 0.085, tick: 0.2, knockback: 0 },
       skyfall: { dist: 5, range: 7, dur: 0.7, height: 3, r: 3.75, dmg: 0.75, stun: 1, knockback: 9, frenzyR: 5.25, frenzyMult: 1.3, coneDeg: 100 },
     },
+    balance: { dmgMul: [[12, 1], [14, 1], [16, 1], [18, 1], [20, 1]] },
   },
   battlemage: {
     id: 'battlemage', from: 'warrior', name: 'Battlemage', color: '#ff7a2f',
@@ -72,6 +81,7 @@ export default {
     ranks: {
       3: { name: 'Rune Slash', icon: 'rune', desc: 'Blade slashes; every third one fires an Elemental Wave.' },
       4: { name: 'Rune Tide', icon: 'rune', desc: 'Waves every second slash; they pierce and leave elemental ground.' },
+      5: { name: 'Rune Tempest', icon: 'rune', desc: 'Huge waves that carry two elements at once: the current one and the last.' },
     },
     abilities: [
       { slot: 'f', id: 'rune_shift', name: 'Rune Shift', icon: 'rune', unlock: 8, cd: 1.5, cost: 0,
@@ -92,8 +102,11 @@ export default {
       slash: { arc: 110, range: 1.3, dmg: 0.25, interval: 0.42, knockback: 4 },
       wave: { every: 3, every4: 2, dmg: 0.26, dmg4: 0.15, range: 6, speed: 10, radius: 0.35, twinSide: 0.3 },
       ground: { r: 1.1, dur: 3, dmg: 0.03, stormChain: 4 },
+      // round 3, rank V: waves carry the current AND the previous element (colour + glow), bigger
+      wave5: { size: 1.9, radius: 0.5 },
       rune_shift: { r: 2.75, dmg: 0.2, knockback: 5 },
       runestorm: { dur: 3, r: 6.25, dmg: 0.45, times: [0.3, 1.3, 2.3], encoreAt: 3.0, bolts: 6, pillars: 6, pillarR: 3.0 },
     },
+    balance: { dmgMul: [[12, 1], [14, 1], [16, 1], [18, 1], [20, 1]] },
   },
 };

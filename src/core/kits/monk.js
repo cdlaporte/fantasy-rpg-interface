@@ -37,6 +37,7 @@ function strike(game, p, angle, i, rank) {
   if (i === 4) {
     for (let j = 0; j < n; j++) pop(game, p, hits[j], b);
     game.fx({ type: 'sparkle', x: p.x + Math.cos(angle) * 0.7, y: p.y + Math.sin(angle) * 0.7, n: 10, color: s.color, r: 0.5 });
+    if (rank >= 5) dragonFist(game, p, angle);
   }
   if (i === 2) game.fx({ type: 'slash', x: p.x, y: p.y, angle, arc: b.arc, r: b.range + 0.2, color: s.jade, style: 'spin' });
   landed(game, p, n);
@@ -57,6 +58,13 @@ function palm(game, p, angle, rank) {
   game.bus.emit('sfx', { id: 'swing' });
   landed(game, p, n);
   k.mo_palms = (k.mo_palms || 0) + 1;
+  if (boon(game, 'palm_echo')) {
+    // round 3 boon: a bigger, delayed second shockwave
+    const pe = s.palm_echo;
+    game.combat.aoe(p, { x: p.x, y: p.y, shape: 'cone', angle, arc: b.arc + 20, r: b.range * pe.rMul, dmg: b.dmg * pe.dmgMul, knockback: b.knockback * 0.6,
+      type: 'melee', delay: pe.delay, telegraph: false, fx: 'shockwave', color: s.jade, shake: 0.15, tags: ['palm_echo'] });
+    k.mo_echoes = (k.mo_echoes || 0) + 1;
+  }
   if (dragon) {
     const dw = s.dragon_wave;
     game.kits.spend(p, dw.cost);
@@ -85,6 +93,33 @@ function palm(game, p, angle, rank) {
   }
   return n;
 }
+/** round 3, rank V Dragon Fist: a big ki wave (the head) and a zigzag tail of ki orbs that follow it. */
+function dragonFist(game, p, angle) {
+  const s = S(game), d = s.dragon, k = p.data.kit;
+  game.abilities.use('projectile', p, { angle, speed: d.speed, range: d.range, dmg: d.dmg, radius: d.radius, pierce: true, type: 'magic',
+    knockback: 5, look: projLook('wave', s.color, '#ffffff', d.size), color: s.color, tags: ['dragon_fist'], anim: 'attack' });
+  const q = k.mo_tail || (k.mo_tail = []);
+  for (let i = 1; i <= d.tail; i++) q.push({ at: game.t + i * d.tailGap, i, angle, x: p.x, y: p.y });
+  game.fx({ type: 'shockwave', x: p.x, y: p.y, r: 1.8, color: s.color });
+  game.fx({ type: 'burst', x: p.x + Math.cos(angle) * 0.8, y: p.y + Math.sin(angle) * 0.8, n: 18, color: s.jade, r: 0.9 });
+  game.camera.shake = Math.max(game.camera.shake, 0.25);
+  k.mo_dragonFists = (k.mo_dragonFists || 0) + 1;
+}
+function updateTail(game, p) {
+  const k = p.data.kit, q = k.mo_tail;
+  if (!q || !q.length) return;
+  const s = S(game), d = s.dragon;
+  for (let j = q.length - 1; j >= 0; j--) {
+    const seg = q[j];
+    if (game.t < seg.at) continue;
+    q.splice(j, 1);
+    const side = (seg.i % 2 ? 1 : -1) * d.wiggle;
+    game.combat.projectile(p, { x: seg.x, y: seg.y, angle: seg.angle, side, speed: d.speed, range: d.range - 0.3 * seg.i, dmg: d.tailDmg,
+      radius: 0.3, pierce: true, type: 'magic', knockback: 1, look: projLook('orb', seg.i % 2 ? s.jade : s.color, '#ffffff', 1.4 - seg.i * 0.15),
+      tags: ['dragon_tail'] });
+  }
+}
+
 function pop(game, p, t, b) {
   if (!t || t.removed || t.tags.includes('boss')) return;
   const k = p.data.kit;
@@ -297,6 +332,15 @@ function updatePalms(game, p, dt) {
     game.fx({ type: 'screenFlash', color: s.color, dur: 0.3 });
     game.abilities.use('heal', p, { pct: tp.heal });
     game.camera.shake = Math.max(game.camera.shake, 0.5);
+    if (boon(game, 'jade_lotus')) {
+      // round 3 boon: a jade lotus blooms where the blur ends (heals you, slows enemies)
+      const jl = s.jade_lotus;
+      game.combat.zone(p, { x: p.x, y: p.y, r: jl.r, dur: jl.dur, tick: jl.tick, healAmount: Math.max(1, Math.round(p.hpMax * jl.healPct)),
+        status: { slow: [0.8, jl.slow] }, color: s.jade, id: 'jade_lotus' });
+      game.fx({ type: 'pillar', x: p.x, y: p.y, r: 1.2, color: s.jade, dur: 1 });
+      game.fx({ type: 'sparkle', x: p.x, y: p.y, n: 24, color: s.jade, r: jl.r });
+      k.mo_lotus = (k.mo_lotus || 0) + 1;
+    }
   }
 }
 
@@ -310,13 +354,13 @@ const monk = {
   basicInfo(game, p, rank) {
     const r = (sdata(game, 'monk') || DEF).ranks || DEF.ranks;
     if (rank < 3) return mage.basicInfo(game, p, rank);
-    return rank >= 4 ? r[4] : r[3];
+    return rank >= 5 && r[5] ? r[5] : rank >= 4 ? r[4] : r[3];
   },
   onEquip(game, p) {
     const k = p.data.kit;
     const s = S(game);
     k.mo_beat = 0; k.mo_lastT = -9; k.mo_punchUntil = 0; k.mo_punchA = 0; k.mo_still = 0; k.mo_med = false; k.mo_hpAcc = 0; k.mo_sparkT = 0;
-    k.mo_pops = []; k.mo_near = []; k.mo_palmsRun = null;
+    k.mo_pops = []; k.mo_near = []; k.mo_palmsRun = null; k.mo_tail = [];
     k.mo_reflOpts = { color: s.color };
     k.mo_palmOpts = { source: p, type: 'melee', knockback: 0.5, color: s.color, hitStop: 0.03, tags: ['thousand_palms'] };
     k.mo_off = game.bus.on('proj:reflected', (e) => onReflected(game, p, e));
@@ -333,6 +377,7 @@ const monk = {
     updateDeflect(game, p);
     updatePops(game, p);
     updatePalms(game, p, dt);
+    updateTail(game, p);
     updateMeditation(game, p, dt);
   },
   hud(game, p, hud) {

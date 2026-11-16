@@ -41,12 +41,16 @@ export default {
       mana_surge: { cost: 30, dmg: 2.6, speed: 13, range: 9, radius: 0.4, size: 2.2 },
       gravity_well: { pullR: 4.5, pull: 9, delay: 0.35 },
       phase_shift: { dmg: 1.2, w: 0.9, markT: 4 },
+      // round 3 class boons
+      arcane_chain: { every: 3, jumps: 2, range: 4, dmg: 0.6, icd: 0.25, color: '#7fe7ff' },
+      comet_nova: { n: 5, rMin: 1.4, rMax: 3.4, r: 1.0, dmg: 0.7, delay: 0.45, gap: 0.12 },
+      mana_shield: { above: 0.5, absorb: 0.35, manaPerHit: 10, color: '#4d8dff' },
     },
 
     // Balance: outgoing damage multiplier by level (linear between points), applied by the kit to the player's and
     // the familiars' hits. Keeps every coefficient exactly as in CLASSES.md while landing the measured mixed-fight
     // DPS inside the CLASSES band (docs/notes/kit-mage.md). Specs may override with their own `balance.dmgMul`.
-    balance: { dmgMul: [[1, 0.5], [3, 0.5], [5, 0.46], [8, 0.55], [12, 0.55]] },
+    balance: { dmgMul: [[1, 0.5], [3, 0.5], [5, 0.46], [8, 0.55], [12, 0.55], [20, 0.55]] },
 
     // Classmate Elowen (Sim companions schema, docs/notes/sim.md section 10). Round 2: 100% of the numbers (was 70%),
     // Arcane Nova from player level 5, a splitting bolt and a new outfit when the player specializes.

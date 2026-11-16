@@ -214,8 +214,8 @@ test('mage data: class, specs and boons match the shapes Meta reads; icons from 
     for (const a of s.abilities) assert.ok(ICONS.has(a.icon), a.icon);
   }
   const boons = Object.values(data.boons).filter((b) => b.class === 'mage' || specs.includes(b.spec));
-  assert.equal(boons.filter((b) => b.class === 'mage').length, 8);
-  for (const id of specs) assert.equal(boons.filter((b) => b.spec === id).length, 4);
+  assert.equal(boons.filter((b) => b.class === 'mage').length, 11);   // round 3: +3
+  for (const id of specs) assert.equal(boons.filter((b) => b.spec === id).length, 6);   // round 3: +2 each
   for (const b of boons) { assert.ok(ICONS.has(b.icon), b.icon); assert.ok(b.name && b.desc && b.desc.length < 90, b.id); }
   // look vocabulary (CONTRACTS 6)
   const held = new Set(['staff', 'orb', 'fists']);

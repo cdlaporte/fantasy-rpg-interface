@@ -17,8 +17,28 @@ import monk from './monk.js';
 import archer from './archer.js';
 import thief from './thief.js';
 import ninja from './ninja.js';
+// round 4: tier-3 masteries (docs/MASTERY.md), each layered over its subclass
+import paladin from './paladin.js';
+import sentinel from './sentinel.js';
+import warlord from './warlord.js';
+import juggernaut from './juggernaut.js';
+import spellblade from './spellblade.js';
+import runeguard from './runeguard.js';
+import summoner from './summoner.js';
+import illusionist from './illusionist.js';
+import stormcaller from './stormcaller.js';
+import pyromancer from './pyromancer.js';
+import sage from './sage.js';
+import mystic from './mystic.js';
+import ranger from './ranger.js';
+import sharpshooter from './sharpshooter.js';
+import trickster from './trickster.js';
+import swashbuckler from './swashbuckler.js';
+import windwalker from './windwalker.js';
+import smokestep from './smokestep.js';
 
-export const KITS = { novice, warrior, mage, rogue, knight, berserker, battlemage, conjurer, sorcerer, monk, archer, thief, ninja };
+export const KITS = { novice, warrior, mage, rogue, knight, berserker, battlemage, conjurer, sorcerer, monk, archer, thief, ninja,
+  paladin, sentinel, warlord, juggernaut, spellblade, runeguard, summoner, illusionist, stormcaller, pyromancer, sage, mystic, ranger, sharpshooter, trickster, swashbuckler, windwalker, smokestep };
 
 const ZERO_RES = Object.freeze({ value: 0, max: 0 });
 const HOOK_NAMES = ['onHit', 'onHurt', 'onKill', 'onBlock', 'onOutgoing', 'onIncoming', 'onLethal', 'onMinionHit', 'onMinionKill', 'onMinionOutgoing', 'onCatch'];
@@ -41,10 +61,13 @@ export default {
       if (L) return L;
       let base = classId ? KITS[classId] || null : null;
       const spec = specId ? KITS[specId] || null : null;
-      if (!base && spec && spec.parent) base = KITS[spec.parent] || null;
+      // round 4: walk the parent chain (mastery -> subclass -> class), so a tier-3 mastery id layers all three
+      const chain = [];
+      for (let k = spec, n = 0; k && n < 4; k = k.parent ? KITS[k.parent] || null : null, n++) chain.unshift(k);
+      if (!base && chain.length) base = chain[0];
       const layers = [];
       if (base) layers.push(base);
-      if (spec && spec !== base) layers.push(spec);
+      for (const k of chain) if (k !== base && layers.indexOf(k) < 0) layers.push(k);
       if (!layers.length) layers.push(novice);
       const top = layers[layers.length - 1];
       let basicKit = null;
@@ -189,7 +212,10 @@ export default {
         const prevUnlocked = {};
         if (old) for (const s of ABILITY_SLOTS) prevUnlocked[s] = old.abilities[s] && level(ent) >= (old.abilities[s].unlock || 0) ? old.abilities[s].id : null;
         ent.data.kitL = L; ent.data.kitRef = L;
-        ent.data.classId = classId || null; ent.data.specId = specId || null;
+        // round 4: for a tier-3 mastery, data.specId stays the subclass (kits read it) and data.masteryId is the mastery
+        const tier3 = specId && KITS[specId] && KITS[specId].tier === 3;
+        ent.data.classId = classId || null; ent.data.specId = tier3 ? KITS[specId].parent : specId || null;
+        ent.data.masteryId = tier3 ? specId : null;
         ent.data.kit = { speedMul: 1, lookPatch: null };
         ent.data.kitT = { basicT: 0, heldT: 0, basicHeld: false, holding: { space: null, q: null, f: null, shift: null }, has8: false, aim: 0, diagA: 0, diagT: -9 };
         const rd = L.resource;

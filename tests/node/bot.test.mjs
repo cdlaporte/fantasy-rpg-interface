@@ -93,6 +93,8 @@ test('bot: new game -> intro -> ambush -> rescue -> town -> class pick -> forest
     bot.input.set({ moveX: 0, moveY: 1 }); await bot.seconds(2); bot.idle();
     assert.ok(dist(game.player, c) <= 4.05, 'held inside the barrier (' + dist(game.player, c).toFixed(2) + ')');
     let minHp = Infinity;
+    let hexHits = 0;
+    const offHex = game.bus.on('hit', (e) => { if (e.target === game.player && e.source && e.source.kind === 'hexguard') hexHits++; });
     await bot.fight({ until: () => game.cutscene.active !== 'ambush', timeout: 40, each: null });
     minHp = Math.min(minHp, game.player.hp);
     mark('ambush_end');
@@ -101,6 +103,8 @@ test('bot: new game -> intro -> ambush -> rescue -> town -> class pick -> forest
     assert.equal(ev.down, 0, 'never downed during the ambush');
     const fight = marks.ambush_end - marks.ambush_fight;
     t.diagnostic(`ambush fight lasted ${fight.toFixed(1)} s`);
+    if (typeof offHex === 'function') offHex();
+    assert.ok(hexHits > 0, 'the hexguards attack inside the barrier');
     assert.ok(fight >= 8 && fight <= 22, 'ambush lasts ~10-20 s, got ' + fight);
   });
 

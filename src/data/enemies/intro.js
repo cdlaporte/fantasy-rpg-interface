@@ -51,7 +51,7 @@ export default {
     id: 'hexguard', name: 'Hexguard', level: 4, tags: ['ambush', 'construct', 'story'],
     stats: { hp: 40, power: 3, defense: 1, speed: 2.9, radius: 0.38, xp: 12 },
     flying: false,
-    ai: { brain: 'guard', aggro: 8, leash: 4.5 },
+    ai: { brain: 'chaser', aggro: 8, leash: 4.5 },   // not 'guard': that brain is for town guards (acts only when the player is wanted)
     attacks: [
       { id: 'hex_slash', use: 'melee_arc', arc: 100, range: 1.1, dmg: 0.6, cd: 2.0, windup: 0.5, telegraph: 'cone', weight: 3 },
       { id: 'shield_rush', use: 'dash', dist: 2.5, speed: 8, dmg: 0.5, knockback: 3, cd: 5, windup: 0.7, range: 3,

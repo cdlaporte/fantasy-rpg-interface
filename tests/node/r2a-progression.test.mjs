@@ -27,7 +27,7 @@ test('level down: stats, abilities and rank follow; xp restarts; events', () => 
   pr.setLevel(CAP, { quiet: true });
   pr.setSpec('sorcerer', { quiet: true });
   const top = { hp: game.player.hpMax, power: game.player.stats.power };
-  assert.equal(pr.rank(), 4);
+  assert.equal(pr.rank(), CAP >= 16 ? 5 : 4);
   assert.deepEqual(unlockedSlots(game).sort(), ['f', 'q', 'shift', 'space']);
   assert.equal(pr.xp, pr.xpNext, 'at the cap xp is full');
   assert.ok(of('levelup').length >= 1);
@@ -42,7 +42,7 @@ test('level down: stats, abilities and rank follow; xp restarts; events', () => 
   assert.equal(pr.specId, 'sorcerer', 'the subclass stays (teacher: any subclass at any level)');
   assert.equal(of('levelup').length, ups, "no 'levelup' on the way down");
   assert.deepEqual(of('level:set').at(-1), { level: 3, prev: CAP });
-  assert.deepEqual(of('rank:down').at(-1), { rank: 1, prev: 4 });
+  assert.deepEqual(of('rank:down').at(-1), { rank: 1, prev: CAP >= 16 ? 5 : 4 });
   // back up again: unlocks fire again, level:set and levelup
   pr.setLevel(8);
   assert.deepEqual(of('level:set').at(-1), { level: 8, prev: 3 });

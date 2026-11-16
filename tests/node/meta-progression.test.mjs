@@ -31,8 +31,11 @@ test('xp curve and rank thresholds', () => {
   const { base, exp } = config.xpCurve;
   assert.equal(xpNext(1), Math.round(base));
   assert.equal(xpNext(2), Math.round(base * 2 ** exp));
-  assert.equal(xpNext(11), Math.round(base * 11 ** exp));
-  assert.deepEqual([1, 3, 4, 7, 8, 11, 12, 16].map(rankAt), [1, 1, 2, 2, 3, 3, 4, 5]);
+  assert.equal(xpNext(10), Math.round(base * 10 ** exp));
+  // round 3: levels 11+ cost more (XP_LATE, docs/notes/r3a.md): 2x at 11, +0.3x per level after
+  assert.equal(xpNext(11), Math.round(base * 11 ** exp * 2));
+  assert.equal(xpNext(19), Math.round(base * 19 ** exp * 4.4));
+  assert.deepEqual([1, 3, 4, 7, 8, 11, 12, 16, 20].map(rankAt), [1, 1, 2, 2, 3, 3, 4, 5, 5]);
 });
 
 test('level up: full heal, fx, knockback ring, toast, events, boons, cap', () => {
@@ -64,15 +67,15 @@ test('level up: full heal, fx, knockback ring, toast, events, boons, cap', () =>
   assert.equal(of('rank:up').length, 1);
   assert.deepEqual(of('rank:up')[0], { rank: 2, prev: 1 });
   assert.equal(pr.pendingBoons, 1, 'boon queued at 4');
-  pr.addXp(1e6);
-  assert.equal(pr.level, 12, 'cap from config');
-  assert.equal(pr.pendingBoons, 5, 'boons at 4/6/8/10/12');
-  assert.equal(pr.rank(), 4);
+  pr.addXp(1e7);
+  assert.equal(pr.level, 20, 'cap from config (round 3: 20)');
+  assert.equal(pr.pendingBoons, 9, 'boons at 4/6/8/10/12/14/16/18/20');
+  assert.equal(pr.rank(), 5);
   assert.equal(pr.addXp(50), 0);
-  assert.equal(pr.level, 12);
+  assert.equal(pr.level, 20);
   const hud = game.hudState();
-  assert.equal(hud.player.level, 12);
-  assert.equal(hud.pendingBoons, 5);
+  assert.equal(hud.player.level, 20);
+  assert.equal(hud.pendingBoons, 9);
 });
 
 test('stats from the balance sheet, spec mods, data overrides', () => {

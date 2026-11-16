@@ -1,25 +1,14 @@
-// The teacher's question provider goes here. See docs/QUESTIONS.md for a complete, commented example
-// (a question bank in JSON plus a provider that shows it in the game's question window).
+// The question provider the game uses for players (main.js installs this default export when it is not null).
 //
-// While this file exports null, the game uses the placeholder card from stubProvider.js.
+// Round 2: Mr. Laporte's Geometry C Unit 4 "Similar Figures" problems, generated fresh every time from the
+// topics in src/questions/unit4/ (see docs/QUESTIONS.md). Teacher mode and the enabled topics are read from the
+// shared Questions object (Questions.teacher, Questions.topics).
 //
-// A provider is an object with an id and an ask() function:
-//
-//   export default {
-//     id: 'my-bank',
-//     // req = { context: 'gate', difficulty: 2, tags: ['geometry'], optional: false, attempt: 1 }
-//     // el  = an empty <div> inside the game's question window: put your question in it.
-//     ask(req, el) {
-//       return new Promise((resolve) => {
-//         const p = document.createElement('p');
-//         p.textContent = 'What is 7 x 8?';
-//         const input = document.createElement('input');
-//         const btn = document.createElement('button');
-//         btn.textContent = 'Check';
-//         btn.onclick = () => resolve({ correct: input.value.trim() === '56', skipped: false });
-//         el.append(p, input, btn);
-//       });
-//     },
-//   };
+// To go back to the placeholder card, export null instead. To use another unit later, build its provider the same
+// way (a folder with generators + TOPICS, see docs/QUESTIONS.md) and export it here.
+import Questions from './index.js';
+import { createUnit4Provider } from './unit4/provider.js';
 
-export default null;
+const provider = createUnit4Provider({ settings: () => Questions });
+
+export default provider;

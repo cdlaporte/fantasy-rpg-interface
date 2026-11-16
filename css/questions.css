@@ -1,1 +1,109 @@
-/* Round 2, package B: question card, diagrams, answer input, worked solutions. */
+/* Round 2, package B: question card, diagrams, answer input, worked solutions.
+   The card lives in the question modal (.question-box, a parchment px-box from ui.css). Math text uses a plain,
+   very readable font; the game's pixel font is kept for the small context line and the key hints. */
+
+.q4 {
+  --q-ink: #2b1d14;
+  --q-ink-2: #6b4f37;
+  --q-paper: #fffbf0;
+  --q-rim: #d9b77e;
+  --q-accent: #6a4bc4;
+  --q-good: #237a45;
+  --q-good-bg: #d9f3df;
+  --q-bad: #b23a22;
+  --q-bad-bg: #fde3d6;
+  --q-teach: #2a62c9;
+  --q-teach-bg: #dfe9ff;
+  --q-math: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'DejaVu Sans', sans-serif;
+  --q-serif: 'Times New Roman', Times, 'Liberation Serif', 'DejaVu Serif', serif;
+  display: flex; flex-direction: column; gap: 8px; width: 100%;
+  color: var(--q-ink); font: 20px/1.3 var(--q-math); -webkit-font-smoothing: antialiased;
+}
+
+/* the modal's own title is replaced by the card's context line */
+.question-box:has(.q4) { min-width: 0; width: min(880px, calc(100% - 28px)); max-width: none; box-sizing: border-box;
+  max-height: calc(100% - 16px); overflow: auto; padding: 10px 16px 14px; }
+.question-box:has(.q4) > .question-head { display: none; }
+.question-mount:has(.q4) { display: block; min-height: 0; }
+
+.q4-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.q4-context { font: 12px/1.2 var(--pxfont); color: var(--q-accent); letter-spacing: 0.5px; text-transform: uppercase; }
+.q4-stakes { font-size: 16px; color: var(--q-ink-2); flex: 1 1 auto; }
+.q4-badge { font: 10px/1 var(--pxfont); padding: 5px 7px; color: #fff; background: var(--q-teach); box-shadow: var(--notch); margin: 3px; }
+.q4-badge.opt { background: #8a6b4c; }
+.q4-kicker { font-size: 15px; color: var(--q-ink-2); font-weight: 600; letter-spacing: 0.2px; }
+.q4-kicker b { color: var(--q-accent); }
+.q4-prompt { margin: 0; font-size: 21px; line-height: 1.32; font-weight: 600; }
+
+.q4-body { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+.q4-figure { flex: 0 1 auto; max-width: 100%; background: var(--q-paper); padding: 6px 8px;
+  box-shadow: inset 0 0 0 2px var(--q-rim); display: flex; align-items: center; justify-content: center; }
+.q4-figure svg { display: block; width: auto; height: auto; max-width: min(420px, 100%); max-height: 260px; overflow: visible; }
+.q4-figure svg.q4-eq { max-height: 110px; }
+.q4-side { flex: 1 1 250px; min-width: 240px; display: flex; flex-direction: column; gap: 10px; }
+
+/* diagram ink (SVG built by src/questions/unit4/svg.js) */
+.q4-fig { color: var(--q-ink, #2b1d14); }
+.q4-fig .f-line { stroke-width: 2.2; }
+.q4-fig .f-mark { stroke-width: 2; }
+.q4-fig .f-arc { stroke-width: 1.7; }
+.q4-fig .f-head { fill: currentColor; stroke-width: 1; }
+.q4-fig .f-dim { stroke-width: 1.4; }
+.q4-fig .f-bar { stroke-width: 2.2; }
+.q4-fig text { stroke: none; }
+.q4-fig .f-lbl { font-family: var(--q-math, Arial, sans-serif); font-weight: 600; }
+.q4-fig .f-deg { font-weight: 600; fill: #3f2a8a; }
+.q4-fig .f-vtx { font-family: var(--q-serif, serif); font-style: italic; font-weight: 700; }
+.q4-fig .f-eq { font-family: var(--q-serif, serif); }
+
+/* answer: typed number */
+.q4-answer { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.q4-pre { font: italic 600 22px var(--q-serif); }
+.q4-suf { font-size: 20px; }
+.q4-input { font: 600 22px var(--q-math); width: 150px; padding: 6px 10px; color: var(--q-ink); background: #fff;
+  border: 0; box-shadow: var(--notch); margin: 3px; outline: none; }
+.q4-input:focus { background: #fffdf2; box-shadow: var(--notch), 0 0 0 5px rgba(106, 75, 196, 0.35); }
+.q4 button { font: 600 20px var(--q-math); color: var(--q-ink); padding: 7px 14px; background: var(--parch); border: 0; cursor: pointer;
+  box-shadow: var(--notch); margin: 3px; }
+.q4 button:hover, .q4 button:focus-visible { background: #fff3c4; outline: none; }
+.q4-check { background: #f3d58b !important; }
+.q4-help { font-size: 15px; color: var(--q-ink-2); min-height: 1em; }
+.q4-help.warn { color: var(--q-bad); font-weight: 600; }
+
+/* answer: multiple choice */
+.q4-choices { display: flex; flex-direction: column; gap: 6px; }
+.q4-choices.wide { display: grid; grid-template-columns: 1fr 1fr; }
+.q4 .q4-choice { display: flex; align-items: center; gap: 10px; text-align: left; font-size: 20px; padding: 7px 12px; width: calc(100% - 6px); box-sizing: border-box; }
+.q4-key { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; font: 10px/1 var(--pxfont);
+  background: #fffaf0; border: 2px solid var(--outline); border-bottom-width: 4px; border-radius: 3px; }
+.q4 .q4-choice.is-right { background: var(--q-good-bg); box-shadow: var(--notch), inset 0 0 0 3px var(--q-good); }
+.q4 .q4-choice.is-picked { background: var(--q-bad-bg); box-shadow: var(--notch), inset 0 0 0 3px var(--q-bad); }
+.q4 .q4-choice:disabled { cursor: default; opacity: 1; }
+
+/* result + worked solution */
+.q4-flash { font: 700 26px var(--q-math); color: var(--q-good); padding: 4px 0; animation: q4-pop 0.25s steps(3); }
+.q4-result { padding: 8px 12px; font-size: 19px; font-weight: 600; }
+.q4-result.bad { background: var(--q-bad-bg); color: var(--q-bad); box-shadow: inset 4px 0 0 var(--q-bad); }
+.q4-result.teach { background: var(--q-teach-bg); color: var(--q-teach); box-shadow: inset 4px 0 0 var(--q-teach); }
+.q4-result .q4-ans { color: var(--q-ink); white-space: nowrap; }
+.q4-steps { margin: 0; padding: 6px 10px 6px 32px; background: var(--q-paper); box-shadow: inset 0 0 0 2px var(--q-rim);
+  font-size: 18px; line-height: 1.35; }
+.q4-steps li { margin: 2px 0; }
+.q4-steps li::marker { color: var(--q-ink-2); font-size: 15px; }
+.q4-next { display: flex; align-items: center; gap: 10px; }
+.q4-next .q4-hint { font: 10px/1.4 var(--pxfont); color: var(--q-ink-2); }
+.q4-next button { background: #f3d58b; }
+
+@keyframes q4-pop { 0% { transform: scale(0.7); } 100% { transform: scale(1); } }
+
+/* small screens (1024x600 Chromebooks): tighter */
+@media (max-height: 640px) {
+  .q4 { gap: 6px; }
+  .q4-prompt { font-size: 20px; }
+  .q4-figure svg { max-height: 220px; }
+  .q4-steps { font-size: 17px; }
+}
+@media (max-width: 1100px) {
+  .q4-figure svg { max-width: min(380px, 100%); }
+  .q4-side { min-width: 220px; }
+}

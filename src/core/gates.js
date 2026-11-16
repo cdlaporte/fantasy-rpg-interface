@@ -113,7 +113,7 @@ export default {
         job.wait = Math.max(0.01, retrySeconds());
         game.bus.emit('gate:retry', { req: job.req, attempt: job.attempt, wait: job.wait });
         game.bus.emit('sfx', { id: 'ui_bad' });
-        game.toast(`Not quite. Try again in ${Math.ceil(job.wait)} seconds.`, 'bad');
+        game.toast(`Not quite. A new problem in ${Math.ceil(job.wait)} seconds.`, 'bad');
         return true;
       }
       settle(job, r);

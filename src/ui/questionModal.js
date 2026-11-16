@@ -4,9 +4,10 @@
 import { el, add, clear } from './dom.js';
 import { K, hints, livePortrait } from './modalKit.js';
 
+// The Unit 4 card (.q4) shows its own context line; this head is for other providers (css/questions.css hides it).
 const CONTEXT_LABEL = {
-  levelup: 'Level up!', boon: 'Boon trial', spec: 'Specialization trial', gate: 'Rune seal', chest: 'Rune chest',
-  boss_shield: 'Break the shield!', focus: 'Focus', lesson: 'Lesson', quest_turnin: 'Bonus question', haggle: 'Haggle',
+  levelup: 'Level up', boon: 'Level-up bonus', spec: 'Specialization trial', gate: 'Rune gate', chest: 'Rune chest',
+  boss_shield: 'Boss shield', focus: 'Focus scroll', lesson: 'Lesson', quest_turnin: 'Quest bonus', haggle: 'Haggling',
   revive: 'Second chance',
 };
 

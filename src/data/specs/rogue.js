@@ -177,7 +177,7 @@ export default {
     kit: {
       dmgScale: 1, lateScale: [[15, 1.0], [16, 0.88], [18, 0.87], [20, 0.85]],
       colors: { main: '#c44dff', pink: '#ff70a6', gold: '#f2c94c', confetti: ['#ff70a6', '#ffd23f', '#4cc9f0', '#7bdc3a', '#c44dff'] },
-      chest: { ttl: 3, hpMul: 0.6, dist: 2.8, lure: 7, r: 2.6, coef: 2.0, stun: 1.2, knockback: 6, coins: 8, coinCoef: 0.35, coinRange: 3 },
+      chest: { ttl: 3, hpMul: 1.0, defense: 10, scale: 1.4, dist: 3.6, lure: 7, r: 2.6, coef: 2.0, stun: 1.2, knockback: 6, coins: 8, coinCoef: 0.35, coinRange: 3 },
       trick: { cd: 30, range: 7.5, targets: 6, step: 0.16, coef: 1.4, coefPerPip: 0.28, stun: 0.9, mark: 5, coins: 4, coinCoef: 0.3,
         coinRange: 2.6, finalCoins: 12, finalCoinCoef: 0.35, finalR: 2.6, finalCoef: 1.2 },
     },

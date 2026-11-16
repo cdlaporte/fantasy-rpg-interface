@@ -134,7 +134,7 @@ function railFire(game, p) {
   }
   ss.rails++; ss.railHits += total;
   game.ents.setAnim(p, 'attack', 0.3);
-  game.fx({ type: 'screenFlash', color: C.core, dur: 0.2 });
+  game.fx({ type: 'screenFlash', color: C.main, dur: 0.15 });
   game.fx({ type: 'ring', x: p.x, y: p.y, r: 2.2, color: C.main, dur: 0.4 });
   game.fx({ type: 'burst', x: p.x + Math.cos(p.angle) * 0.6, y: p.y + Math.sin(p.angle) * 0.6, n: 18, r: 0.9, color: C.core });
   game.camera.shake = Math.max(game.camera.shake, R.shake);

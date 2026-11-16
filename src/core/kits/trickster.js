@@ -53,7 +53,7 @@ function spawnChest(game, p, x, y) {
   const old = tr.chestId ? game.ents.get(tr.chestId) : null;
   if (old && !old.removed) burstChest(game, p, old);
   const c = game.combat.decoy(p, { kind: 'prank_chest', name: 'Treasure?', look: CHEST_LOOK, x, y, ttl: Ch.ttl,
-    hp: Math.max(5, Math.round(p.hpMax * Ch.hpMul)), power: game.combat.powerOf(p), fxTag: false,
+    hp: Math.max(5, Math.round(p.hpMax * Ch.hpMul)), defense: Ch.defense, scale: Ch.scale, power: game.combat.powerOf(p), fxTag: false,
     onExpire: (g, e) => burstChest(g, p, e), onDeath: (g, e) => burstChest(g, p, e) });
   c.angle = Math.PI / 2; c.dir = 2;
   tr.chestId = c.id;

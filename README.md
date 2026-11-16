@@ -1,14 +1,13 @@
 # Flinkerton Academy
 
 A bright, light-hearted fantasy action-RPG for reviewing statistics and geometry, built to run on school
-Chromebooks in Chrome. The same game runs in two looks, chosen on the title screen (and switchable from the
-pause menu): **2D Pixel** (Canvas 2D pixel art) and **3D Toy Box** (three.js, cel-shaded). All art is
-generated in code; there are no image files and no build step. The game runs in the 3D toy-box look; the 2D
-pixel renderer is kept only as an automatic fallback for computers without WebGL (or `?renderer=2d`).
+Chromebooks in Chrome. It runs in a cel-shaded 3D "toy box" look (three.js); a 2D pixel-art renderer is kept
+only as an automatic fallback for computers without WebGL (or `?renderer=2d`). All art is generated in code;
+there are no image files and no build step.
 
 ## What is in this build (the "vertical slice")
 
-- Title screen (name, look), a cloaked tutorial on the country road, Malgrim's ambush, Headmaster Laporte's
+- Title screen (name, options), a cloaked tutorial on the country road, Malgrim's ambush, Headmaster Laporte's
   rescue and the "remind me who you are" look picker, the escort into Flinkerton.
 - Flinkerton town: shops (potions, outfitter, general store, bakery), NPCs with daily routines and dialogue,
   side quests, guards and a light "wanted" system.

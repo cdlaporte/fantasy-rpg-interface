@@ -73,7 +73,7 @@ export default {
       // The potion.
       ['cameraReset'],
       ['move', 'player', 'clearing', { speed: 1.4 }],
-      ['move', 'laporte', 'clearing', { speed: 2, stopAt: 1.3 }],
+      ['move', 'laporte', 'clearing', { speed: 2, stopAt: 2.1 }],   // far enough that the sprites never overlap
       ['face', 'laporte', DOWN],
       ['say', 'laporte', 'You look terrible. Here.', { mood: 'calm' }],
       ['give', 'potion_small', 1, { slot: 0 }],   // slot 0 = key 1, even if rat cheese is already there

@@ -10,7 +10,7 @@ export default {
       /* 2 */ { text: 'Shoo the pantry rats. (3)', goal: { type: 'kill', kind: 'rat', n: 3 } },
       /* 3 */ { text: 'More rats up the road! (4)', goal: { type: 'kill', kind: 'rat', n: 4 } },
       /* 4 */ { text: 'Defeat Sir Squeaks-a-Lot.', goal: { type: 'kill', kind: 'giant_rat', n: 1 } },
-      /* 5 */ { text: 'Keep walking toward Flinkerton.', goal: { type: 'reach', zone: 'intro', marker: 'clearing', r: 4 } },
+      /* 5 */ { text: 'Keep walking toward Flinkerton.', goal: { type: 'flag', key: 'ambush_done' } },
       /* 6 */ { text: 'Follow the stranger to town.', goal: { type: 'flag', key: 'intro_done' } },
       /* 7 */ { text: 'Choose your discipline at the Academy.', goal: { type: 'flag', key: 'class_chosen' } },
     ],

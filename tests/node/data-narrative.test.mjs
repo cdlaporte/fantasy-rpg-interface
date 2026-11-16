@@ -314,9 +314,9 @@ test('enemies: schema, references, balance', () => {
     if (e.level !== L) fail(w, `level ${e.level} != ${L}`);
     const elite = e.tags.includes('elite');
     const boss = !!e.boss;
-    // round 2 (package C, docs/notes/r2c.md): intro/forest hp x0.6, Mossback x0.4; forest kill xp +30%.
+    // round 2 (package C, docs/notes/r2c.md): intro/forest hp x0.6, Mossback x0.8; forest kill xp +30%.
     const forest = L >= 3 && !boss;
-    within(w, 'hp', e.stats.hp, 6 * L ** 1.4 * (boss ? 25 * 0.4 : elite ? 2.5 * 0.6 : 0.6));
+    within(w, 'hp', e.stats.hp, 6 * L ** 1.4 * (boss ? 25 * 0.8 : elite ? 2.5 * 0.6 : 0.6));
     within(w, 'power', e.stats.power, 2 + 1.5 * L);
     within(w, 'xp', e.stats.xp, (5 + 3 * L) * (boss ? 20 : elite ? 3 : 1) * (forest ? 1.3 : 1));
     if (!boss && e.drops.gold[1] > (2 + L) * (elite ? 2 : 1) * 1.25) fail(w, 'gold');

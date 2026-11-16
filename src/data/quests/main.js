@@ -26,7 +26,7 @@ export default {
       { text: 'Clear out the mint slimes. (5)', goal: { type: 'kill', kind: 'slime', n: 5 } },
       { text: 'Report to Mr. Laporte in his office.', goal: { type: 'talk', npc: 'laporte' } },
     ],
-    rewards: { xp: 80, gold: 30, items: [{ id: 'potion_small', n: 2 }, { id: 'bread', n: 2 }] },
+    rewards: { xp: 110, gold: 30, items: [{ id: 'potion_small', n: 2 }, { id: 'bread', n: 2 }] },   // round 2: 80 -> 110 (level 6 after it, docs/notes/r2c.md)
     onDone: [['rel', 'laporte', 1], ['toast', 'Ranger Tam has more work in the Whisperwood.', 'quest']],
   },
 };

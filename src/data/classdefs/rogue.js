@@ -38,16 +38,17 @@ export default {
       // round 2: 100% of the class numbers (was 0.7); Fan of Knives from player level 5; bleeding daggers on the upgrade.
       npc: 'pip', name: 'Pip', mult: 1, brain: 'ally_melee',
       stats: { hp: 34, hpPerLevel: 6.5, power: 4.5, powerPerLevel: 1.5625, speed: 4.0 },
-      basic: { use: 'melee_arc', name: 'Twin Daggers', arc: 70, range: 0.95, dmg: 0.4, repeat: 2, critChance: 0.15, knockback: 1.2,
+      // coefficients = the player's effective class numbers (CLASSES coef x the kit's dmgScale 0.23, rounded up)
+      basic: { use: 'melee_arc', name: 'Twin Daggers', arc: 70, range: 0.95, dmg: 0.16, repeat: 2, critChance: 0.15, knockback: 1.2,
         cd: 0.32, windup: 0.08, style: 'dagger', color: '#58d68d' },
-      ability: { use: 'dash', name: 'Dodge Roll', dist: 3, speed: 15, invuln: 0.35, dmg: 0.6, through: true, cd: 3, range: 3,
+      ability: { use: 'dash', name: 'Dodge Roll', dist: 3, speed: 15, invuln: 0.35, dmg: 0.2, through: true, cd: 3, range: 3,
         minRange: 0.8, windup: 0.05, color: '#58d68d' },
       ability2: { unlock: 5, use: 'multishot', name: 'Fan of Knives', n: 5, spread: 70, model: 'knife', color: '#58d68d', glow: '#cfd8dc',
-        size: 1.1, speed: 13, range: 5, dmg: 0.45, knockback: 1, cd: 7, windup: 0.1 },
+        size: 1.1, speed: 13, range: 5, dmg: 0.18, knockback: 1, cd: 7, windup: 0.1 },
       upgrade: {
         dmgMul: 1.3, toast: 'Pip grows stronger!',
         // the daggers make enemies bleed (the venom status: green tint, damage over time)
-        basic: { name: 'Bleeding Daggers', color: '#ff5a6e' }, bleed: { id: 'venom', t: 3, dps: 0.08 },
+        basic: { name: 'Bleeding Daggers', color: '#ff5a6e' }, bleed: { id: 'venom', t: 3, dps: 0.03 },
         look: { outfit: { style: 'cloak', primary: '#24303a', secondary: '#2f8a4a', accent: '#ff5a6e' }, hood: true,
           held: { style: 'daggers', color: '#ffffff', glow: '#58d68d' } },
       },

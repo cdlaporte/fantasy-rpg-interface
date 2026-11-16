@@ -53,10 +53,11 @@ export default {
     companion: {
       npc: 'elowen', name: 'Elowen', mult: 1, brain: 'ally_ranged', keepRange: 3.8,
       stats: { hp: 28, hpPerLevel: 5, power: 6, powerPerLevel: 2.0, speed: 3.3 },
-      basic: { use: 'projectile', name: 'Arcane Bolt', model: 'bolt', speed: 11, range: 7, dmg: 1.0, cd: 0.65, windup: 0.12,
+      // coefficients ~ the player's effective class numbers (CLASSES coef x the kit's balance dmgMul), evened out with Bram and Pip
+      basic: { use: 'projectile', name: 'Arcane Bolt', model: 'bolt', speed: 11, range: 7, dmg: 0.42, cd: 0.65, windup: 0.12,
         type: 'magic', color: VIOLET, glow: CYAN, size: 1 },
       ability: { use: 'blink', name: 'Blink', away: true, dist: 3.5, cd: 4, range: 1.6, windup: 0.05, color: VIOLET },
-      ability2: { unlock: 5, use: 'aoe_ring', name: 'Arcane Nova', r: 3.2, dmg: 1.2, knockback: 9, cd: 9, range: 2.4, windup: 0.15,
+      ability2: { unlock: 5, use: 'aoe_ring', name: 'Arcane Nova', r: 3.2, dmg: 1.0, knockback: 9, cd: 9, range: 2.4, windup: 0.15,
         fx: 'ring', color: VIOLET, shake: 0.12 },
       upgrade: {
         dmgMul: 1.3, toast: 'Elowen grows stronger!',

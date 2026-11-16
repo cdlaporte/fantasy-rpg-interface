@@ -130,7 +130,19 @@ export default {
       }
       game.physics.teleport(e, p.x, p.y);
     }
+    // Upgraded basics: a melee swing that also throws a short projectile (Bram's crescent). {..melee_arc, then: {..projectile}}
+    // Registered on first use (the abilities system may initialize after this one).
+    function ensureBlocks() {
+      const ab = game.abilities;
+      if (!ab || !ab.register || (ab.blocks && ab.blocks.swing_throw)) return;
+      ab.register('swing_throw', (c, p) => {
+        const hits = ab.use('melee_arc', c, p);
+        if (p.then) ab.use('projectile', c, Object.assign({}, p.then, { angle: p.angle, mult: p.mult, anim: p.anim || 'attack' }));
+        return hits;
+      });
+    }
     function create(classId, i) {
+      ensureBlocks();
       const { cc, d } = cfgOf(classId);
       const npcId = cc.npc || d.npc;
       const npcDef = game.data.npcs && game.data.npcs[npcId];
@@ -220,14 +232,7 @@ export default {
     game.bus.on('ent:down', ({ ent }) => { if (ent.type === 'companion') bark(ent, 'down'); });
     const ops = game.sys.ops;
     if (ops && ops.register) ops.register('companions', (g, a) => { api.set(a[1] || []); });
-    // Upgraded basics: a melee swing that also throws a short projectile (Bram's crescent). {..melee_arc, then: {..projectile}}
-    if (game.abilities && game.abilities.register) {
-      game.abilities.register('swing_throw', (c, p) => {
-        const hits = game.abilities.use('melee_arc', c, p);
-        if (p.then) game.abilities.use('projectile', c, Object.assign({}, p.then, { angle: p.angle, mult: p.mult, anim: p.anim || 'attack' }));
-        return hits;
-      });
-    }
+
     api._hudPool = hudPool;
     return api;
   },

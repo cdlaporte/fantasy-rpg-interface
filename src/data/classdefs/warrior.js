@@ -35,11 +35,11 @@ export default {
       // round 2: 100% of the class numbers (was 0.7); ability2 from player level 5; `upgrade` when the player specializes.
       npc: 'bram', name: 'Bram', mult: 1, brain: 'ally_melee',
       stats: { hp: 44, hpPerLevel: 9, power: 5, powerPerLevel: 1.625, speed: 3.4 },
-      basic: { use: 'melee_arc', name: 'Sword Arc', arc: 100, range: 1.2, dmg: 0.8, knockback: 5, cd: 0.6, windup: 0.1,
+      basic: { use: 'melee_arc', name: 'Sword Arc', arc: 100, range: 1.2, dmg: 0.55, knockback: 5, cd: 0.6, windup: 0.1,
         style: 'sword', color: '#e8eef5' },
-      ability: { use: 'dash', name: 'Shield Bash', dist: 2.5, speed: 14, dmg: 0.9, status: { stun: 0.8 }, knockback: 8,
+      ability: { use: 'dash', name: 'Shield Bash', dist: 2.5, speed: 14, dmg: 0.7, status: { stun: 0.8 }, knockback: 8,
         stopOnHit: true, cd: 5, range: 3, minRange: 1.3, windup: 0.15, color: '#e2503c' },
-      ability2: { unlock: 5, use: 'aoe_ring', name: 'War Cry', r: 3.45, dmg: 0.6, knockback: 8, status: { slow: [3, 0.4] }, cd: 12,
+      ability2: { unlock: 5, use: 'aoe_ring', name: 'War Cry', r: 3.45, dmg: 0.3, knockback: 8, status: { slow: [3, 0.4] }, cd: 12,
         range: 2.2, windup: 0.2, fx: 'shockwave', color: '#e2503c', shake: 0.15 },
       upgrade: {
         dmgMul: 1.3, toast: 'Bram grows stronger!',

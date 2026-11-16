@@ -1,4 +1,4 @@
-// Sunscorch Dunes quests. Rewards: about 40% of a level at the zone band (level 10-16: ~280-700 xp per level).
+// Sunscorch Dunes quests. Round 3 QA: xp rewards were scaled so a run lands on the level targets (tests/node/r3qa-progression.test.mjs, docs/notes/qa-r3.md): about 4200 xp per biome in total, 6500 in Aether.
 // Zone props set the flags (dunes_crate_1..3, dunes_spring_filled, dunes_rubbing_*), so the steps complete in any order.
 export default {
   dunes_lost_caravan: {
@@ -13,7 +13,7 @@ export default {
       { text: 'Defeat Sultana Sandsnout.', goal: { type: 'boss', kind: 'sultana_sandsnout' } },
       { text: 'Tell Ziva the road is clear.', goal: { type: 'talk', npc: 'ziva' } },
     ],
-    rewards: { xp: 300, gold: 150, items: [{ id: 'potion_big', n: 2 }, { id: 'sand_veil', n: 2 }] },
+    rewards: { xp: 2250, gold: 150, items: [{ id: 'potion_big', n: 2 }, { id: 'sand_veil', n: 2 }] },
     onDone: [['rel', 'ziva', 2], ['toast', 'The caravan can cross the dunes again. Ziva is already counting the profits.', 'quest']],
   },
   dunes_oasis_water: {
@@ -24,7 +24,7 @@ export default {
       { text: 'Fill the waterskins at the oasis well.', goal: { type: 'flag', key: 'dunes_spring_filled' } },
       { text: 'Bring the water back to Ziva.', goal: { type: 'talk', npc: 'ziva' } },
     ],
-    rewards: { xp: 150, gold: 70, items: [{ id: 'cactus_water', n: 3 }, { id: 'shield_charm', n: 1 }] },
+    rewards: { xp: 1130, gold: 70, items: [{ id: 'cactus_water', n: 3 }, { id: 'shield_charm', n: 1 }] },
     onDone: [['rel', 'ziva', 2]],
   },
   dunes_obelisk_rubbings: {
@@ -35,7 +35,7 @@ export default {
       { text: 'Study the star obelisk by the south wall.', goal: { type: 'flag', key: 'dunes_rubbing_star' } },
       { text: 'Show your glyph copies to Professor Dusty.', goal: { type: 'talk', npc: 'professor_dusty' } },
     ],
-    rewards: { xp: 110, gold: 50, items: [{ id: 'hat_sun_explorer', n: 1 }, { id: 'cactus_water', n: 2 }] },
+    rewards: { xp: 830, gold: 50, items: [{ id: 'hat_sun_explorer', n: 1 }, { id: 'cactus_water', n: 2 }] },
     onDone: [['rel', 'professor_dusty', 2]],
   },
 };

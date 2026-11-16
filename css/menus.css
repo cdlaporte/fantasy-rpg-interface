@@ -94,7 +94,7 @@
 
 /* ---- teacher tools (pause) */
 .pause.with-sub { gap: 0; }
-.tch-tools { width: 860px; max-width: calc(100vw - 30px); max-height: calc(100vh - 24px); overflow: auto; padding: 10px 16px 8px; box-sizing: border-box;
+.tch-tools { width: 860px; max-width: calc(100vw - var(--panel-w) - 16px); max-height: calc(100vh - 24px); overflow: auto; padding: 10px 16px 8px; box-sizing: border-box;
   display: flex; flex-direction: column; gap: 4px; }
 .tch-tools .tch-title { margin-bottom: 0; }
 .tch-status { font-size: 17px; font-weight: 600; text-align: center; color: #3b2a1e; background: #fff3c4; padding: 4px 8px; box-shadow: inset 0 0 0 3px var(--parch-3); }
@@ -102,7 +102,7 @@
 .tch-line { display: flex; align-items: center; gap: 8px; }
 .tch-llabel { flex: 0 0 190px; font-size: 10px; color: var(--ink-2); text-align: right; }
 .tch-lbtns { flex: 1; display: flex; flex-wrap: wrap; }
-.tch-lbtns > .tch-btn { flex: 1; padding: 6px 8px 5px; font-size: 16px; }
+.tch-lbtns > .tch-btn { flex: 1; min-width: 0; padding: 6px 8px 5px; font-size: 16px; }
 .tch-levels .tch-lbtns > .tch-btn { flex: 1 0 0; min-width: 0; padding: 7px 0 6px; font-size: 11px; }
 .tch-btn.on { background: #c9f2d3; }
 .tch-class { border-left: 6px solid var(--cc, #9a8a7a) !important; }
@@ -122,6 +122,13 @@
 }
 @media (max-height: 640px) {
   .tch-tools .hints { display: none; }
+}
+/* narrow windows (the HUD panel takes 296 px of the width): the Teacher tools box shrinks to the view, QA round 3 */
+@media (max-width: 1250px) {
+  .tch-tools { padding: 8px 10px 6px; }
+  .tch-llabel { flex-basis: 110px; font-size: 9px; }
+  .tch-lbtns > .tch-btn { font-size: 14px; padding: 5px 4px 4px; }
+  .tch-levels .tch-lbtns > .tch-btn { font-size: 10px; }
 }
 
 /* big sub-screens (settings, teacher options) take the logo's place */

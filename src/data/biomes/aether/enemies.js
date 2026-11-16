@@ -154,7 +154,7 @@ export default {
   // hp tuned so a level-20 player with both classmates wins in about 2-3 minutes (docs/notes/r3-aether.md).
   malgrim_ascended: {
     id: 'malgrim_ascended', name: 'Malgrim Ascended', level: 20, tags: ['boss', 'villain', 'story'],
-    stats: { hp: 7000, power: 26, defense: 4, speed: 2.8, radius: 0.9, xp: 500 },
+    stats: { hp: 9100, power: 26, defense: 4, speed: 2.8, radius: 0.9, xp: 500 },
     flying: false,
     ai: { brain: 'boss', aggro: 16, leash: 24, keepRange: 4.5, blinkCd: 7 },
     attacks: [

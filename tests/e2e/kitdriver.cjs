@@ -5,7 +5,7 @@ const KITS = [
   ...['knight', 'berserker', 'battlemage', 'conjurer', 'sorcerer', 'monk', 'archer', 'thief', 'ninja'].map((s) => ({ id: s, classId: null, specId: s })),
 ];
 const SPEC_CLASS = { knight: 'warrior', berserker: 'warrior', battlemage: 'warrior', conjurer: 'mage', sorcerer: 'mage', monk: 'mage', archer: 'rogue', thief: 'rogue', ninja: 'rogue' };
-const LEVELS = [3, 8, 12];
+const LEVELS = [3, 8, 12, 16];   // round 3: 16 = rank V (Twin Dawn, Burning Shot, ...)
 for (const k of KITS) if (!k.classId) k.classId = SPEC_CLASS[k.specId];
 // frames after the cast at which the effect is most visible (60 Hz steps); default 6
 const PEAK = { meteor: 50, cataclysm: 60, arrow_rain: 30, summon_familiar: 50, shadow_clones: 12, grand_conjuration: 50, runestorm: 24, aegis: 10, thousand_palms: 10, whirlwind: 10, skyfall_leap: 26, flying_kick: 10 };

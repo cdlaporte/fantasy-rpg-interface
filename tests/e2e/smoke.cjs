@@ -10,7 +10,12 @@
 //     by keyboard (answer computed from Questions.preview; a number key on a multiple-choice card must not also
 //     drink hotbar item 1), boon picker by Tab;
 //  4. no console errors / pageerrors and an empty __game.errors(); a screenshot per milestone in tests/e2e/out/.
-// Run: node tests/e2e/smoke.cjs [3d|2d|all]
+//  5. (3D only, round 3 QA) the four biomes: a locked town gate and its toast before `biomes_open`, each town exit
+//     into its biome at `entry_town` and back, every regular enemy kind killed once, one rune chest opened (question
+//     card answered), `biome_boss` through both shields to the outro flag, the Aether finale played to the end and free
+//     play afterwards; the quest log (Q, tabs, Track) in a biome; the 10-look picker. Screenshots go to
+//     $SMOKE_SHOTS (default tests/e2e/out).
+// Run: node tests/e2e/smoke.cjs [3d|2d|all] [biomes|base]   (second argument: only the biome checks / only the rest)
 const path = require('node:path');
 const fs = require('node:fs');
 const assert = require('node:assert');
@@ -18,6 +23,8 @@ const H = require('./helpers.cjs');
 
 const OUT = path.join(__dirname, 'out');
 const only = process.argv[2] || '3d';
+const part = process.argv[3] || 'all';
+const SHOTS = process.env.SMOKE_SHOTS || OUT;
 
 async function modalInfo(page) {
   return page.evaluate(() => {
@@ -105,7 +112,7 @@ async function play(page, body, { timeout = 90, policy, until, log = [], onModal
         }
       };
 
-      await check(`debug scenarios (${renderer})`, async () => {
+      if (part !== 'biomes') await check(`debug scenarios (${renderer})`, async () => {
         const page = await H.newPage(browser);
         page.__base = server.url;
         const { errors } = await H.openGame(page, { renderer, params: { questions: 'stub' } });
@@ -140,7 +147,7 @@ async function play(page, body, { timeout = 90, policy, until, log = [], onModal
         await page.close();
       });
 
-      await check(`new game, first minutes, every modal by keyboard (${renderer})`, async () => {
+      if (part !== 'biomes') await check(`new game, first minutes, every modal by keyboard (${renderer})`, async () => {
         const page = await H.newPage(browser);
         page.__base = server.url;
         const { errors } = await H.openGame(page, { renderer, params: { questions: 'stub' } });
@@ -322,6 +329,223 @@ async function play(page, body, { timeout = 90, policy, until, log = [], onModal
         console.log('      modal log:', [...new Set(log)].join(' '));
         await page.close();
       });
+
+      if (renderer === '3d' && part !== 'base') {
+        const bshot = async (page, name) => {
+          fs.mkdirSync(SHOTS, { recursive: true });
+          await H.frames(page, 3);
+          // the "+14 levels" banner of a level-jumping debug scenario would sit over every shot: let it leave
+          await page.evaluate(() => { document.querySelectorAll('.banner').forEach((n) => n.remove()); const c = document.querySelector('.zone-card'); if (c) c.classList.remove('show'); });
+          const file = path.join(SHOTS, `biome-${name}.png`);
+          for (let i = 0; ; i++) { try { await page.screenshot({ path: file, timeout: 90000 }); return file; } catch (e) { if (i >= 1) throw e; } }
+        };
+        const BIOME_IDS = ['dunes', 'cove', 'peaks', 'aether'];
+        const newBiomePage = async () => {
+          const page = await H.newPage(browser);
+          page.__base = server.url;
+          const { errors } = await H.openGame(page, { renderer: '3d', params: { questions: 'stub' } });
+          await H.attachBot(page);
+          await page.evaluate(() => { window.__toasts = []; window.__game.game.bus.on('toast', (t) => window.__toasts.push(t.text)); });
+          return { page, errors };
+        };
+        const noErrors = async (page, errors, label) => {
+          assert.deepStrictEqual(await page.evaluate(() => window.__game.errors()), [], label + ': __game.errors()');
+          assert.deepStrictEqual(await page.evaluate(() => window.__game.renderStats().unknown), [], label + ': renderStats().unknown');
+          assert.deepStrictEqual(errors, [], label + ': console errors');
+        };
+
+        if (process.env.SMOKE_ONLY && process.env.SMOKE_ONLY !== 'gates') {} else await check('town gates: locked with their toast before biomes_open, open into each biome at entry_town and back (3d)', async () => {
+          const { page, errors } = await newBiomePage();
+          await page.evaluate(() => window.__game.scenario('forest'));
+          assert.ok(!(await page.evaluate(() => window.__game.game.flags.biomes_open)), 'biomes_open not set before Mossback');
+          for (const id of BIOME_IDS) {
+            await page.evaluate((id) => { window.__toasts.length = 0; window.__game.teleport('town', 'gate_' + id); window.__game.step(10, {}); }, id);
+            await play(page, `await bot.walkTo('exit_${id}', {r: 0.4, timeout: 20}); await bot.step(30); return true;`, { timeout: 60 });
+            const r = await page.evaluate(() => ({ zone: window.__game.game.zone.id, toasts: window.__toasts.slice() }));
+            assert.strictEqual(r.zone, 'town', id + ' gate is locked');
+            assert.ok(r.toasts.some((t) => /Sealed for now/.test(t)), id + ' locked toast: ' + JSON.stringify(r.toasts));
+          }
+          await bshot(page, 'town-gate-locked');
+          // after Mossback: forest_boss's flag (the outro / onSkip set it); here the flag itself
+          await page.evaluate(() => window.__game.setFlag('biomes_open', true));
+          for (const id of BIOME_IDS) {
+            await page.evaluate((id) => { window.__game.teleport('town', 'gate_' + id); window.__game.step(10, {}); }, id);
+            await play(page, `await bot.travelVia('exit_${id}', '${id}'); return true;`, { timeout: 90 });
+            const r = await page.evaluate(() => { const g = window.__game.game; const m = g.world.marker('entry_town'); const p = g.player; return { zone: g.zone.id, d: Math.hypot(m.x - p.x, m.y - p.y) }; });
+            assert.strictEqual(r.zone, id, 'town exit leads to ' + id);
+            assert.ok(r.d < 5, id + ' arrival is at entry_town (distance ' + r.d.toFixed(1) + ')');
+            await play(page, `await bot.travelVia('exit_town', 'town'); return true;`, { timeout: 120 });
+            assert.strictEqual(await page.evaluate(() => window.__game.game.zone.id), 'town', id + ' exit leads back to town');
+          }
+          await noErrors(page, errors, 'gates');
+          await page.close();
+        });
+
+        for (const id of BIOME_IDS) {
+          if (process.env.SMOKE_ONLY && process.env.SMOKE_ONLY !== id) continue;
+          await check(`biome ${id}: camp, one of each enemy kind, a rune chest, the boss to the outro (3d)`, async () => {
+            const { page, errors } = await newBiomePage();
+            const info = await page.evaluate((id) => {
+              const z = window.__game.game.data.zones[id];
+              return { kinds: [...new Set(z.spawns.map((s) => s.kind))].filter((k) => k !== z.boss.kind), boss: z.boss, range: z.levelRange, chests: (z.chests || []).filter((c) => c.rune).map((c) => c.id) };
+            }, id);
+            assert.ok(info.kinds.length >= 5, id + ' has 5 regular kinds: ' + info.kinds);
+            const lvl = info.range[1] - 1;
+            // --- camp
+            let r = await page.evaluate(({ id, lvl }) => window.__game.scenario('biome', { zone: id, level: lvl, classId: 'warrior' }), { id, lvl });
+            assert.strictEqual(r.ok, true, 'biome scenario ' + JSON.stringify(r.missing));
+            for (let i = 0; i < 12; i++) { await stepPage(page, 10); if (await modalInfo(page)) await answer(page); }
+            await page.evaluate(() => { const g = window.__game; g.god(true); g.teleport(g.game.zone.id, 'camp'); g.step(20, {}); });
+            await page.waitForTimeout(300);
+            const npcs = await page.evaluate(() => window.__game.game.ents.all.filter((e) => e.type === 'npc' && !e.removed).length);
+            assert.ok(npcs >= 1, id + ' camp has NPCs (' + npcs + ')');
+            await bshot(page, id + '-1-camp');
+            // --- enemies: three kinds first (the fight shot), then the rest; each killed once
+            const spawnKinds = async (kinds) => page.evaluate((kinds) => kinds.map((k) => window.__game.spawn(k, 1)[0]), kinds);
+            const ids3 = await spawnKinds(info.kinds.slice(0, 3));
+            await stepPage(page, 70);
+            await page.evaluate(() => { const g = window.__game; g.step(1, {}); });
+            await bshot(page, id + '-2-fight');
+            const ids2 = await spawnKinds(info.kinds.slice(3));
+            const all = ids3.concat(ids2);
+            assert.ok(all.every((x) => x != null), 'all kinds spawned ' + all);
+            await play(page, `const ids = ${JSON.stringify(all)}; const alive = ids.filter((i) => { const e = game.ents.get(i); return e && !e.removed && e.alive; });
+              if (!alive.length) return true; await bot.fight({kind: ${JSON.stringify(info.kinds)}, timeout: 40, until: () => { const q = ids.filter((i) => { const e = game.ents.get(i); return e && !e.removed && e.alive; }); return !q.length || game.t % 1 < 0.02; }}); return false;`, { timeout: 240 });
+            const dead = await page.evaluate((all) => all.map((i) => { const e = window.__game.game.ents.get(i); return !e || e.removed || !e.alive; }), all);
+            assert.ok(dead.every(Boolean), id + ' every kind killed: ' + info.kinds.filter((k, i) => !dead[i]));
+            // --- a rune chest: the question card is answered
+            const chestShot = { done: false };
+            await page.evaluate(({ id, cid }) => {
+              const g = window.__game.game; const c = g.data.zones[id].chests.find((x) => x.id === cid); const m = g.world.marker(c.at);
+              window.__game.teleport(id, [m.x, m.y + 2.2]); window.__game.step(10, {});
+            }, { id, cid: info.chests[0] });
+            await play(page, `const c = game.ents.all.find((e) => e.data && e.data.chest === ${JSON.stringify(info.chests[0])} && e.data.rune && !game.flags[e.data.flag]);
+              if (!c) return true; await bot.talkTo(c, {r: 1.1}); return false;`, {
+              timeout: 90,
+              onModal: async (m) => { if (m && m.type === 'question' && !chestShot.done) { chestShot.done = true; await page.waitForSelector('.q4', { timeout: 10000 }); await H.frames(page); await page.waitForTimeout(300); await bshot(page, id + '-5-question-card'); } },
+            });
+            assert.ok(chestShot.done, id + ' rune chest asked its question');
+            assert.ok(await page.evaluate(({ id, cid }) => !!window.__game.game.flags['chest_' + id + '_' + cid], { id, cid: info.chests[0] }), 'rune chest opened');
+            await stepPage(page, 30);
+            // --- quest log inside the biome (dunes: Q, tabs, Track)
+            if (id === 'dunes') {
+              await page.evaluate(() => { const g = window.__game.game; g.ops.run([['quest.start', 'dunes_lost_caravan']]); g.ops.run([['quest.start', 'dunes_oasis_water']]); g.ops.run([['quest.start', 'dunes_obelisk_rubbings']]); g.ops.run([['quest.complete', 'dunes_obelisk_rubbings']]); window.__game.step(8, {}); });
+              await page.keyboard.press('KeyQ'); await stepPage(page, 3);
+              assert.strictEqual((await modalInfo(page) || {}).type, 'questLog', 'Q opens the quest log in the biome');
+              await page.waitForSelector('.qlog-row', { timeout: 5000 });
+              await H.frames(page, 2);
+              const names = await page.$$eval('.qlog-row .qlog-rname', (n) => n.map((x) => x.textContent));
+              assert.ok(names.length >= 2, 'two active biome quests: ' + names);
+              const before = await page.evaluate(() => window.__game.game.quests.tracked);
+              await page.keyboard.press('ArrowDown'); await page.keyboard.press('Enter'); await stepPage(page, 2);
+              assert.notStrictEqual(await page.evaluate(() => window.__game.game.quests.tracked), before, 'Enter tracks the other quest');
+              await bshot(page, 'quest-log-' + id);
+              await page.keyboard.press('Tab'); await stepPage(page, 2);
+              assert.ok(await page.$('.qlog-step.done'), 'Done tab shows finished steps');
+              await page.keyboard.press('ArrowLeft'); await stepPage(page, 2);
+              assert.ok(await page.$('.qlog-track'), 'back on the Active tab');
+              await page.keyboard.press('KeyQ'); await stepPage(page, 3);
+              assert.strictEqual(await modalInfo(page), null, 'Q closes the quest log');
+            }
+            // --- boss: intro, both shields, outro
+            r = await page.evaluate(({ id, lvl }) => window.__game.scenario('biome_boss', { zone: id, level: lvl, classId: 'warrior' }), { id, lvl });
+            assert.strictEqual(r.ok, true, 'biome_boss scenario ' + JSON.stringify(r.missing));
+            await page.evaluate(() => window.__game.god(true));
+            const B = info.boss;
+            let introShot = false;
+            await play(page, `return !game.cutscene.active && !game.modal && game.inputLock === 0 && !!game.ents.all.find((e) => e.kind === ${JSON.stringify(B.kind)} && !e.removed);`, { timeout: 120,
+              onModal: async (m) => { if (m && m.type === 'dialogue' && !introShot) { introShot = true; await bshot(page, id + '-3-boss-intro'); } } });
+            const bossBody = (frac) => `const b = game.ents.all.find((e) => e.kind === ${JSON.stringify(B.kind)} && !e.removed);
+              if (game.flags.${B.flag} || !b) return true; if (b.hp <= b.hpMax * ${frac}) return true;
+              const t0 = game.t; await bot.fight({kind: ${JSON.stringify(B.kind)}, timeout: 30, until: () => !b.alive || game.t - t0 > 4}); return false;`;
+            let shields = 0;
+            const trackShield = async (m) => { if (m && m.type === 'question') shields++; };
+            await play(page, bossBody(0.45), { timeout: 400, onModal: trackShield });
+            await page.evaluate(() => window.__game.step(2, {}));
+            await bshot(page, id + '-4-boss-fight');
+            await play(page, `const b = game.ents.all.find((e) => e.kind === ${JSON.stringify(B.kind)} && !e.removed);
+              if (game.flags.${B.flag}) return true;
+              if (b && b.alive) { const t0 = game.t; await bot.fight({kind: ${JSON.stringify(B.kind)}, timeout: 30, until: () => !b.alive || game.t - t0 > 4}); }
+              return false;`, { timeout: 400, onModal: trackShield });
+            assert.ok(await page.evaluate((f) => !!window.__game.game.flags[f], B.flag), id + ' boss defeat flag ' + B.flag);
+            assert.ok(shields >= 2, id + ' boss: two shield question cards answered (' + shields + ')');
+            // outro: every line by keyboard; shots of the first line (and every line of the Aether finale)
+            let line = 0;
+            const lastLines = [];
+            const outroDone = id === 'aether'
+              ? `return game.zone.id === 'town' && !game.cutscene.active && !game.modal && game.inputLock === 0;`
+              : `return !game.cutscene.active && !game.modal && game.inputLock === 0;`;
+            await play(page, outroDone, { timeout: 600,
+              onModal: async (m) => {
+                if (!m || m.type !== 'dialogue') return;
+                line++;
+                lastLines.push((m.speaker || '') + ': ' + (m.text || ''));
+                if (id === 'aether' || line === 1) { await H.frames(page, 2); await page.waitForTimeout(1400);   // let the typewriter finish the line
+                  await bshot(page, id === 'aether' ? `aether-6-finale-${String(line).padStart(2, '0')}` : id + '-6-outro'); }
+              } });
+            assert.ok(line >= 1, id + ' outro had dialogue');
+            await stepPage(page, 30);
+            await noErrors(page, errors, id);
+            if (id === 'aether') {
+              const f = await page.evaluate(() => { const g = window.__game.game; return { end: !!g.flags.end_of_term, zone: g.zone.id, lock: g.inputLock, modal: g.modal && g.modal.type, cs: g.cutscene.active, leash: g.player.data.leash }; });
+              assert.ok(f.end && f.zone === 'town' && !f.lock && !f.modal && !f.cs && !f.leash, 'finale ended in free play ' + JSON.stringify(f));
+              // free play: walk, travel back into the Aether (no Malgrim left), save still works
+              const p0 = await page.evaluate(() => { const p = window.__game.game.player; return [p.x, p.y]; });
+              await play(page, `await bot.walkTo([game.player.x, game.player.y + 3], {r: 0.6, timeout: 10}); return true;`, { timeout: 40 });
+              const p1 = await page.evaluate(() => { const p = window.__game.game.player; return [p.x, p.y]; });
+              assert.ok(Math.hypot(p1[0] - p0[0], p1[1] - p0[1]) > 1, 'the player walks after the finale');
+              await play(page, `await bot.travelVia('exit_aether', 'aether'); return true;`, { timeout: 120 });
+              await stepPage(page, 20);
+              assert.strictEqual(await page.evaluate(() => !!window.__game.game.ents.all.find((e) => e.kind === 'malgrim_ascended' && !e.removed)), false, 'Malgrim is gone after the finale');
+              await bshot(page, 'aether-7-after-finale');
+              await noErrors(page, errors, 'aether after finale');
+              console.log('      finale last lines:', lastLines.slice(-3).map((l) => l.slice(0, 90)).join(' | '));
+            }
+            await page.close();
+          });
+        }
+
+        if (!process.env.SMOKE_ONLY) await check('teacher tools box fits 1366x657 and 1024x600 (3d)', async () => {
+          for (const vp of [{ width: 1366, height: 657 }, { width: 1024, height: 600 }]) {
+            const page = await H.newPage(browser, { viewport: vp });
+            page.__base = server.url;
+            const { errors } = await H.openGame(page, { renderer: '2d', params: { questions: 'stub' } });
+            await page.evaluate(() => { window.__game.scenario('forest'); window.__game.game.teacher = true; });
+            await page.keyboard.press('Escape');
+            await page.waitForSelector('.pause-row[data-id="teacher"]');
+            await page.click('.pause-row[data-id="teacher"]');
+            await page.waitForSelector('.tch-tools');
+            await page.waitForTimeout(300);
+            const m = await page.evaluate(() => { const b = document.querySelector('.tch-tools').getBoundingClientRect(); const panel = 296;
+              return { l: b.left, r: b.right, t: b.top, b: b.bottom, vw: innerWidth, vh: innerHeight, panel, places: document.querySelectorAll('.tch-go').length }; });
+            assert.ok(m.places >= 14, 'Go to buttons: ' + m.places);
+            assert.ok(m.l >= m.panel - 1 && m.r <= m.vw + 0.5 && m.t >= 0 && m.b <= m.vh + 0.5, `${vp.width}x${vp.height}: Teacher tools box inside the view ${JSON.stringify(m)}`);
+            await page.close();
+            assert.deepStrictEqual(errors, [], 'console errors');
+          }
+        });
+
+        if (!process.env.SMOKE_ONLY) await check('look picker with 10 looks, the last one by keyboard (3d)', async () => {
+          const { page, errors } = await newBiomePage();
+          await page.evaluate(() => window.__game.scenario('forest'));
+          await stepPage(page, 20);
+          await page.evaluate(() => { window.__game.game.ops.run([['lookPicker']]); });
+          await stepPage(page, 3);
+          assert.strictEqual((await modalInfo(page) || {}).type, 'lookPicker');
+          await page.waitForSelector('.look-card', { timeout: 5000 });
+          assert.strictEqual(await page.$$eval('.look-card', (n) => n.length), 10, 'ten looks');
+          await H.frames(page, 2);
+          for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowRight');
+          await page.keyboard.press('ArrowDown');
+          await bshot(page, 'look-picker-10');
+          await page.keyboard.press('Enter'); await stepPage(page, 3);
+          assert.strictEqual(await page.evaluate(() => window.__game.game.flags.look_choice), 9, 'look 10 (index 9) chosen by keyboard');
+          assert.strictEqual(await modalInfo(page), null, 'picker closed');
+          await stepPage(page, 20); await H.frames(page, 2);
+          await noErrors(page, errors, 'looks');
+          await page.close();
+        });
+      }
     }
   } finally {
     clearTimeout(watchdog);

@@ -1,4 +1,4 @@
-// Gullwing Cove quests. Rewards: about 40% of a level at the zone's band (levels 11-17), see docs/notes/r3-cove.md.
+// Gullwing Cove quests. Round 3 QA: xp rewards were scaled so a run lands on the level targets (tests/node/r3qa-progression.test.mjs, docs/notes/qa-r3.md): about 4200 xp per biome in total, 6500 in Aether.
 export default {
   cove_lighthouse_dark: {
     id: 'cove_lighthouse_dark', name: 'The Dark Lighthouse', giver: 'marlo', req: [['flag', 'biomes_open']], companions: null,
@@ -11,7 +11,7 @@ export default {
       { text: 'Defeat Captain Clawsworth on the sandbar.', goal: { type: 'boss', kind: 'captain_clawsworth' } },
       { text: 'Tell Marlo the light is on and the Captain is hat-sized.', goal: { type: 'talk', npc: 'marlo' } },
     ],
-    rewards: { xp: 250, gold: 200, items: [{ id: 'potion_big', n: 2 }, { id: 'sea_chowder', n: 2 }] },
+    rewards: { xp: 2230, gold: 200, items: [{ id: 'potion_big', n: 2 }, { id: 'sea_chowder', n: 2 }] },
     onDone: [['rel', 'marlo', 3]],
   },
   cove_lost_shells: {
@@ -21,7 +21,7 @@ export default {
       { text: 'Get Skipper\'s conch shells back from the snippy crabs. (5 in all)', goal: { type: 'collect', item: 'conch_shell', n: 5 } },
       { text: 'Bring the shells to Skipper at the pier.', goal: { type: 'talk', npc: 'skipper' } },
     ],
-    rewards: { xp: 120, gold: 90, items: [{ id: 'bubble_bomb', n: 2 }] },
+    rewards: { xp: 1070, gold: 90, items: [{ id: 'bubble_bomb', n: 2 }] },
     onDone: [['take', 'conch_shell', 5], ['rel', 'skipper', 3]],
   },
   cove_gull_gold: {
@@ -30,7 +30,7 @@ export default {
       { text: 'Shoo the pilfering gulls away from the village. (6)', goal: { type: 'kill', kind: 'gull', n: 6 } },
       { text: 'Tell Pearl the till is safe.', goal: { type: 'talk', npc: 'pearl' } },
     ],
-    rewards: { xp: 100, gold: 80, items: [{ id: 'sea_chowder', n: 3 }] },
+    rewards: { xp: 890, gold: 80, items: [{ id: 'sea_chowder', n: 3 }] },
     onDone: [['rel', 'pearl', 2]],
   },
 };

@@ -418,8 +418,9 @@ export function createTeacherTools(game, opts = {}) {
     if (opts.onClose) opts.onClose(true);
     return !!(r && r.ok !== undefined);
   }, 'tch-go'));
-  line('GO TO', go.slice(0, 3));
-  line('', go.slice(3));
+  line('GO TO', go.slice(0, 5));          // rows of five: 14 places in one wide row pushed the box past narrow windows
+  line('', go.slice(5, 10));
+  line('', go.slice(10));
   line('', [btn('Back', () => { if (opts.onClose) opts.onClose(); }, 'tch-back pxfont')]);
 
   const nav = gridNav(rows, sfx);

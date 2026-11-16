@@ -30,6 +30,9 @@
 html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #2a1d17; color: var(--ink);
   font: calc(17px * var(--ui-scale))/1.25 var(--body); -webkit-font-smoothing: none; }
 button, input { font: inherit; color: inherit; }
+/* Pixelify Sans draws its fi / fl ligatures as odd glyphs ("first" -> "Arst", "Snowflake" -> "SnowAake"); a `font:` shorthand
+   anywhere resets the longhand, so this is !important */
+* { font-variant-ligatures: none !important; font-feature-settings: 'liga' 0, 'clig' 0 !important; }
 canvas.pixel, .pixel { image-rendering: pixelated; image-rendering: crisp-edges; }
 canvas.icon { width: 32px; height: 32px; display: block; image-rendering: pixelated; flex: none; }
 canvas.icon-sm { width: 16px; height: 16px; }

@@ -30,8 +30,8 @@ export default {
       punch: { every: 4, delay: 0.12, arc: 80, range: 1.3, dmg: 0.3, stun: 0.5, knockback: 9, lunge: 0.4, setupKnockback: 1.5 },
       crescent: { every: 3, dmg: 0.35, range: 5, speed: 12, radius: 0.35 },
       shield_wall: { arc: 120, reduce: 0.85, perfect: 0.25, stunAttacker: 1, speedMul: 0.6, perfectRage: 20 },
-      shield_slam: { r: 2.4, arc: 110, dmg: 0.4, blockedFrac: 0.4, capCoef: 3, knockback: 9 },
-      aegis: { r: 3.5, dur: 5, dmgTaken: -0.8, push: 3.5, endR: 3.5, endDmg: 1.4 },
+      shield_slam: { r: 3.0, arc: 110, dmg: 0.4, blockedFrac: 0.4, capCoef: 3, knockback: 9 },
+      aegis: { r: 4.4, dur: 5, dmgTaken: -0.8, push: 3.5, endR: 4.4, endDmg: 1.4 },
     },
   },
   berserker: {
@@ -60,8 +60,8 @@ export default {
       frenzy: { at: 100, dur: 6, attackSpeed: 0.4, lifesteal: 0.08, afterimage: 0.1 },
       axes: { arc: 90, range: 1.15, dmg: 0.125, interval: 0.26, knockback: 2.5, rage: 8, swing: 0.22 },
       throw: { every: 4, dmg: 0.12, range: 5, speed: 10, radius: 0.3 },
-      whirlwind: { need: 20, drain: 20, speedMul: 0.8, r: 1.6, dmg: 0.085, tick: 0.2, knockback: 0 },
-      skyfall: { dist: 5, dur: 0.7, height: 3, r: 3, dmg: 0.75, stun: 1, knockback: 9, frenzyR: 4.2, frenzyMult: 1.3, coneDeg: 100 },
+      whirlwind: { need: 20, drain: 20, speedMul: 0.8, r: 2.0, dmg: 0.085, tick: 0.2, knockback: 0 },
+      skyfall: { dist: 5, range: 7, dur: 0.7, height: 3, r: 3.75, dmg: 0.75, stun: 1, knockback: 9, frenzyR: 5.25, frenzyMult: 1.3, coneDeg: 100 },
     },
   },
   battlemage: {
@@ -92,8 +92,8 @@ export default {
       slash: { arc: 110, range: 1.3, dmg: 0.25, interval: 0.42, knockback: 4 },
       wave: { every: 3, every4: 2, dmg: 0.26, dmg4: 0.15, range: 6, speed: 10, radius: 0.35, twinSide: 0.3 },
       ground: { r: 1.1, dur: 3, dmg: 0.03, stormChain: 4 },
-      rune_shift: { r: 2.2, dmg: 0.2, knockback: 5 },
-      runestorm: { dur: 3, r: 5, dmg: 0.45, times: [0.3, 1.3, 2.3], encoreAt: 3.0, bolts: 6, pillars: 6, pillarR: 2.4 },
+      rune_shift: { r: 2.75, dmg: 0.2, knockback: 5 },
+      runestorm: { dur: 3, r: 6.25, dmg: 0.45, times: [0.3, 1.3, 2.3], encoreAt: 3.0, bolts: 6, pillars: 6, pillarR: 3.0 },
     },
   },
 };

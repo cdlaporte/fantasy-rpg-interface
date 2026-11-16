@@ -251,14 +251,14 @@ test('Caltrop Trail: Dodge Roll scatters caltrops along its path', () => {
 test('Explosive Tags: the decoy burst is larger and burns', () => {
   const [a, b] = both({ spec: 'ninja' }, 'explosive_tags', (env) => {
     const far = env.game.ents.spawn('rat', CX + 6, CY, { noAi: true, hp: 5000 });
-    const side = env.rat(CX, CY + 2.1);
+    const side = env.rat(CX, CY + 2.7);   // round 2: between the decoy burst r (2.25) and the Explosive Tags r (3.1)
     env.input.set({ pressed: { f: true } }); env.step(Math.round(2.7 / DT));
     void far;
     return { side: tagHits(env, 'ninja_decoy').filter((h) => h.target === side).length, burn: side.status.burn > 0,
       fire: env.game.ents.all.some((e) => e.look && e.look.model === 'ground_fire') };
   });
   assert.deepEqual(a, { side: 0, burn: false, fire: false });
-  assert.equal(b.side, 1, 'the bigger burst reaches 2.1 tiles');
+  assert.equal(b.side, 1, 'the bigger burst reaches 2.7 tiles');
   assert.equal(b.burn, true);
   assert.equal(b.fire, true);
 });

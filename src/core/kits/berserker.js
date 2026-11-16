@@ -68,6 +68,8 @@ function skyLand(game, p) {
   }
 }
 
+const LEAP_PICK = { range: 7, mode: 'strongest', cone: 100, angle: 0 };
+
 export default {
   id: 'berserker',
   parent: 'warrior',
@@ -199,21 +201,13 @@ export default {
         const n = N(game).skyfall, col = C(game);
         const big = bz.frenzyEnd > game.t;
         bz.leapFrenzy = big;
-        // Aim: the nearest enemy within range in front (cone), else straight ahead in the move direction.
+        // round 2: aim at the strongest enemy within `range` (7) in the cone of the move direction; else the strongest
+        // anywhere within range; else straight ahead in the move direction.
         const a0 = ctx.moveAngle;
-        let tx = null, ty = null, bd = n.dist * n.dist;
-        const half = (n.coneDeg * Math.PI / 180) / 2;
-        const list = game.ents.inRadius(p.x, p.y, n.dist, null);
-        for (let i = 0; i < list.length; i++) {
-          const e = list[i];
-          if (!game.combat.canHit(p, e)) continue;
-          const dx = e.x - p.x, dy = e.y - p.y, d = dx * dx + dy * dy;
-          let da = Math.atan2(dy, dx) - a0;
-          while (da > Math.PI) da -= Math.PI * 2;
-          while (da < -Math.PI) da += Math.PI * 2;
-          if (Math.abs(da) > half || d >= bd) continue;
-          bd = d; tx = e.x; ty = e.y;
-        }
+        LEAP_PICK.range = n.range || n.dist; LEAP_PICK.cone = n.coneDeg; LEAP_PICK.angle = a0;
+        let t = game.abilities.pickTarget(p, LEAP_PICK);
+        if (!t) { LEAP_PICK.cone = 0; t = game.abilities.pickTarget(p, LEAP_PICK); }
+        const tx = t ? t.x : null, ty = t ? t.y : null;
         const o = { dur: n.dur, height: big ? n.height * 1.3 : n.height, invuln: true, onLand: skyLand,
           land: { r: big ? n.frenzyR : n.r, dmg: n.dmg, mult: big ? n.frenzyMult : 0, knockback: n.knockback, status: { stun: n.stun },
             fx: 'shockwave', color: col.crimson, shake: big ? 0.7 : 0.5, type: 'melee', tags: TAG_SKILL } };

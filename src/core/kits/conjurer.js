@@ -180,14 +180,24 @@ function spiritSwap(game, p) {
 }
 
 // ---------------------------------------------------------------------------------------------- grand conjuration
+const GRAND_PICK = { range: 8, mode: 'nearest', los: true };
 function castGrand(game, p) {
   const s = S(game), g = s.grand, k = p.data.kit;
   const a = p.angle;
+  // round 2: the guardian appears right next to the nearest enemy (on the side facing you), else in front of you.
+  let gx = p.x + Math.cos(a) * 1.4, gy = p.y + Math.sin(a) * 1.4;
+  GRAND_PICK.range = g.range || 8;
+  const foe = game.abilities.pickTarget(p, GRAND_PICK);
+  if (foe) {
+    const back = Math.atan2(p.y - foe.y, p.x - foe.x), off = (foe.radius || 0.4) + 1.0;
+    const x = foe.x + Math.cos(back) * off, y = foe.y + Math.sin(back) * off;
+    if (!game.world.solidAt(x, y)) { gx = x; gy = y; }
+  }
   const out = game.abilities.use('summon', p, {
     def: { id: GUARDIAN_KEY, name: 'Spirit Guardian', look: g.look, stats: { radius: 0.75, defense: 6 }, attacks: [] },
     key: GUARDIAN_KEY, max: 1, ttl: g.dur, brain: 'ally_tank', attacks: [], power: p.stats.power,
     hp: Math.round(p.hpMax * g.hpMul), speed: (p.stats.speed || 3.3) * g.speedMul, color: s.color, tags: ['guardian'],
-    x: p.x + Math.cos(a) * 1.4, y: p.y + Math.sin(a) * 1.4,
+    x: gx, y: gy,
   });
   const e = out && out[0];
   if (!e) return false;

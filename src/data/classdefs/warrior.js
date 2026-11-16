@@ -29,7 +29,7 @@ export default {
       // rank II: every `every`-th swing is the heavy swing
       heavy_hand: { every: 3, arc: 180, range: 1.3, dmg: 0.58, knockback: 12, hitStop: 0.08, shake: 0.18 },
       shield_bash: { dist: 2.5, speed: 14, dmg: 0.7, stun: 0.8, knockback: 11, rage: 15, hitRadius: 0.55 },
-      war_cry: { r: 3, dmg: 0.4, knockback: 8, slow: 0.4, slowDur: 3, power: 0.3, dur: 5 },
+      war_cry: { r: 3.45, dmg: 0.4, knockback: 8, slow: 0.4, slowDur: 3, power: 0.3, dur: 5 },
     },
     companion: {
       npc: 'bram', name: 'Bram', mult: 0.7, brain: 'ally_melee',

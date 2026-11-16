@@ -8,7 +8,7 @@ export default {
     nums: { step: 0.8, r: 0.75, dur: 3, dmg: 0.15, burn: 0.1 } },
   aftershock: { id: 'aftershock', class: 'warrior', name: 'Aftershock', icon: 'roar', tags: ['q'],
     desc: 'War Cry booms twice: a bigger second shockwave hits 0.6 s later.',
-    nums: { delay: 0.6, r: 4.5, dmg: 0.45, knockback: 10 } },
+    nums: { delay: 0.6, r: 5.2, dmg: 0.45, knockback: 10 } },
   cleaving_wind: { id: 'cleaving_wind', class: 'warrior', name: 'Cleaving Wind', icon: 'sword', tags: ['basic'],
     desc: 'Every fourth swing throws a slicing crescent of wind.',
     nums: { every: 4, dmg: 0.35, range: 4, speed: 11, radius: 0.3 } },

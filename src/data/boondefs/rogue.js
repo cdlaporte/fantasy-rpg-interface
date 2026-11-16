@@ -42,7 +42,7 @@ export default {
 
   // ---- Ninja (4) ----
   explosive_tags: { id: 'explosive_tags', spec: 'ninja', name: 'Explosive Tags', icon: 'bomb', tags: ['decoy'],
-    desc: 'Your decoy explodes in a bigger, fiery blast that leaves the ground burning.', r: 2.5, coefMul: 1.2, burnDps: 0.2, burnDur: 3, fireDur: 3 },
+    desc: 'Your decoy explodes in a bigger, fiery blast that leaves the ground burning.', r: 3.1, coefMul: 1.2, burnDps: 0.2, burnDur: 3, fireDur: 3 },
   blade_storm: { id: 'blade_storm', spec: 'ninja', name: 'Blade Storm', icon: 'shuriken', tags: ['shuriken'],
     desc: 'Returning shuriken orbit around you for 2 seconds, slicing anything close.', dur: 2, r: 1.2, spin: 7, rehit: 0.5, coefMul: 0.4 },
   substitution: { id: 'substitution', spec: 'ninja', name: 'Substitution', icon: 'shadow', tags: ['defense'],

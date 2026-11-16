@@ -222,8 +222,9 @@ test('boon Aftershock: War Cry fires a second, larger shockwave 0.6 s later', ()
     return { waves: g.fxOf('shockwave').map((e) => e.r), dealt: g.dealt };
   };
   const a = run([]), b = run(['aftershock']);
-  assert.deepEqual(a.waves, [3]);
-  assert.deepEqual(b.waves, [3, 4.5]);
+  const WC = data.classes.warrior.nums.war_cry.r, AS = data.boons.aftershock.nums.r;   // round 2: 3 x 1.15, 4.5 x 1.15
+  assert.deepEqual(a.waves, [WC]);
+  assert.deepEqual(b.waves, [WC, AS]);
   assert.equal(a.dealt, 0, 'ring at r 4 is outside the first shockwave');
   assert.ok(b.dealt > 0, 'the second shockwave reaches it');
 });

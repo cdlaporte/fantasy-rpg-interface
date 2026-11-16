@@ -127,22 +127,24 @@ test('Whirlwind: needs 20 Rage, drains 20/s, 80% speed, ticks everything within 
   assert.equal(g.game.kits.holding(g.p, 'f'), false, 'ends when Rage runs out');
 });
 
-test('Skyfall Leap: real z arc, invulnerable in the air, shockwave r 3 + stun 1; larger during Frenzy', () => {
+test('Skyfall Leap: lands on the strongest enemy in range, real z arc, invulnerable in the air, shockwave r + stun 1; larger during Frenzy', () => {
   const leap = (frenzy) => {
     const g = mk({ ...B, level: 11, ring: 0, hp: 1e6 });
-    const near = dummy(g.game, g.p.x + 5 + 2.5, g.p.y, 1e6);
-    const edge = dummy(g.game, g.p.x + 5, g.p.y + 3.7, 1e6);
+    // round 2: the leap targets an enemy within range 7 in the cone; `edge` sits between the normal and Frenzy radii.
+    const near = dummy(g.game, g.p.x - 6, g.p.y, 1e6);   // (west: the test zone's east wall is 5 tiles away)
+    const edge = dummy(g.game, g.p.x - 6, g.p.y - (BN.skyfall.r + BN.skyfall.frenzyR) / 2, 1e6);
     if (frenzy) { g.setRage(100); g.step(1); }
-    g.press('shift', { moveX: 1 });
+    g.press('shift', { moveX: -1 });
     let zMax = 0, inv = true;
     for (let i = 0; i < 50; i++) { g.step(1, { moveX: 0 }); zMax = Math.max(zMax, g.p.z); if (i > 2 && i < 30 && g.p.z > 0.5 && !(g.p.status.invuln > 0)) inv = false; }
-    return { zMax, inv, near: g.hits.filter((h) => h.t === near), edge: g.hits.some((h) => h.t === edge), stun: near.status.stun, g };
+    return { zMax, inv, near: g.hits.filter((h) => h.t === near), edge: g.hits.some((h) => h.t === edge), stun: near.status.stun, nx: near.x, ny: near.y, g };
   };
   const a = leap(false);
   assert.ok(a.zMax > 2, 'z arc ' + a.zMax);
   assert.ok(a.inv);
   assert.ok(a.near.some((h) => h.amount === Math.round(BN.skyfall.dmg * a.g.p.stats.power)));
   assert.ok(a.stun > 0.5);
+  assert.ok(Math.abs(a.g.p.x - a.nx) < 1.6 && Math.abs(a.g.p.y - a.ny) < 1.6, 'landed at the target');
   assert.equal(a.edge, false);
   const b = leap(true);
   assert.equal(b.edge, true, 'frenzy landing is larger');
@@ -158,7 +160,7 @@ test('boon Cyclone: Whirlwind pulls enemies in and widens the longer it spins', 
     return { d, r: Math.max(...g.fxOf('ring').map((e) => e.r)) };
   };
   const a = run([]), b = run(['cyclone']);
-  assert.ok(a.r <= 1.61 && a.d > 2);
+  assert.ok(a.r <= BN.whirlwind.r + 0.01 && a.d > 2);
   assert.ok(b.r > 2.6 && b.d < 1.6, JSON.stringify(b));
 });
 

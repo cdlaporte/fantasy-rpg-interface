@@ -21,7 +21,7 @@ for (const level of [3, 5, 8, 11, 12]) {
     run600(g, (i) => { if (i % 60 === 59) g.regroup(); g.step(1, { attackDir: i % 4, pressed: { f: i % 30 === 0 } }); });
     const shifts = g.casts.filter((c) => c === 'f:rune_shift').length;
     assert.ok(shifts >= 6 && shifts <= 8, 'cd 1.5 s: ' + shifts);
-    for (const col of [FIRE, FROST, STORM]) assert.ok(g.fxOf('ring').some((e) => e.color === col && e.r === 2.2), 'nova ' + col);
+    for (const col of [FIRE, FROST, STORM]) assert.ok(g.fxOf('ring').some((e) => e.color === col && e.r === data.specs.battlemage.nums.rune_shift.r), 'nova ' + col);
     assert.ok(g.hits.some((h) => h.element === 'frost') && g.hits.some((h) => h.element === 'storm'));
     if (level >= 11) {
       g = mk({ ...M, level, r: 2 });

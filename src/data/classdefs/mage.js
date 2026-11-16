@@ -31,7 +31,7 @@ export default {
       twin: { dmg: 0.65, spacing: 0.32 },
       // Space / Q
       blink: { cd: 4, cost: 15, dist: 3.5, invuln: 0.2 },
-      nova: { cd: 9, cost: 35, r: 2.8, dmg: 1.8, knockback: 9, shake: 0.18 },
+      nova: { cd: 9, cost: 35, r: 3.2, dmg: 1.8, knockback: 9, shake: 0.18 },
       // Class boons
       splitting_bolts: { n: 2, arc: 70, dmgMul: 0.45, range: 3, size: 0.6 },
       blink_burst: { r: 2.0, dmgMul: 0.5 },

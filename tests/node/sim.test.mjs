@@ -57,7 +57,8 @@ test('stick kills three rats and XP is requested; no attacks before the stick', 
   }
   assert.ok(rats.every((r) => r.removed), 'all three rats poofed');
   assert.equal(xp, 3 * game.data.enemies.rat.stats.xp, 'xp from def.stats.xp requested through progression.addXp');
-  assert.ok(playerHits >= 9, 'about three stick hits per rat (2 dmg vs 6 hp)');
+  // round 2 (package C): rat hp 6 -> 4, so two stick hits (2 power vs hp from data)
+  assert.ok(playerHits >= 3 * Math.ceil(game.data.enemies.rat.stats.hp / 2), 'stick hits per rat = rat hp / 2 dmg');
 });
 
 test('projectiles: pierce, bounce, return, split, homing, reflect', () => {

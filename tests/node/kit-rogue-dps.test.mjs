@@ -9,7 +9,7 @@ import data from '../../src/data/index.js';
 import { scriptedInput } from '../../src/platform/input.js';
 import { DT } from '../../src/contracts.js';
 
-const TARGET = Object.fromEntries(Object.entries({ 3: 10, 5: 17, 8: 30, 10: 40, 12: 52 }).map(([k, v]) => [k, v * config.numberScale]));   // CLASSES band x number scale
+const TARGET = Object.fromEntries(Object.entries({ 3: 11, 5: 19.5, 8: 35, 10: 47, 12: 62 }).map(([k, v]) => [k, v * config.numberScale]));   // round 2 band (docs/notes/r2c.md: the CLASSES band x the +25% power-per-level growth) x number scale
 const BAND = 0.15;
 const SEEDS = [7, 11, 23, 31, 42, 57, 64, 99];
 // Sensible picks, in the order they are offered at levels 4 / 6 / 8 / 10 / 12.
@@ -43,7 +43,12 @@ function mixedFight(spec, level, seed) {
   const tough = game.ents.spawn('rat', cx + 1, cy, { level });
   tough.hp = tough.hpMax = Math.round(hpN * 2.5);
   const enemies = [tough];
-  for (const [ox, oy] of [[-2, -3], [-2, 3], [2, -3], [2, 3]]) enemies.push(game.ents.spawn('rat', cx + ox, cy + oy, { level }));
+  // Weak ones at the balance-sheet hp (independent of the zone data: round 2 cut the intro/forest hp x0.6).
+  for (const [ox, oy] of [[-2, -3], [-2, 3], [2, -3], [2, 3]]) {
+    const w = game.ents.spawn('rat', cx + ox, cy + oy, { level });
+    w.hp = w.hpMax = hpN;
+    enemies.push(w);
+  }
   const total = enemies.reduce((s, e) => s + e.hpMax, 0);
   const input = scriptedInput();
   const archer = spec === 'archer', ninja = spec === 'ninja';

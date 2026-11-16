@@ -8,7 +8,7 @@ export default {
   mage: {
     id: 'mage', name: 'Mage', color: VIOLET, pickable: true,
     blurb: 'The glass cannon who controls space. Fragile, ranged, always on the move. Mana refills by itself.',
-    base: { hp: 28, hpPerLevel: 5, power: 6, powerPerLevel: 1.6, speed: 3.3, defense: 0 },
+    base: { hp: 28, hpPerLevel: 5, power: 6, powerPerLevel: 2.0, speed: 3.3, defense: 0 },
     basic: { name: 'Arcane Bolt', icon: 'bolt', desc: 'Fire fast magic bolts. Hold an arrow key to keep firing.' },
     abilities: [
       { slot: 'space', id: 'blink', name: 'Blink', icon: 'blink', unlock: 3, desc: 'Teleport a few steps the way you are moving.' },
@@ -51,7 +51,7 @@ export default {
     // Classmate Elowen (Sim companions schema, docs/notes/sim.md section 10). 70% of the numbers.
     companion: {
       npc: 'elowen', name: 'Elowen', mult: 0.7, brain: 'ally_ranged', keepRange: 3.8,
-      stats: { hp: 28, hpPerLevel: 5, power: 6, powerPerLevel: 1.6, speed: 3.3 },
+      stats: { hp: 28, hpPerLevel: 5, power: 6, powerPerLevel: 2.0, speed: 3.3 },
       basic: { use: 'projectile', name: 'Arcane Bolt', model: 'bolt', speed: 11, range: 7, dmg: 1.0, cd: 0.65, windup: 0.12,
         type: 'magic', color: VIOLET, glow: CYAN, size: 1 },
       ability: { use: 'blink', name: 'Blink', away: true, dist: 3.5, cd: 4, range: 1.6, windup: 0.05, color: VIOLET },

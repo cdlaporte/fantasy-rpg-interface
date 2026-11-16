@@ -9,8 +9,8 @@ import { createQuestions } from '../../src/questions/index.js';
 import { createRng } from '../../src/core/rng.js';
 import { mk, ring, meanDps, DT } from './kit-mage-lib.test.mjs';
 
-// CLASSES balance sheet: level 3 ~10, 5 ~17, 8 ~30, 10 ~40, 12 ~52 (+-15%).
-const TARGET = Object.fromEntries(Object.entries({ 3: 10, 5: 17, 8: 30, 10: 40, 12: 52 }).map(([k, v]) => [k, v * config.numberScale]));   // CLASSES band x number scale
+// Round 2 band (docs/notes/r2c.md): level 3 ~11, 5 ~19.5, 8 ~35, 10 ~47, 12 ~62 (+-15%; the CLASSES band x the power growth).
+const TARGET = Object.fromEntries(Object.entries({ 3: 11, 5: 19.5, 8: 35, 10: 47, 12: 62 }).map(([k, v]) => [k, v * config.numberScale]));   // round 2 band (docs/notes/r2c.md: the CLASSES band x the +25% power-per-level growth) x number scale
 const ROWS = [[null, 3], [null, 5], ['conjurer', 8], ['conjurer', 10], ['conjurer', 12], ['sorcerer', 8], ['sorcerer', 10],
   ['sorcerer', 12], ['monk', 8], ['monk', 10], ['monk', 12]];
 

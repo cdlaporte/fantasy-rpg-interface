@@ -8,7 +8,7 @@ const proj = (model, color, glow, size = 0.6) => ({ rig: 'projectile', model, co
 export default {
   old_mossback: {
     id: 'old_mossback', name: 'Old Mossback', level: 10, tags: ['boss', 'plant', 'treant'],
-    stats: { hp: 3750, power: 17, defense: 3, speed: 1.8, radius: 1.3, xp: 700 },
+    stats: { hp: 1500, power: 17, defense: 3, speed: 1.8, radius: 1.3, xp: 700 },   // round 2: hp 3750 -> 1500 (9,000 effective)
     flying: false,
     ai: { brain: 'boss', aggro: 14, leash: 22, keepRange: 2.5, summon: { kind: 'thornling', n: 2, max: 4, cd: 14 } },
     attacks: [

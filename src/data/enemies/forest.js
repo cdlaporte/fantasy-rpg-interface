@@ -1,5 +1,7 @@
 // Whisperwood enemies. Each has its own brain + attack pattern (see docs/notes/narrative.md, "Enemy behaviors").
 // Numbers follow the CLASSES.md balance sheet: hp ~ 6 * L^1.4, power ~ 2 + 1.5L, xp 5 + 3L, gold 1..(2 + L).
+// Round 2 (playtest: enemies felt spongy, leveling slow): hp x0.6 (rounded), xp +30%, slow chasers (slime, slimelet,
+// thornling, boar) +10% speed so they still threaten the faster player. Bats and goblin scouts keep their speed.
 import { NPC_LOOKS } from '../looks.js';
 
 const proj = (model, color, glow, size = 0.6) => ({ rig: 'projectile', model, color, glow, size, trail: true });
@@ -9,7 +11,7 @@ export default {
   // L3. Wanders lazily; once it notices you it hops in with a short telegraphed bounce. Splits in two on defeat.
   slime: {
     id: 'slime', name: 'Mint Slime', level: 3, tags: ['slime', 'blob'],
-    stats: { hp: 28, power: 6.5, defense: 0, speed: 1.8, radius: 0.4, xp: 14 },
+    stats: { hp: 17, power: 6.5, defense: 0, speed: 1.98, radius: 0.4, xp: 18 },
     flying: false,
     ai: { brain: 'wander', aggro: 5, leash: 10 },
     attacks: [
@@ -25,7 +27,7 @@ export default {
   // Helper kind spawned by `slime`. Small and quick: a nibbling chaser.
   slime_small: {
     id: 'slime_small', name: 'Slimelet', level: 2, tags: ['slime', 'blob', 'helper'],
-    stats: { hp: 10, power: 4, defense: 0, speed: 2.6, radius: 0.25, xp: 4 },
+    stats: { hp: 6, power: 4, defense: 0, speed: 2.86, radius: 0.25, xp: 5 },
     flying: false,
     ai: { brain: 'chaser', aggro: 7, leash: 12 },
     attacks: [
@@ -41,7 +43,7 @@ export default {
   // L4. Rooted turret: lobs spore clouds (slowing ground zones) at range; puffs you away if you get close.
   sporecap: {
     id: 'sporecap', name: 'Sporecap', level: 4, tags: ['plant', 'mushroom'],
-    stats: { hp: 42, power: 8, defense: 1, speed: 0.8, radius: 0.4, xp: 17 },
+    stats: { hp: 25, power: 8, defense: 1, speed: 0.8, radius: 0.4, xp: 22 },
     flying: false,
     ai: { brain: 'turret', aggro: 7, leash: 9, keepRange: 5 },
     attacks: [
@@ -61,7 +63,7 @@ export default {
   // L5. Ambusher: hides as a bush until you are close, then pops up, roots you in place and sprays thorns.
   thornling: {
     id: 'thornling', name: 'Thornling', level: 5, tags: ['plant', 'thorn'],
-    stats: { hp: 57, power: 9.5, defense: 1, speed: 2.0, radius: 0.35, xp: 20 },
+    stats: { hp: 34, power: 9.5, defense: 1, speed: 2.2, radius: 0.35, xp: 26 },
     flying: false,
     ai: { brain: 'ambusher', aggro: 4, leash: 10, keepRange: 3 },
     attacks: [
@@ -81,7 +83,7 @@ export default {
   // L5. Swarmer: flies in packs, circles, then swoops in a straight telegraphed line. Fragile.
   bat: {
     id: 'bat', name: 'Hollow Bat', level: 5, tags: ['beast', 'flying'],
-    stats: { hp: 45, power: 8.5, defense: 0, speed: 4.2, radius: 0.3, xp: 20 },
+    stats: { hp: 27, power: 8.5, defense: 0, speed: 4.2, radius: 0.3, xp: 26 },
     flying: true,
     ai: { brain: 'swarmer', aggro: 7, leash: 14, swarm: 3 },
     attacks: [
@@ -99,7 +101,7 @@ export default {
   // L6. Charger: paws the ground (long line telegraph), then barrels through. Gets angry when hurt.
   boar: {
     id: 'boar', name: 'Bristleboar', level: 6, tags: ['beast'],
-    stats: { hp: 73, power: 11, defense: 2, speed: 2.6, radius: 0.5, xp: 23 },
+    stats: { hp: 44, power: 11, defense: 2, speed: 2.86, radius: 0.5, xp: 30 },
     flying: false,
     ai: { brain: 'charger', aggro: 6, leash: 12 },
     attacks: [
@@ -120,7 +122,7 @@ export default {
   // L7. Skirmisher: keeps 4 tiles away, lobs rocks (arcing), stabs if cornered, runs off when low.
   goblin_scout: {
     id: 'goblin_scout', name: 'Goblin Scout', level: 7, tags: ['goblin', 'humanoid'],
-    stats: { hp: 92, power: 12.5, defense: 2, speed: 3.4, radius: 0.35, xp: 26 },
+    stats: { hp: 55, power: 12.5, defense: 2, speed: 3.4, radius: 0.35, xp: 34 },
     flying: false,
     ai: { brain: 'skirmisher', aggro: 8, leash: 14, keepRange: 4, fleeHp: 0.2 },
     attacks: [
@@ -139,7 +141,7 @@ export default {
   // L8. Flee brain: hovers at 5 tiles, blinks away when approached, zaps a telegraphed beam, sometimes a spark ring.
   wisp: {
     id: 'wisp', name: 'Pond Wisp', level: 8, tags: ['spirit', 'flying'],
-    stats: { hp: 110, power: 14, defense: 1, speed: 3.0, radius: 0.3, xp: 29 },
+    stats: { hp: 66, power: 14, defense: 1, speed: 3.0, radius: 0.3, xp: 38 },
     flying: true,
     ai: { brain: 'flee', aggro: 8, leash: 14, keepRange: 5, blinkCd: 3.5 },
     attacks: [
@@ -158,7 +160,7 @@ export default {
   // L9. Summoner: slow walking tree. Grows thornlings (max 2), slams roots around itself, flicks seeds.
   treant_sapling: {
     id: 'treant_sapling', name: 'Treant Sapling', level: 9, tags: ['plant', 'treant'],
-    stats: { hp: 130, power: 15.5, defense: 3, speed: 1.4, radius: 0.5, xp: 32 },
+    stats: { hp: 78, power: 15.5, defense: 3, speed: 1.4, radius: 0.5, xp: 42 },
     flying: false,
     ai: { brain: 'summoner', aggro: 7, leash: 9, keepRange: 3, summon: { kind: 'thornling', n: 1, max: 2, cd: 9 } },
     attacks: [

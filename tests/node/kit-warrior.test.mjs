@@ -74,7 +74,7 @@ export function run600(g, fn) { for (let i = 0; i < 600; i++) fn(i); return g; }
 test('warrior data: class, picker card, abilities, companion, look, boons', () => {
   const c = data.classes.warrior;
   assert.equal(c.color, '#e2503c');
-  assert.deepEqual([c.base.hp, c.base.hpPerLevel, c.base.power, c.base.powerPerLevel, c.base.speed], [44, 9, 5, 1.3, 3.4]);
+  assert.deepEqual([c.base.hp, c.base.hpPerLevel, c.base.power, c.base.powerPerLevel, c.base.speed], [44, 9, 5, 1.625, 3.4]);   // round 2: powerPerLevel 1.3 x 1.25
   assert.ok(c.basic.name && c.basic.icon && c.basic.desc);
   assert.deepEqual(c.abilities.map((a) => a.slot + ':' + a.id + ':' + a.unlock), ['space:shield_bash:3', 'q:war_cry:5']);
   assert.equal(c.companion.npc, 'bram');

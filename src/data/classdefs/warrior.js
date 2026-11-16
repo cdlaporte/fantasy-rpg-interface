@@ -5,7 +5,7 @@ export default {
   warrior: {
     id: 'warrior', name: 'Warrior', color: '#e2503c', pickable: true,
     blurb: 'The wall and the hammer. Heavy swings, short reach, and everything you hit goes flying. Fighting fills your Rage.',
-    base: { hp: 44, hpPerLevel: 9, power: 5, powerPerLevel: 1.3, speed: 3.4, defense: 0 },
+    base: { hp: 44, hpPerLevel: 9, power: 5, powerPerLevel: 1.625, speed: 3.4, defense: 0 },
     basic: { name: 'Sword Arc', icon: 'sword', desc: 'A wide, heavy sword swing that shoves enemies back.' },
     ranks: {
       1: { name: 'Sword Arc', icon: 'sword', desc: 'A wide, heavy sword swing that shoves enemies back.' },
@@ -29,11 +29,11 @@ export default {
       // rank II: every `every`-th swing is the heavy swing
       heavy_hand: { every: 3, arc: 180, range: 1.3, dmg: 0.58, knockback: 12, hitStop: 0.08, shake: 0.18 },
       shield_bash: { dist: 2.5, speed: 14, dmg: 0.7, stun: 0.8, knockback: 11, rage: 15, hitRadius: 0.55 },
-      war_cry: { r: 3.45, dmg: 0.4, knockback: 8, slow: 0.4, slowDur: 3, power: 0.3, dur: 5 },
+      war_cry: { r: 3.45, dmg: 0.3, knockback: 8, slow: 0.4, slowDur: 3, power: 0.3, dur: 5 },
     },
     companion: {
       npc: 'bram', name: 'Bram', mult: 0.7, brain: 'ally_melee',
-      stats: { hp: 44, hpPerLevel: 9, power: 5, powerPerLevel: 1.3, speed: 3.4 },
+      stats: { hp: 44, hpPerLevel: 9, power: 5, powerPerLevel: 1.625, speed: 3.4 },
       basic: { use: 'melee_arc', name: 'Sword Arc', arc: 100, range: 1.2, dmg: 0.46, knockback: 5, cd: 0.6, windup: 0.1,
         style: 'sword', color: '#e8eef5' },
       ability: { use: 'dash', name: 'Shield Bash', dist: 2.5, speed: 14, dmg: 0.7, status: { stun: 0.8 }, knockback: 8,

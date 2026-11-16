@@ -93,7 +93,7 @@ export default {
       meteor_echo: { n: 3, gap: 1.6, delay: 0.3, r: 1.5, dmg: 2.0 },
       quick_study: { rate: 1.3 },
     },
-    balance: { dmgMul: [[8, 0.32], [10, 0.34], [12, 0.28]] },
+    balance: { dmgMul: [[8, 0.32], [10, 0.35], [12, 0.28]] },
   },
 
   // ------------------------------------------------------------------------------------------------ MONK
@@ -138,6 +138,6 @@ export default {
       splitKi: { n: 2, arc: 50, dmg: 0.45, speed: 10, range: 4 },
       surgeKi: { cost: 30, dmg: 2.6, speed: 12, range: 8, radius: 0.4, size: 2.2 },
     },
-    balance: { dmgMul: [[8, 0.33], [10, 0.37], [12, 0.345]] },
+    balance: { dmgMul: [[8, 0.33], [10, 0.37], [12, 0.33]] },
   },
 };

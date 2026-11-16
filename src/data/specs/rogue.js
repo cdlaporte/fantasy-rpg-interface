@@ -20,7 +20,7 @@ export default {
     },
     ranks: { 3: 'Longbow', 4: 'Twin Arrows' },
     kit: {
-      dmgScale: 0.42,   // replaces the class dmgScale for this spec (measured, docs/notes/kit-rogue.md)
+      dmgScale: 0.38,   // replaces the class dmgScale for this spec (measured, docs/notes/kit-rogue.md)
       colors: { main: '#3fa34d', gold: '#f2c94c', star: '#fff1a8', fire: '#ff7a2f' },
       eagleEye: { minDist: 1, maxDist: 7, bonus: 0.6, pipDist: 5 },
       // Longbow: release under `tapMax` s = quick arrow; longer = Power Shot (coef grows to `coefMax` at `drawFull` s).
@@ -90,7 +90,7 @@ export default {
       colors: { main: '#3d348b', sash: '#e63946', steel: '#cfd8dc', shadow: '#6a5acd' },
       afterimage: { every: 0.22, critWindow: 1 },
       shuriken: { n: 3, spread: 30, range: 6, coef: 0.5, speed: 12, interval: 0.3, catchCdr: 0.3 },
-      shurikenIV: { n: 5, spread: 44, bounce: 1, bounceRange: 3.5 },
+      shurikenIV: { n: 5, spread: 60, bounce: 1, bounceRange: 3.5 },
       shadowStep: { cd: 6, range: 7, behind: 0.75, ahead: 4, pips: 2,
         decoy: { ttl: 2.5, hpMul: 0.5, r: 2.25, coef: 2.0 } },
       clones: { cd: 30, n: 2, nFull: 3, dur: 8, mult: 0.6, dist: 1.3, hpMul: 0.3 },

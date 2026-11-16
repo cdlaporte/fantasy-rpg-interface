@@ -6,7 +6,7 @@ export default {
   rogue: {
     id: 'rogue', name: 'Rogue', color: '#58d68d',
     blurb: 'Fast, slippery, bursty. Stab to build combo pips, roll out of trouble, then cash the pips in on a finisher.',
-    base: { hp: 34, hpPerLevel: 6.5, power: 4.5, powerPerLevel: 1.25, speed: 4.0, defense: 0 },
+    base: { hp: 34, hpPerLevel: 6.5, power: 4.5, powerPerLevel: 1.5625, speed: 4.0, defense: 0 },
     basic: { name: 'Twin Daggers', icon: 'dagger', desc: 'Hold to slash twice, fast. Every hit adds a combo pip.' },
     abilities: [
       { slot: 'space', id: 'dodge_roll', name: 'Dodge Roll', icon: 'roll', unlock: 3, cd: 3,
@@ -36,7 +36,7 @@ export default {
     },
     companion: {
       npc: 'pip', name: 'Pip', mult: 0.7, brain: 'ally_melee',
-      stats: { hp: 34, hpPerLevel: 6.5, power: 4.5, powerPerLevel: 1.25, speed: 4.0 },
+      stats: { hp: 34, hpPerLevel: 6.5, power: 4.5, powerPerLevel: 1.5625, speed: 4.0 },
       basic: { use: 'melee_arc', name: 'Twin Daggers', arc: 70, range: 0.95, dmg: 0.55, repeat: 2, critChance: 0.15, knockback: 1.2,
         cd: 0.32, windup: 0.08, style: 'dagger', color: '#58d68d' },
       ability: { use: 'dash', name: 'Dodge Roll', dist: 3, speed: 15, invuln: 0.35, dmg: 0.6, through: true, cd: 3, range: 3,

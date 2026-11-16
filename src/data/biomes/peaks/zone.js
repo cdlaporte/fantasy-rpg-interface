@@ -9,8 +9,8 @@
 // TILES (coordinate with package B's `peaks` palette): SNOW is the ground; ICE is the walkable frozen pond.
 // Snow = 'cloud' and ice = 'stone' work with any palette (white and pale blue-grey); when B documents real snow/ice tiles,
 // change these two constants (and SNOW_PATH/ROCK if wanted) and nothing else.
-const SNOW = 'cloud';
-const ICE = 'stone';
+const SNOW = 'snow';
+const ICE = 'ice';
 const WALL = 'cliff';
 const GLINT = 'crystal';
 

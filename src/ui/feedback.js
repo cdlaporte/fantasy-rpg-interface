@@ -32,6 +32,9 @@ export function createFeedback(hudEl, viewEl, ctx) {
     if (cur) { cur(); cur = null; }
     const nx = queue.shift();
     if (!nx) return;
+    // only one announcement on screen: clear any leftover banner or zone card before the next one starts
+    card.classList.remove('show');
+    for (const b of [...bannerHost.children]) b.remove();
     cur = nx.start();
     const ms = queue.length >= 2 ? Math.min(nx.ms, 1500) : queue.length === 1 ? Math.min(nx.ms, 2000) : nx.ms;
     curUntil = now + ms;

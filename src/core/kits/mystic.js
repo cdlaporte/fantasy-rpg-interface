@@ -7,6 +7,7 @@
 // less damage and cannot be knocked back while it lasts. Numbers: data/specs/mage.js `mystic.kit`. State: `my_*`.
 import SPECS from '../../data/specs/mage.js';
 import { enemiesNear, projLook, sdata, setPatch } from './mage.js';
+import { tintAt, tintAmountAt } from '../clock.js';
 
 const DEF = SPECS.mystic;
 const D = (game) => sdata(game, 'mystic') || DEF;
@@ -21,6 +22,14 @@ function interp(tab, lv) {
   return tab[tab.length - 1][1];
 }
 const lateMul = (game, p) => interp(D(game).balance && D(game).balance.dmgMul, game.kits.level(p));
+
+/** Presentation mood while the ultimate runs: tint the scene light (the clock rewrites game.ambience every step, before
+ *  the kits; moodEnd puts the clock's tint back at once). tintAmount stays within the contract's 0.25. */
+function mood(game, color, amount) { const a = game.ambience; if (a) { a.tint = color; a.tintAmount = Math.min(0.25, amount); } }
+function moodEnd(game) {
+  const a = game.ambience, c = game.clock;
+  if (a && c && typeof c.hour === 'number') { a.tint = tintAt(c.hour); a.tintAmount = tintAmountAt(c.hour); }
+}
 
 // ---------------------------------------------------------------------------------------------- spirit fists
 function spiritFists(game, p, angle, n, arcDeg) {
@@ -107,6 +116,7 @@ function endAvatar(game, p, e) {
   }
   k.my_avatar = 0; k.my_until = 0;
   game.combat.removeMod(p, 'my_avatar');
+  moodEnd(game);
   setPatch(game, p, 'my_avatar', null);
 }
 function updateAvatar(game, p, dt) {
@@ -115,6 +125,7 @@ function updateAvatar(game, p, dt) {
   const e = avatarEnt(game, p);
   if (!e || game.t >= k.my_until || p.data.down) { endAvatar(game, p, e); return; }
   const s = K(game), av = s.avatar;
+  mood(game, s.color, 0.2);                          // violet spirit light
   const age = game.t - k.my_t0;
   e.scale = Math.min(av.scale, 0.6 + (av.scale - 0.6) * Math.min(1, age / 0.5));
   // the spirit stands around you (a step behind, so you stay visible inside it)

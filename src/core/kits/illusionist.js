@@ -8,6 +8,7 @@
 import SPECS from '../../data/specs/mage.js';
 import conjurer from './conjurer.js';
 import { defer, enemiesNear, projLook, sdata, setPatch } from './mage.js';
+import { tintAt, tintAmountAt } from '../clock.js';
 
 const DEF = SPECS.illusionist;
 const D = (game) => sdata(game, 'illusionist') || DEF;
@@ -23,6 +24,14 @@ function interp(tab, lv) {
   return tab[tab.length - 1][1];
 }
 const lateMul = (game, p) => interp(D(game).balance && D(game).balance.dmgMul, game.kits.level(p));
+
+/** Presentation mood while the ultimate runs: tint the scene light (the clock rewrites game.ambience every step, before
+ *  the kits; moodEnd puts the clock's tint back at once). tintAmount stays within the contract's 0.25. */
+function mood(game, color, amount) { const a = game.ambience; if (a) { a.tint = color; a.tintAmount = Math.min(0.25, amount); } }
+function moodEnd(game) {
+  const a = game.ambience, c = game.clock;
+  if (a && c && typeof c.hour === 'number') { a.tint = tintAt(c.hour); a.tintAmount = tintAmountAt(c.hour); }
+}
 
 function imagesOf(game, p, key, out) { return game.combat.summonsOf(p, key, out); }
 
@@ -74,13 +83,13 @@ function leaveImage(game, p, x, y) {
   if (e) { k.il_images = (k.il_images || 0) + 1; game.fx({ type: 'afterimage', x, y, ent: p.id, color: s.color }); }
   return e;
 }
-/** Every copy (passive images and hall mirrors) fires a rose mini-bolt at the point the player aimed at. */
+/** Every passive mirror image fires a rose mini-bolt at the point the player aimed at (hall mirrors cast on their own). */
 function copiesCast(game, p, tx, ty, dmg) {
   const s = K(game), im = s.image, k = p.data.kit, cj = (sdata(game, 'conjurer') || SPECS.conjurer).kit;
   const status = { id: 'mark', t: cj.spiritBolt.markT, p: cj.spiritBolt.markPower };
   const pw = game.combat.powerOf(p);
-  for (const key of [IMAGE_KEY, HALL_KEY]) {
-    const list = imagesOf(game, p, key, k.il_list2 || (k.il_list2 = []));
+  {
+    const list = imagesOf(game, p, IMAGE_KEY, k.il_list2 || (k.il_list2 = []));
     for (let i = 0; i < list.length; i++) {
       const c = list[i];
       const a = Math.atan2(ty - c.y, tx - c.x);
@@ -139,8 +148,10 @@ function updateHall(game, p, dt) {
   if (game.t >= k.il_hallUntil + 1 || !list.length) {
     k.il_hallUntil = 0;
     setPatch(game, p, 'il_hall', null);
+    moodEnd(game);
     return;
   }
+  mood(game, s.lavender, 0.2);                       // a dreamy lavender hall
   k.il_beamT -= dt;
   if (k.il_beamT <= 0) { k.il_beamT = h.beamEvery; mirrorBeams(game, p, list); }
   const pw = game.combat.powerOf(p), cj = (sdata(game, 'conjurer') || SPECS.conjurer).kit;

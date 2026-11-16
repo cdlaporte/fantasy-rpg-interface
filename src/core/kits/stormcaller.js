@@ -9,6 +9,7 @@
 import SPECS from '../../data/specs/mage.js';
 import sorcerer from './sorcerer.js';
 import { defer, enemiesNear, sdata, setPatch } from './mage.js';
+import { tintAt, tintAmountAt } from '../clock.js';
 
 const DEF = SPECS.stormcaller;
 const D = (game) => sdata(game, 'stormcaller') || DEF;
@@ -21,6 +22,14 @@ function interp(tab, lv) {
   return tab[tab.length - 1][1];
 }
 const lateMul = (game, p) => interp(D(game).balance && D(game).balance.dmgMul, game.kits.level(p));
+
+/** Presentation mood while the ultimate runs: tint the scene light (the clock rewrites game.ambience every step, before
+ *  the kits; moodEnd puts the clock's tint back at once). tintAmount stays within the contract's 0.25. */
+function mood(game, color, amount) { const a = game.ambience; if (a) { a.tint = color; a.tintAmount = Math.min(0.25, amount); } }
+function moodEnd(game) {
+  const a = game.ambience, c = game.clock;
+  if (a && c && typeof c.hour === 'number') { a.tint = tintAt(c.hour); a.tintAmount = tintAmountAt(c.hour); }
+}
 
 // ---------------------------------------------------------------------------------------------- static
 function setStatic(game, p, v) {
@@ -124,9 +133,11 @@ function updateStorm(game, p, dt) {
   if (game.t >= run.until || p.data.down) {
     k.sc_storm = null;
     setPatch(game, p, 'sc_storm', null);
+    moodEnd(game);
     game.fx({ type: 'sparkle', x: p.x, y: p.y, n: 16, color: s.color, r: 1.5 });
     return;
   }
+  mood(game, s.navy, 0.25);                         // the sky darkens while the storm rages
   run.next -= dt;
   if (run.next > 0) return;
   run.next += sm.every;
@@ -154,7 +165,7 @@ function updateStorm(game, p, dt) {
     kk.m_chaining = false;
   }
   if (run.n % sm.flashEvery === 0) {
-    game.fx({ type: 'screenFlash', color: s.white, dur: 0.08 });
+    game.fx({ type: 'screenFlash', color: '#cfe8ff', dur: 0.06 });
     game.camera.shake = Math.max(game.camera.shake, 0.3);
   }
   k.sc_strikes = (k.sc_strikes || 0) + 1;

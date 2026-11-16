@@ -7,6 +7,7 @@
 // Numbers: data/specs/mage.js `pyromancer.kit`. State keys: `py_*` in p.data.kit.
 import SPECS from '../../data/specs/mage.js';
 import { enemiesNear, sdata, setPatch } from './mage.js';
+import { tintAt, tintAmountAt } from '../clock.js';
 
 const DEF = SPECS.pyromancer;
 const D = (game) => sdata(game, 'pyromancer') || DEF;
@@ -20,6 +21,14 @@ function interp(tab, lv) {
   return tab[tab.length - 1][1];
 }
 const lateMul = (game, p) => interp(D(game).balance && D(game).balance.dmgMul, game.kits.level(p));
+
+/** Presentation mood while the ultimate runs: tint the scene light (the clock rewrites game.ambience every step, before
+ *  the kits; moodEnd puts the clock's tint back at once). tintAmount stays within the contract's 0.25. */
+function mood(game, color, amount) { const a = game.ambience; if (a) { a.tint = color; a.tintAmount = Math.min(0.25, amount); } }
+function moodEnd(game) {
+  const a = game.ambience, c = game.clock;
+  if (a && c && typeof c.hour === 'number') { a.tint = tintAt(c.hour); a.tintAmount = tintAmountAt(c.hour); }
+}
 
 // ---------------------------------------------------------------------------------------------- spreading flames
 function ignite(game, p, t) {
@@ -87,6 +96,7 @@ function updateInferno(game, p, dt) {
   const k = p.data.kit, run = k.py_inferno;
   if (!run) return;
   const s = K(game), f = s.inferno;
+  mood(game, s.crimson, 0.22);                       // the scene glows red while the fire rains
   run.t -= dt;
   if (run.t > 0) return;
   run.t += f.every;
@@ -110,7 +120,7 @@ function updateInferno(game, p, dt) {
       if (kk) kk.py_rainHits = (kk.py_rainHits || 0) + 1;
     } });
   run.n++;
-  if (run.n >= f.n) { k.py_inferno = null; setPatch(game, p, 'py_inferno', null); }
+  if (run.n >= f.n) { k.py_inferno = null; setPatch(game, p, 'py_inferno', null); moodEnd(game); }
 }
 
 // ---------------------------------------------------------------------------------------------- the kit

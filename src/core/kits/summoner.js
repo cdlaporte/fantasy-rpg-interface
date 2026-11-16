@@ -7,6 +7,7 @@
 // Numbers: data/specs/mage.js `summoner.kit`. State keys: `sm_*` in p.data.kit.
 import SPECS from '../../data/specs/mage.js';
 import { boon, defer, enemiesNear, sdata, setPatch } from './mage.js';
+import { tintAt, tintAmountAt } from '../clock.js';
 
 const DEF = SPECS.summoner;
 const D = (game) => sdata(game, 'summoner') || DEF;
@@ -23,6 +24,14 @@ function interp(tab, lv) {
   return tab[tab.length - 1][1];
 }
 const lateMul = (game, p) => interp(D(game).balance && D(game).balance.dmgMul, game.kits.level(p));
+
+/** Presentation mood while the ultimate runs: tint the scene light (the clock rewrites game.ambience every step, before
+ *  the kits; moodEnd puts the clock's tint back at once). tintAmount stays within the contract's 0.25. */
+function mood(game, color, amount) { const a = game.ambience; if (a) { a.tint = color; a.tintAmount = Math.min(0.25, amount); } }
+function moodEnd(game) {
+  const a = game.ambience, c = game.clock;
+  if (a && c && typeof c.hour === 'number') { a.tint = tintAt(c.hour); a.tintAmount = tintAmountAt(c.hour); }
+}
 
 function maxFamiliars(game) { return K(game).max + (boon(game, 'pack_leader') ? 1 : 0); }
 function familiars(game, p) { const k = p.data.kit; return game.combat.summonsOf(p, FAMILIAR_KEY, k.sm_list || (k.sm_list = [])); }
@@ -194,7 +203,7 @@ function landDragon(game, p, e) {
     tags: ['dragon_land'] });
   game.fx({ type: 'burst', x: e.x, y: e.y, n: 30, color: s.gold, r: d.landR });
   game.fx({ type: 'ring', x: e.x, y: e.y, r: d.landR + 1, color: s.gold, dur: 0.6 });
-  game.fx({ type: 'screenFlash', color: '#ffffff', dur: 0.15 });
+  game.fx({ type: 'screenFlash', color: s.gold, dur: 0.12 });
   game.camera.shake = Math.max(game.camera.shake, 0.6);
 }
 function breathe(game, p, e, tx, ty) {
@@ -230,6 +239,7 @@ function endDragon(game, p, e) {
   }
   k.sm_dragon = 0; k.sm_dragonUntil = 0;
   setPatch(game, p, 'sm_dragon', null);
+  moodEnd(game);
   const list = familiars(game, p);
   for (let i = 0; i < list.length; i++) if (list[i].data.smGrown) { list[i].scale = 1; list[i].data.smGrown = false; }
 }
@@ -239,6 +249,7 @@ function updateDragon(game, p, dt) {
   const e = dragonEnt(game, p);
   if (!e || game.t >= k.sm_dragonUntil || p.data.down) { endDragon(game, p, e); return; }
   const s = K(game), d = s.dragon;
+  mood(game, s.gold, 0.15);                          // warm dragon light
   const age = game.t - k.sm_dragonT0;
   if (!k.sm_landed) {
     const f = Math.min(1, age / d.dropT);

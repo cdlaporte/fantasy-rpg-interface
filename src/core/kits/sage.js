@@ -7,6 +7,7 @@
 // healing, and your own fists speed up. Numbers: data/specs/mage.js `sage.kit`. State keys: `sg_*` in p.data.kit.
 import SPECS from '../../data/specs/mage.js';
 import { sdata, setPatch } from './mage.js';
+import { tintAt, tintAmountAt } from '../clock.js';
 
 const DEF = SPECS.sage;
 const D = (game) => sdata(game, 'sage') || DEF;
@@ -19,6 +20,14 @@ function interp(tab, lv) {
   return tab[tab.length - 1][1];
 }
 const lateMul = (game, p) => interp(D(game).balance && D(game).balance.dmgMul, game.kits.level(p));
+
+/** Presentation mood while the ultimate runs: tint the scene light (the clock rewrites game.ambience every step, before
+ *  the kits; moodEnd puts the clock's tint back at once). tintAmount stays within the contract's 0.25. */
+function mood(game, color, amount) { const a = game.ambience; if (a) { a.tint = color; a.tintAmount = Math.min(0.25, amount); } }
+function moodEnd(game) {
+  const a = game.ambience, c = game.clock;
+  if (a && c && typeof c.hour === 'number') { a.tint = tintAt(c.hour); a.tintAmount = tintAmountAt(c.hour); }
+}
 const isKi = (p) => !!(p.data.resource && p.data.resource.id === 'ki');
 
 /** Classmates (companions) and the player's summons within r of (x, y), excluding decoys. */
@@ -79,6 +88,8 @@ function castEnlighten(game, p) {
   if (isKi(p)) game.kits.gain(p, en.ki);
   k.sg_zone = game.combat.zone(p, { follow: p, r: en.r, dur: en.dur, tick: en.tick, firstTick: true, color: s.gold,
     status: { slow: [en.tick * 2 + 0.1, en.slow] }, healAmount: Math.max(1, Math.round(p.hpMax * en.regen)), id: 'enlightenment' });
+  // the Sage herself floats inside a small golden bubble (visual only)
+  k.sg_bubble = game.combat.zone(p, { follow: p, r: 1.1, dur: en.dur, tick: 10, bubble: true, color: s.gold, id: 'enlightenment_bubble' });
   k.sg_until = game.t + en.dur;
   k.sg_pulseT = en.pulseEvery * 0.5;
   game.combat.addMod(p, 'sg_enlighten', { attackSpeed: en.attackSpeed, kbImmune: 1 }, en.dur);
@@ -99,6 +110,7 @@ function endEnlighten(game, p) {
   k.sg_until = 0;
   p.z = 0;
   setPatch(game, p, 'sg_enlighten', null);
+  moodEnd(game);
   game.fx({ type: 'sparkle', x: p.x, y: p.y, n: 20, color: s.gold, r: 1.5 });
   game.fx({ type: 'ring', x: p.x, y: p.y, r: 1.5, color: s.color, dur: 0.4 });
 }
@@ -107,6 +119,7 @@ function updateEnlighten(game, p, dt) {
   if (!k.sg_until) return;
   const s = K(game), en = s.enlighten;
   if (game.t >= k.sg_until || p.data.down) { endEnlighten(game, p); return; }
+  mood(game, s.gold, 0.22);                          // golden, still light inside the slow time
   // levitate: the Sage floats a little above the ground, bobbing
   const age = en.dur - (k.sg_until - game.t);
   p.z = Math.min(en.lift, age * 2) + Math.sin(age * 3) * 0.05;
@@ -127,7 +140,8 @@ function updateEnlighten(game, p, dt) {
   k.sg_pulseT -= dt;
   if (k.sg_pulseT <= 0) {
     k.sg_pulseT = en.pulseEvery;
-    game.combat.aoe(p, { x: p.x, y: p.y, r: en.r, dmg: en.pulseDmg, knockback: 0.5, type: 'magic', fx: 'ring', color: s.gold, tags: ['enlightenment'] });
+    game.combat.aoe(p, { x: p.x, y: p.y, r: en.r, dmg: en.pulseDmg, knockback: 0.5, type: 'magic', fx: { type: 'ring', r: en.r, color: s.gold, dur: 0.8 },
+      color: s.gold, tags: ['enlightenment'] });
     game.fx({ type: 'sparkle', x: p.x, y: p.y, n: 12, color: s.color, r: en.r * 0.8 });
     k.sg_pulses = (k.sg_pulses || 0) + 1;
   }
@@ -147,6 +161,7 @@ const sage = {
     const k = p.data.kit;
     if (k.sg_until) { p.z = 0; k.sg_until = 0; }
     if (k.sg_zone && !k.sg_zone.removed) game.ents.remove(k.sg_zone);
+    if (k.sg_bubble && !k.sg_bubble.removed) game.ents.remove(k.sg_bubble);
     game.combat.removeMod(p, 'sg_enlighten');
   },
   update(game, p, dt) {

@@ -4,6 +4,7 @@
 // data/boons.js do not provide a value (data wins field by field; classes, specs and boons merge per id).
 // See docs/notes/meta.md for the API reference.
 import { createRng } from './rng.js';
+import { config as CONFIG } from '../config.js';
 
 // ---------------------------------------------------------------------------------------------------------------
 // defaults (docs/CLASSES.md)
@@ -243,7 +244,10 @@ export const AURA_STYLES = { warrior: 'flame', mage: 'sparkle', rogue: 'shadow' 
 // helpers
 
 /** XP needed to go from level l to l + 1 (CONTRACTS 12). */
-export function xpNext(l) { return Math.round(20 * Math.pow(Math.max(1, l), 1.6)); }
+export function xpNext(l) {
+  const c = CONFIG.xpCurve || { base: 20, exp: 1.6 };
+  return Math.round(c.base * Math.pow(Math.max(1, l), c.exp));
+}
 
 /** Attack rank 1..5 for a level. */
 export function rankAt(level) {
@@ -490,6 +494,7 @@ export default {
       const hpMax = Math.max(1, Math.round(hp * ns));
       if (!p.stats) p.stats = {};
       p.stats.power = Math.round(power * 100) / 100;
+      speed *= game.config.playerSpeedMul || 1;
       p.stats.speed = Math.round(speed * 100) / 100;
       p.stats.defense = Math.round(defense * 100) / 100;
       const old = p.hpMax || 0;

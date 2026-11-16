@@ -22,6 +22,10 @@ function normalizeResult(r) {
 export function createQuestions(opts = {}) {
   const q = {
     mode: MODES.includes(opts.mode) ? opts.mode : 'auto',
+    /** round 2: teacher mode shows answers and worked solutions (set by the teacher options). */
+    teacher: false,
+    /** round 2: enabled topic ids (see unit4/index.js TOPICS); null = every topic on by default. */
+    topics: null,
     provider: opts.provider || stubProvider,
     /** provider registry: id -> provider */
     providers: { [stubProvider.id]: stubProvider },

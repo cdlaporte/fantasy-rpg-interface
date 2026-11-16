@@ -233,13 +233,14 @@ export function makeInputState() {
   };
   return {
     moveX: 0, moveY: 0, attackDir: -1, attackPressed: -1, attackReleased: -1, attackHeldT: 0,
+    attackAngle: NaN,        // round 2: radians of the held attack keys combined (8 ways), NaN when none
     pressed: keys(), held: keys(), released: keys(),
   };
 }
 
 /** Reset an InputState to neutral in place. */
 export function clearInputState(s) {
-  s.moveX = 0; s.moveY = 0; s.attackDir = -1; s.attackPressed = -1; s.attackReleased = -1; s.attackHeldT = 0;
+  s.moveX = 0; s.moveY = 0; s.attackDir = -1; s.attackPressed = -1; s.attackReleased = -1; s.attackHeldT = 0; s.attackAngle = NaN;
   for (const k of INPUT_KEYS) { s.pressed[k] = false; s.held[k] = false; s.released[k] = false; }
   return s;
 }

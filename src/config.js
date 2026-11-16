@@ -5,7 +5,14 @@ export const config = {
   startMarker: 'start',
   fallbackZone: 'test',        // used when startZone is missing from data.zones
   levelCap: 12,
-  numberScale: 6,              // every health and damage number in the game is this many times bigger (see docs/notes/fixcore.md)
+  numberScale: 6,
+  // round 2 (playtest feedback)
+  cameraZoom: 1.3,             // 3D camera: closer view (cutscene zooms multiply this)
+  modelScale: 1.3,             // 3D: characters and creatures drawn this much bigger (not props, projectiles, effects)
+  playerSpeedMul: 1.3,         // player (and companion) walking speed multiplier over the class numbers
+  xpCurve: { base: 15, exp: 1.5 },   // xpNext(level) = round(base * level^exp)
+  teacherPin: '9631',          // classroom lock for Teacher options (not real security)
+  defaultRenderer: '3d',              // every health and damage number in the game is this many times bigger (see docs/notes/fixcore.md)
   dayLengthSeconds: 720,       // a full in-game day = 12 real minutes
   startHour: 8,
   activationRadius: 30,        // tiles; entities farther from the player are asleep
@@ -22,17 +29,19 @@ export const config = {
   questions: {
     retrySeconds: 3,           // integration (Meta request): wait before a blocking question is asked again
     contexts: {
+      // blocking = must be answered correctly (wrong: worked solution, then a new problem). Teacher decision:
+      // only rune gates and boss shields block; everywhere else a wrong answer just gives a smaller reward.
       levelup: { enabled: true, blocking: false },
-      boon: { enabled: true, blocking: true },
-      spec: { enabled: true, blocking: true },
+      boon: { enabled: true, blocking: false },
+      spec: { enabled: true, blocking: false },
       gate: { enabled: true, blocking: true },
-      chest: { enabled: true, blocking: true },
+      chest: { enabled: true, blocking: false },
       boss_shield: { enabled: true, blocking: true },
       focus: { enabled: true, blocking: false },
-      lesson: { enabled: true, blocking: true },
-      quest_turnin: { enabled: true, blocking: true },
+      lesson: { enabled: true, blocking: false },
+      quest_turnin: { enabled: true, blocking: false },
       haggle: { enabled: true, blocking: false },
-      revive: { enabled: true, blocking: true },
+      revive: { enabled: true, blocking: false },
     },
   },
 };

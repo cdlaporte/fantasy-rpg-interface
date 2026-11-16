@@ -1,2 +1,72 @@
-// Gullwing Cove: cutscenes (each with zone: 'cove'). Stub by the lead's prep (round 3); owned by this biome's package.
-export default {};
+// Gullwing Cove cutscenes. cove_boss_intro: played by the zone trigger at the sandbar's mouth. cove_boss_outro: run by
+// captain_clawsworth.onDeath. Both carry zone: 'cove' for the marker checks.
+const DOWN = 2;
+
+export default {
+  cove_boss_intro: {
+    id: 'cove_boss_intro', zone: 'cove', skippable: true,
+    // the zone keeps Captain Clawsworth as a `spawns` entry whenever he is undefeated, so this scene only spawns him when missing
+    onSkip: [['spawn', 'captain_clawsworth', 'boss_spawn', { tag: 'boss', unique: true }], ['sfx', 'boss']],
+    steps: [
+      ['lockInput'],
+      ['letterbox', true],
+      ['camera', { to: 'boss_arena', zoom: 0.9, t: 1.6 }],
+      ['wait', 0.4],
+      ['camera', { shake: 0.4 }],
+      ['fx', { type: 'smoke', at: 'boss_arena', r: 2.5, dur: 1.5 }],
+      ['wait', 0.6],
+      ['camera', { shake: 0.7 }],
+      ['fx', { type: 'shockwave', at: 'boss_arena', r: 4, color: '#8fe3ff' }],
+      ['spawn', 'captain_clawsworth', 'boss_spawn', { tag: 'boss', unique: true }],   // unique: no-op when the zone spawn exists
+      ['anim', 'captain_clawsworth', 'charge', 1.2],
+      ['fx', { type: 'burst', at: 'boss_arena', n: 30, r: 3, color: '#ff9a6a' }],
+      ['sfx', 'boss'],
+      ['say', 'captain_clawsworth', 'AHOY! This sandbar be private property of Captain Clawsworth!', { mood: 'annoyed' }],
+      ['bubble', 'player', 'Private? There is a lighthouse right there.', 1.6],
+      ['say', 'captain_clawsworth', 'AYE, and ye RELIT it! Now ships see me sandbar and steer around it!', { mood: 'annoyed' }],
+      ['say', 'captain_clawsworth', 'No wrecks, no hats! Twelve hats a month, I used to get! Last month: ZERO!', { mood: 'annoyed' }],
+      ['say', 'captain_clawsworth', 'So ye be payin\' in hats. Or SHELLS. Crew, pinch the intruder!', { mood: 'annoyed' }],
+      ['cameraReset'],
+      ['letterbox', false],
+      ['toast', 'When the Captain shields up, answer the question to crack his shield!', 'info'],
+      ['unlockInput'],
+    ],
+  },
+
+  cove_boss_outro: {
+    id: 'cove_boss_outro', zone: 'cove', skippable: true,
+    onSkip: [['flag.set', 'clawsworth_defeated', true], ['chest', 'boss_clawsworth', { id: 'clawsworth' }], ['save']],
+    steps: [
+      ['lockInput'],
+      ['letterbox', true],
+      ['camera', { to: 'boss_arena', zoom: 1.2, t: 1.0 }],
+      ['fx', { type: 'sparkle', at: 'boss_arena', n: 50, r: 3, color: '#8fe3ff' }],
+      ['fx', { type: 'poof', at: 'boss_arena', color: '#ffffff' }],
+      ['spawn', 'clawsworth_tiny', 'boss_arena', { tag: 'tiny_captain' }],
+      ['wait', 0.8],
+      ['say', 'clawsworth_tiny', 'Arr... shiver me shells. Ye win. I be about hat-sized now, it seems.', { mood: 'annoyed' }],
+      ['say', 'clawsworth_tiny', 'Take me spare hat. And the treasure. Ye never saw the hat. Or me.', { mood: 'calm' }],
+      ['flag.set', 'clawsworth_defeated', true],
+      ['chest', 'boss_clawsworth', { id: 'clawsworth' }],
+      ['anim', 'clawsworth_tiny', 'sit', 1.5],
+      ['wait', 0.6],
+      ['fx', { type: 'pillar', at: 'player', r: 1.0, color: '#9fe6ff', dur: 1.0 }],
+      ['fx', { type: 'poof', at: 'player', color: '#9fe6ff' }],
+      ['spawn', 'laporte', 'boss_arena', { tag: 'laporte', offset: [0, 3] }],
+      ['sfx', 'laporte'],
+      ['face', 'laporte', DOWN],
+      ['say', 'laporte', 'Nicely done. Two congruent claws, by the way. I checked.', { mood: 'proud' }],
+      ['say', 'clawsworth_tiny', 'Headmaster! I can explain the hats!', { mood: 'worried' }],
+      ['say', 'laporte', 'No need. Return them to the wrecks. All twelve.', { mood: 'calm' }],
+      ['say', 'clawsworth_tiny', 'Aye aye. ...Eleven?', { mood: 'worried' }],
+      ['say', 'laporte', 'Twelve.', { mood: 'calm' }],
+      ['say', 'laporte', 'Marlo will want to hear this. Go on. The gulls have been warned.', { mood: 'proud' }],
+      ['fx', { type: 'poof', at: 'laporte', color: '#9fe6ff' }],
+      ['despawn', 'laporte'],
+      ['cameraReset'],
+      ['letterbox', false],
+      ['unlockInput'],
+      ['save'],
+    ],
+  },
+};

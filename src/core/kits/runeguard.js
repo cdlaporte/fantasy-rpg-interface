@@ -1,6 +1,6 @@
 // Runeguard mastery (tier 3, layered over battlemage; docs/MASTERY.md). Warding runes.
 // Passive Rune Wards: every other swing drops a rune ward of the current element in front of you (effect kind
-// `rune_ward`, a glowing rune circle; at most 4, 6 s each). A ward zaps the nearest enemy within 3.2 every 0.9 s with
+// `rune_ward`, a floating rune glyph (effect model rune_seal); at most 4, 6 s each). A ward zaps the nearest enemy within 3.2 every 0.9 s with
 // a bolt of its element (burn / frost / an extra-strong storm zap). Within 2.6 tiles of a ward you take 15% less damage.
 // Shift Rune Citadel (unlock 15): a ring of eight wards (fire / frost / storm in turn) around you for 6 s: you and
 // classmates inside are shielded and take 40% less damage, lightning walls crackle between the wards, every ward
@@ -20,7 +20,7 @@ const near = [];
 
 function makeWard(game, p, x, y, el, r, ttl) {
   return game.ents.create({ kind: 'rune_ward', type: 'effect', team: p.team, owner: p.id, x, y, solid: false,
-    look: { rig: 'effect', model: 'zone_ring', color: elColor(game, el), r }, ttl });
+    look: { rig: 'effect', model: 'rune_seal', color: elColor(game, el), r, w: 1, h: 1 }, ttl });
 }
 
 /** One zap from a ward at (x, y): the nearest enemy within r takes a bolt of element el. */

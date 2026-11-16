@@ -67,6 +67,7 @@ function strike(game, p, sb) {
   const e = sb.edge, n = N(game).edge;
   const i = e.i % 3, col = elColor(game, i);
   e.el = i;
+  game.combat.status(p, 'invuln', n.every + 0.25);
   MW.foes(game, p, e.x0, e.y0, n.range, foes);
   // the nearest enemy to where you are now, not the one you just struck (unless it is the only one)
   let t = null, bd = 1e9;
@@ -88,7 +89,10 @@ function strike(game, p, sb) {
       const ai = W.prep('afterimage', x0, y0, 0, col);
       ai.ent = p.id;
       game.fx(ai);
-      game.physics.teleport(p, lx, ly);
+      // move without physics.teleport: that snaps the camera, nine snaps in a second are hard to follow; the camera
+      // glides after the hero instead (the one-frame interpolation streak reads as a dash)
+      p.x = lx; p.y = ly; p.kx = p.ky = 0;
+      game.ents.touch();
       game.physics.resolve(p);
     }
     tx = t.x; ty = t.y;
@@ -112,7 +116,6 @@ function finale(game, p, sb) {
   const n = N(game).edge, col = C(game), bc = BC(game);
   sb.edge = null;
   sb.edges++;
-  game.combat.status(p, 'invuln', 0);
   game.combat.aoe(p, { x: p.x, y: p.y, r: n.finR, dmg: n.finDmg, knockback: 10, type: 'magic', element: 'storm', tags: TAG_SKILL,
     fx: 'shockwave', color: col.prism, shake: 0.65 });
   game.fx({ type: 'slash', x: p.x, y: p.y, angle: Math.PI / 4, arc: 160, r: n.finR, color: bc.fire, style: 'crescent', w: 3 });
@@ -198,7 +201,7 @@ export default {
         // Encore (Runestorm boon) carries over: three more strikes
         const strikes = n.strikes + (W.has(game, p, 'encore') ? 3 : 0);
         sb.edge = { i: 0, el: 0, next: game.t + 0.12, last: 0, x0: p.x, y0: p.y, strikes };
-        game.combat.status(p, 'invuln', strikes * n.every + 0.5);
+        game.combat.status(p, 'invuln', 0.4);   // renewed by every strike (never cleared: teacher god mode uses invuln too)
         game.fx({ type: 'ring', x: p.x, y: p.y, r: n.range, color: col.prism, dur: 0.5 });
         game.fx({ type: 'burst', x: p.x, y: p.y, n: 24, r: 1.2, color: col.white });
         game.fx({ type: 'screenFlash', x: p.x, y: p.y, color: '#ffd8f6', dur: 0.15 });

@@ -324,7 +324,7 @@ test('War Banner: leap, gold landing, a banner that buffs friends and drums; ene
   assert.equal(kindOf(g, 'warlord_banner')[0].look.model, 'totem');
   assert.ok(wl.feared >= 1, 'feared ' + wl.feared);
   assert.ok(g.foes.some((f) => f.status.mark > 0), 'shaken (marked)');
-  assert.ok(g.fx.types.meteor >= 1 && g.fx.types.screenFlash >= 1);
+  assert.ok(g.fx.types.screenFlash >= 1 && g.fx.list.some((e) => e.type === 'text' && e.text === 'FOR FLINKERTON!'));
   g.game.physics.teleport(g.p, wl.banner.x, wl.banner.y);
   g.step(5);
   assert.ok(g.game.combat.mod(g.p, 'power') >= 0.25 && g.game.combat.mod(g.p, 'attackSpeed') >= 0.25, 'banner buff');
@@ -336,6 +336,7 @@ test('War Banner: leap, gold landing, a banner that buffs friends and drums; ene
   assert.equal(wl.banner, null);
   assert.equal(kindOf(g, 'warlord_banner').length, 0);
   assert.ok(g.fxOf('shockwave').length >= 6, 'war drums');
+  assert.ok(g.fxOf('pillar').filter((e) => e.color === data.specs.warlord.colors.crimson).length >= 8, 'the standard (a column of light over the banner)');
   assert.ok(g.dealt > 0);
 });
 
@@ -432,7 +433,7 @@ test('ultimates differ from the subclass ultimates (distinct fx signatures)', ()
   }
   assert.ok(sig.paladin.bolt > 5 && sig.paladin.heal >= 1);
   assert.ok(sig.sentinel.meteor >= 1 && sig.sentinel.slash >= 4);
-  assert.ok(sig.warlord.meteor >= 1 && sig.warlord.poof >= 1);
+  assert.ok(sig.warlord.pillar >= 8 && sig.warlord.poof >= 1);
   assert.ok(sig.juggernaut.afterimage >= 8 && sig.juggernaut.trail >= 4);
   assert.ok(sig.spellblade.trail >= 9 && sig.spellblade.afterimage >= 5);
   assert.ok(sig.runeguard.bolt >= 30);

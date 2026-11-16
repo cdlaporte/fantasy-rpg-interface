@@ -113,7 +113,7 @@ function sunlit(game, p, angle) {
 
 function sanctuaryEnd(game, p, st) {
   const n = N(game).sanctuary, col = C(game);
-  game.fx({ type: 'pillar', x: st.x, y: st.y, r: 2.6, color: col.white, dur: 1.2 });
+  game.fx({ type: 'pillar', x: st.x, y: st.y, r: 1.6, color: col.white, dur: 1.2 });
   game.combat.aoe(p, { x: st.x, y: st.y, r: n.endR, dmg: n.endDmg, knockback: 12, type: 'magic', element: 'holy', tags: TAG_SKILL,
     fx: 'shockwave', color: col.sun, shake: 0.7 });
   game.fx({ type: 'ring', x: st.x, y: st.y, r: n.endR + 1.2, color: col.white, dur: 0.9 });
@@ -136,7 +136,7 @@ function smite(game, p, st) {
       const a = game.rng.next() * Math.PI * 2, r = game.rng.next() * n.r * 0.8;
       x = st.x + Math.cos(a) * r; y = st.y + Math.sin(a) * r;
     }
-    game.fx({ type: 'pillar', x, y, r: n.smiteR * 0.6, color: col.light, dur: 0.6 });
+    game.fx({ type: 'pillar', x, y, r: 0.45, color: col.light, dur: 0.5 });
     game.fx({ type: 'bolt', x, y, color: col.sun });
     if (foes.length) {
       game.combat.aoe(p, { x, y, r: n.smiteR, dmg: n.smiteDmg, knockback: 2, status: { stun: n.smiteStun }, type: 'magic', element: 'holy',
@@ -198,7 +198,7 @@ export default {
           push: n.push, healAmount: Math.max(1, Math.round(p.hpMax * n.healPct * (extra ? 2 : 1))), silentHeal: true, color: col.sun, id: 'sanctuary' });
         pal.sanct = { x: p.x, y: p.y, end: game.t + dur, nextSmite: game.t + 0.35, smiteN: 0, smitten: 0, ent };
         game.combat.addMod(p, 'zone:sanctuary', { dmgTaken: n.dmgTaken }, 0.6);
-        game.fx({ type: 'pillar', x: p.x, y: p.y, r: 2.2, color: col.white, dur: 1.1 });
+        game.fx({ type: 'pillar', x: p.x, y: p.y, r: 1.2, color: col.white, dur: 1.1 });
         game.fx({ type: 'shockwave', x: p.x, y: p.y, r: n.r, color: col.sun });
         game.fx({ type: 'ring', x: p.x, y: p.y, r: n.r, color: col.sky, dur: 0.8 });
         game.fx({ type: 'sparkle', x: p.x, y: p.y, n: 40, r: n.r, color: col.gold });

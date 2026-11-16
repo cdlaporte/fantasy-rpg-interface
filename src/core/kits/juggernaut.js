@@ -54,6 +54,7 @@ function nextLeg(game, p, jg) {
   let dist = n.dist;
   if (best) { st.angle = Math.atan2(best.y - p.y, best.x - p.x); dist = Math.min(n.dist * 1.6, Math.max(n.dist, bs + 1.6)); }
   st.dashing = true;
+  game.combat.status(p, 'invuln', 0.6);
   game.abilities.use('dash', p, { angle: st.angle, dist, speed: n.speed, dmg: n.dmg, through: true, stopOnHit: false, hitRadius: n.hitRadius,
     knockback: n.knockback, status: { stun: n.stun }, invuln: true, tags: TAG_SKILL, color: col.ember, onHit: stHit, onEnd: stEnd });
   game.fx({ type: 'ring', x: p.x, y: p.y, r: 1.2, color: col.ember, dur: 0.3 });
@@ -64,7 +65,6 @@ function finale(game, p, jg) {
   const n = N(game).stampede, col = C(game);
   jg.st = null;
   jg.stampedes++;
-  game.combat.status(p, 'invuln', 0);
   game.combat.aoe(p, { x: p.x, y: p.y, r: n.endR, dmg: n.endDmg, knockback: 12, status: { stun: n.endStun }, type: 'melee', tags: TAG_SKILL,
     fx: 'shockwave', color: col.ember, shake: 0.8 });
   game.fx({ type: 'meteor', x: p.x, y: p.y, r: n.endR * 0.8, color: col.ember });
@@ -73,7 +73,7 @@ function finale(game, p, jg) {
   game.fx({ type: 'burst', x: p.x, y: p.y, n: 40, r: n.endR, color: col.dust });
   for (let i = 0; i < 6; i++) {
     const a = i * Math.PI / 3 + 0.25;
-    game.fx({ type: 'meteor', x: p.x + Math.cos(a) * n.endR * 0.75, y: p.y + Math.sin(a) * n.endR * 0.75, r: 0.9, color: col.iron });
+    game.fx({ type: 'meteor', x: p.x + Math.cos(a) * n.endR * 0.75, y: p.y + Math.sin(a) * n.endR * 0.75, r: 0.9, color: i % 2 ? col.ember : col.magma });
   }
   game.fx({ type: 'screenFlash', x: p.x, y: p.y, color: '#ffb38a', dur: 0.3 });
   game.fx({ type: 'text', x: p.x, y: p.y, z: 2, text: 'STAMPEDE!', style: 'info', ent: p.id });
@@ -162,7 +162,7 @@ export default {
         const jg = p.data.kit.jg;
         const n = N(game).stampede, col = C(game);
         jg.st = { seg: 0, next: game.t, legT: game.t, angle: ctx.moveAngle, last: 0, hits: 0, dashing: false };
-        game.combat.status(p, 'invuln', n.segs * 0.5 + 0.4);
+        game.combat.status(p, 'invuln', 0.5);   // renewed by every leg (never cleared: teacher god mode uses invuln too)
         game.fx({ type: 'shockwave', x: p.x, y: p.y, r: 2.2, color: col.ember });
         game.fx({ type: 'burst', x: p.x, y: p.y, n: 26, r: 1.4, color: col.dust });
         game.fx({ type: 'text', x: p.x, y: p.y, z: 1.8, text: 'CHARGE!', style: 'info', ent: p.id });

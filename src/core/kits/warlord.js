@@ -42,9 +42,12 @@ function bannerLand(game, p) {
   if (!wl) return;
   const n = N(game).banner, col = C(game);
   if (wl.banner && wl.banner.ent && !wl.banner.ent.removed) game.ents.remove(wl.banner.ent);
-  const ent = game.ents.create({ kind: 'warlord_banner', type: 'effect', team: p.team, owner: p.id, x: p.x, y: p.y, solid: false,
+  // planted a step behind you (so you do not stand on it), unless that is a wall
+  let bx = p.x - Math.cos(p.angle) * 0.9, by = p.y - Math.sin(p.angle) * 0.9;
+  if (game.world.solidAt && game.world.solidAt(bx, by)) { bx = p.x; by = p.y; }
+  const ent = game.ents.create({ kind: 'warlord_banner', type: 'effect', team: p.team, owner: p.id, x: bx, y: by, solid: false,
     look: { rig: 'effect', model: 'totem', color: col.banner, r: 0.9 }, ttl: n.life });
-  wl.banner = { x: p.x, y: p.y, end: game.t + n.life, nextDrum: game.t + n.drum, nextRegen: game.t + 1, ent, drums: 0 };
+  wl.banner = { x: bx, y: by, end: game.t + n.life, nextDrum: game.t + n.drum, nextRegen: game.t + 1, nextPole: game.t, ent, drums: 0 };
   // fear: everything near the landing flees
   MW.foes(game, p, p.x, p.y, n.fearR, foes);
   for (let i = 0; i < foes.length; i++) {
@@ -57,7 +60,7 @@ function bannerLand(game, p) {
   }
   wl.feared += foes.length;
   MW.crater(game, p, p.x, p.y);
-  game.fx({ type: 'meteor', x: p.x, y: p.y, r: n.landR, color: col.gold });
+  game.fx({ type: 'shockwave', x: p.x, y: p.y, r: n.landR + 1, color: col.crimson });
   game.fx({ type: 'pillar', x: p.x, y: p.y, r: 1.4, color: col.gold, dur: 1.1 });
   game.fx({ type: 'ring', x: p.x, y: p.y, r: n.auraR, color: col.crimson, dur: 0.9 });
   game.fx({ type: 'ring', x: p.x, y: p.y, r: n.fearR + 1.5, color: col.light, dur: 0.6 });
@@ -86,6 +89,12 @@ function bannerTick(game, p, wl) {
     if (dx * dx + dy * dy <= n.auraR * n.auraR) game.combat.heal(p, Math.max(1, Math.round(p.hpMax * n.regenPct)), { silent: true, source: p });
     for (let i = 0; i < near.length; i++) game.combat.heal(near[i], Math.max(1, Math.round(near[i].hpMax * n.regenPct)), { silent: true, source: p });
     W.fx(game, 'sparkle', b.x, b.y, n.auraR * 0.6, col.gold, 10);
+  }
+  if (game.t >= b.nextPole) {
+    // the standard: a crimson-and-gold column of light over the banner, renewed before it fades
+    b.nextPole += 0.8;
+    W.fx(game, 'pillar', b.x, b.y, 0.22, col.crimson, 0, 0.95);
+    W.fx(game, 'pillar', b.x, b.y, 0.1, col.light, 0, 0.95);
   }
   if (game.t >= b.nextDrum) {
     b.nextDrum += n.drum;

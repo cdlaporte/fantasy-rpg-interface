@@ -19,6 +19,7 @@ export function propUnknown(pr, out) {
   const m = propModel(pr);
   if (!PROP_MODELS.includes(m)) out.push('prop.model:' + m);
   if (['house', 'shop', 'tower', 'academy'].includes(m) && pr.look && pr.look.sign && !SIGNS.includes(pr.look.sign)) out.push('prop.sign:' + pr.look.sign);
+  if (pr.look && pr.look.style && !STYLES.includes(pr.look.style)) out.push('prop.style:' + pr.look.style);
 }
 
 /** Cache key for a prop's sprite. */
@@ -31,10 +32,13 @@ export function buildProp(pr) {
   const w = pr.w || 1, h = pr.h || 1;
   const L = pr.look || {};
   const v = (L.variant | 0) + (((pr.x || 0) * 7 + (pr.y || 0) * 13) & 255);
-  const fn = PAINTERS[model] || PAINTERS.crate;
-  const up = UP[model] ?? 24, side = SIDE[model] ?? 6, down = 3;
+  const style = ['house', 'shop', 'tower'].includes(model) && STYLES.includes(L.style) ? L.style : null;
+  let fn = PAINTERS[model] || PAINTERS.crate;
+  if (style) fn = (c) => styled(c, style);
+  const up = (style && STYLE_UP[style]) || (model === 'table' && L.umbrella ? 26 : UP[model] ?? 24), side = SIDE[model] ?? 6, down = 3;
   const p = new Pix(w * 16 + side * 2, h * 16 + up + down);
-  const ctx = { p, w, h, W: w * 16, H: h * 16, ox: side, oy: up, L, v, emit: [], shadow: null };
+  const ctx = { p, w, h, W: w * 16, H: h * 16, ox: side, oy: up, L, v, emit: [], shadow: null,
+    door: pr.def && pr.def.door !== undefined ? pr.def.door : null };
   fn(ctx);
   p.outline(OUTLINE);
   return { pix: p, dx: -side, dy: -up, w: p.w, h: p.h, flat: !!FLAT_MODELS[model], shadow: ctx.shadow, emit: ctx.emit, model };
@@ -350,6 +354,11 @@ const PAINTERS = {
       R(0, H - 3, W, 3, rail); R(0, H - 1, W, 1, dark(rail, 0.35));
       for (let x = 0; x < W; x += 12) { R(x, -2, 3, 5, rail); R(x, H - 5, 3, 5, rail); }
     }
+    if (ctx.L.style === 'arch') {
+      // humped stone bridge: mortar joints and round end posts
+      for (let y = 2; y < H; y += 6) for (let x = 5 + ((y / 6) & 1) * 4; x < W - 5; x += 8) R(x, y, 1, 3, dark(wood, 0.25));
+      for (const x of [0, W - 4]) for (const y of [-3, H - 4]) R(x, y, 4, 4, light(rail, 0.25));
+    }
   },
   banner(ctx) {
     const { R, PL, S } = tools(ctx);
@@ -395,6 +404,13 @@ const PAINTERS = {
     for (let x = 1; x < 32; x += 4) R(x, 9, 2, 1, dark(cloth, 0.25));
     R(2, 10, 3, 5, wood); R(27, 10, 3, 5, wood);
     R(13, -1, 6, 3, '#ffffff'); R(14, -2, 4, 1, '#e0e4f0'); R(8, 0, 2, 2, '#c8503c'); R(23, 0, 3, 2, '#ffd24a');
+    if (ctx.L.umbrella) {
+      const { PL } = tools(ctx);
+      const u1 = col(ctx.L.umbrella, '#e0508a'), u2 = col(ctx.L.umbrella2, '#ffffff'), cx = ctx.W / 2;
+      R(cx, -18, 1, 18, '#8a8a96');
+      for (let i = 0; i < 4; i++) PL([cx - 13 + i * 6.5, -16, cx - 6.5 + i * 6.5, -16, cx, -24], i % 2 ? u2 : u1);
+      R(cx - 13, -16, 26, 1, dark(u1, 0.3));
+    }
   },
   chair(ctx) {
     const { R } = tools(ctx);
@@ -518,7 +534,7 @@ function building(ctx, kind) {
   for (let x = 3; x < W - 3; x += 6) R(x, H - 3, 1, 2, '#9a9eae');
   for (const x of [1, W - 4]) R(x, wallY, 3, wallH - 4, trim);
   R(1, wallY + 2, W - 2, 2, trim);
-  const doorX = Math.floor(ctx.w / 2) * 16 + 3, doorW = 10, doorH = 16;
+  const doorX = (ctx.door != null ? ctx.door : Math.floor(ctx.w / 2)) * 16 + 3, doorW = 10, doorH = 16;
   // windows
   const winY = wallY + 8;
   const winXs = [];
@@ -679,3 +695,155 @@ function academy(ctx) {
   for (let i = 0; i < 18; i++) { S(2 + (i * 5) % 22, H - 8 - ((i * 7) % 30), i % 3 ? '#3f9e4a' : '#5fb548'); }
   for (let x = tw; x < W - tw; x += 3) { if (Math.abs(x - W / 2) < 18) continue; S(x, H - 7, x % 2 ? '#4cbf55' : '#ff8fc7'); }
 }
+
+// ------------------------------------------------------------------ building styles (look.style, round 2)
+// Simple, distinct 2D fallbacks of the 3D building styles. ctx.door = the door column (def.door).
+
+export const STYLES = ['cottage', 'townhouse', 'tower_house', 'mushroom', 'windmill', 'greenhouse', 'bakery', 'library', 'potion',
+  'outfitter', 'cafe', 'general', 'guardhouse', 'clock', 'arch'];
+// headroom above the footprint per style (art px)
+const STYLE_UP = { cottage: 30, townhouse: 52, tower_house: 76, mushroom: 30, windmill: 58, greenhouse: 18, bakery: 40, library: 52,
+  potion: 78, outfitter: 48, cafe: 34, general: 36, guardhouse: 40, clock: 80 };
+
+function doorX(ctx) { return (ctx.door != null ? ctx.door : Math.floor(ctx.w / 2)) * 16 + 3; }
+
+function styled(ctx, style) {
+  const { R, PL, S, E, SH } = tools(ctx);
+  const L = ctx.L, W = ctx.W, H = ctx.H;
+  const wall = col(L.wall, '#f4e3c4'), roof = col(L.roof, '#d9534f'), trim = col(L.trim, '#8a5a33'), doorC = col(L.door, '#6b4423');
+  const sign = SIGNS.includes(L.sign) ? L.sign : 'none';
+  const dx = doorX(ctx);
+  const rLo = dark(roof, 0.3), rHi = light(roof, 0.25);
+  shadow(ctx, W / 2, H - 1, W / 2 + 2, 4);
+  const box = (x, y, w, h, c) => { R(x, y, w, h, c); R(x, y, w, 2, dark(c, 0.2)); R(x + w - 3, y, 3, h, dark(c, 0.12)); };
+  const base = (x, w) => { R(x, H - 4, w, 4, '#b9bccb'); R(x, H - 1, w, 1, '#8a8ea0'); };
+  const gable = (x0, x1, eave, ridge, c) => {
+    PL([x0 - 3, eave, x1 + 3, eave, (x0 + x1) / 2, ridge], c);
+    PL([(x0 + x1) / 2, ridge, x1 + 3, eave, (x0 + x1) / 2 + 4, eave], dark(c, 0.25));
+    for (let y = ridge + 4; y < eave; y += 4) { const t = (y - ridge) / (eave - ridge); R((x0 + x1) / 2 - t * ((x1 - x0) / 2 + 3), y, t * (x1 - x0 + 6), 1, dark(c, 0.2)); }
+  };
+  const stripes = (x, y, w, c1, c2) => { for (let i = 0; i < w; i += 4) PL([x + i, y, x + i + 4, y, x + i + 4, y - 6, x + i, y - 6], (i >> 2) % 2 ? c2 : c1); };
+  const hangSign = (x, y) => { if (sign !== 'none') { R(x + 3, y - 3, 4, 1, '#3a3a4a'); signIcon(ctx, x + 1, y, sign, '#f4e3c4'); } };
+  switch (style) {
+    case 'cottage': {
+      const wy = H - 22;
+      box(2, wy, W - 4, 22, wall); base(2, W - 4);
+      SH(W / 2, wy - 2, W / 2 + 3, 15, roof, rLo, rHi);
+      R(3, wy + 2, W - 6, 2, rLo);
+      window_(ctx, dx > W / 2 ? 6 : W - 16, wy + 7, 8, 7, trim, false); flowerBox(ctx, dx > W / 2 ? 5 : W - 17, wy + 16, 10);
+      door(ctx, dx, H - 18, 10, 14, doorC, trim);
+      R(W - 12, wy - 22, 6, 10, '#a8a49a'); ctx.emit.push({ kind: 'smoke', x: W - 9, y: wy - 24, color: '#f0f0f4' });
+      if ((L.variant | 0) === 1) for (let i = 0; i < 6; i++) { S(3, wy + 3 + i * 3, '#ff6b8a'); S(4, wy + 4 + i * 3, '#4f9e3a'); }
+      break;
+    }
+    case 'townhouse': {
+      const wy = H - 44;
+      box(2, H - 22, W - 4, 22, mix(wall, '#d8d0c0', 0.35)); box(0, wy, W, 22, wall); base(2, W - 4);
+      for (let x = 0; x <= W; x += W / 4) R(Math.min(W - 2, x), wy, 2, 22, trim);
+      R(0, wy + 20, W, 3, trim); LNx(ctx, 4, wy + 18, W / 4 - 2, wy + 4, trim); LNx(ctx, W - 4, wy + 18, W - W / 4 + 2, wy + 4, trim);
+      window_(ctx, W / 4 - 4, wy + 6, 8, 8, trim, false); window_(ctx, W - W / 4 - 4, wy + 6, 8, 8, trim, false);
+      gable(0, W, wy + 1, wy - 26, roof);
+      window_(ctx, dx > W / 2 ? 6 : W - 18, H - 16, 12, 7, trim, false);
+      door(ctx, dx, H - 18, 10, 14, doorC, trim);
+      break;
+    }
+    case 'tower_house':
+    case 'clock':
+    case 'potion': {
+      tower(ctx);
+      if (style === 'clock') {
+        const cy = -10;
+        E(W / 2, cy, 8, 8, col(L.trim, '#ffd24a')); E(W / 2, cy, 6.5, 6.5, '#fffbe8');
+        R(W / 2, cy - 5, 1, 5, '#2a2a3a'); R(W / 2, cy, 4, 1, '#2a2a3a'); S(W / 2, cy, '#c8503c');
+      } else if (style === 'potion') {
+        // bent tip and a bubbling cauldron on the roof shoulder
+        PL([W / 2, -64, W / 2 + 10, -70, W / 2 + 2, -58], roof);
+        E(W - 8, -18, 6, 4, '#3a3a4a'); E(W - 8, -21, 5, 1.6, '#7cf07c');
+        ctx.emit.push({ kind: 'smoke', x: W - 8, y: -24, color: '#d8c4ff' });
+      } else {
+        R(W / 2 + 6, -2, 5, 6, roof);
+      }
+      break;
+    }
+    case 'mushroom': {
+      const wy = H - 20;
+      SH(W / 2, wy + 9, W / 2 - 8, 12, wall, dark(wall, 0.2), light(wall, 0.3));
+      SH(W / 2, wy - 6, W / 2 + 2, 14, roof, rLo, rHi);
+      R(4, wy + 2, W - 8, 2, dark(wall, 0.35));
+      for (const [x, y, r] of [[W / 2 - 10, wy - 12, 3], [W / 2 + 8, wy - 8, 4], [W / 2, wy - 16, 2.5], [W / 2 - 16, wy - 3, 2], [W / 2 + 15, wy - 2, 2]]) E(x, y, r, r * 0.7, col(L.trim, '#ffffff'));
+      E(dx + 5, H - 9, 5, 7, doorC); R(dx, H - 9, 10, 6, doorC); S(dx + 8, H - 8, '#ffd24a');
+      break;
+    }
+    case 'windmill': {
+      const wy = H - 34;
+      PL([8, H - 2, W - 8, H - 2, W - 14, wy, 14, wy], wall);
+      PL([W - 14, wy, W - 8, H - 2, W - 13, H - 2], dark(wall, 0.15));
+      E(W / 2, wy, 10, 6, roof);
+      door(ctx, dx, H - 16, 9, 12, doorC, '#7a4e2c');
+      const hx = W / 2, hy = wy + 2;
+      for (const [ax, ay] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
+        LNx(ctx, hx, hy, hx + ax * 20, hy + ay * 20, '#7a4e2c');
+        PL([hx + ax * 6, hy + ay * 6, hx + ax * 20, hy + ay * 20, hx + ax * 20 + ay * 5, hy + ay * 20 - ax * 5, hx + ax * 6 + ay * 4, hy + ay * 6 - ax * 4], col(L.trim, '#fffaf0'));
+      }
+      E(hx, hy, 3, 3, '#5a3a22');
+      break;
+    }
+    case 'greenhouse': {
+      const wy = H - 18;
+      R(1, H - 5, W - 2, 5, '#c87a5a');
+      R(1, wy, W - 2, 13, light(roof, 0.1)); for (let x = 1; x < W; x += 8) R(x, wy, 1, 13, '#ffffff'); R(1, wy + 6, W - 2, 1, '#ffffff');
+      for (let x = 4; x < W - 4; x += 6) E(x, wy + 9, 3, 3, (x >> 1) % 2 ? '#4cbf55' : '#7cd96a');
+      PL([1, wy, W - 1, wy, W - 4, wy - 10, 4, wy - 10], light(roof, 0.25));
+      for (let x = 4; x < W - 2; x += 8) R(x, wy - 10, 1, 10, '#ffffff');
+      R(4, wy - 11, W - 8, 1, '#ffffff');
+      door(ctx, dx, H - 16, 9, 12, doorC, '#ffffff');
+      break;
+    }
+    case 'library': {
+      const wy = H - 30;
+      box(1, wy, W - 2, 30, wall); base(1, W - 2);
+      R(1, wy - 3, W - 2, 3, trim);
+      for (const x of [6, W - 14]) window_(ctx, x, wy + 8, 8, 12, trim, true);
+      const px = W / 2 - 18;
+      PL([px - 2, wy + 2, px + 38, wy + 2, W / 2, wy - 10], light(wall, 0.15)); R(px - 2, wy + 2, 40, 2, trim);
+      for (let i = 0; i < 4; i++) R(px + 2 + i * 10, wy + 4, 4, 22, '#ffffff');
+      door(ctx, dx, H - 20, 12, 16, doorC, trim);
+      SH(W / 2, wy - 14, 16, 14, roof, rLo, rHi); R(W / 2 - 17, wy - 14, 34, 14, dark(wall, 0.05)); SH(W / 2, wy - 16, 16, 12, roof, rLo, rHi);
+      R(W / 2 - 1, wy - 34, 2, 6, trim); S(W / 2, wy - 35, '#ffffff');
+      hangSign(W - 18, wy + 2);
+      break;
+    }
+    case 'guardhouse': {
+      const wy = H - 30;
+      box(1, wy, W - 2, 30, wall); base(1, W - 2);
+      for (let x = 1; x < W - 2; x += 8) R(x, wy - 5, 5, 5, wall);
+      R(1, wy, W - 2, 2, dark(wall, 0.25));
+      for (let y = wy + 6; y < H - 4; y += 6) R(2, y, W - 4, 1, dark(wall, 0.1));
+      R(W - 12, wy - 16, 9, 30, light(wall, 0.05)); PL([W - 14, wy - 16, W - 1, wy - 16, W - 7.5, wy - 28], roof);
+      for (const x of [8, W - 22]) R(x, wy + 8, 2, 8, '#2a2a3a');
+      door(ctx, dx, H - 20, 11, 16, doorC, trim);
+      hangSign(dx - 12, wy + 4);
+      break;
+    }
+    default: {   // shops built on the generic building, plus a signature extra
+      building(ctx, 'shop');
+      const wy = H - 28;
+      if (style === 'bakery') {
+        E(-1, H - 10, 7, 9, '#c06e4c'); R(-3, wy - 34, 7, 34, '#c06e4c'); R(-3, wy - 34, 7, 2, '#d98a62');
+        ctx.emit.push({ kind: 'smoke', x: 0.5, y: wy - 36, color: '#f4f0f8' });
+      } else if (style === 'outfitter') {
+        R(W - 26, wy + 6, 20, 14, light(roof, 0.3)); R(W - 24, wy + 8, 16, 10, '#9fd0f0'); R(W - 20, wy + 10, 3, 8, '#7a5ad9');
+        PL([W / 2 - 8, -24, W / 2 + 8, -24, W / 2 + 2, -44], '#7a5ad9'); R(W / 2 - 12, -24, 24, 3, '#7a5ad9'); R(W / 2 - 8, -27, 16, 2, '#ffd24a');
+      } else if (style === 'cafe') {
+        for (const [x, c1] of [[W - 26, roof], [W - 10, '#ffd24a']]) {
+          R(x, H - 14, 1, 14, '#5a5a66'); PL([x - 9, H - 14, x + 9, H - 14, x, H - 21], c1); PL([x - 3, H - 14, x + 3, H - 14, x, H - 21], '#ffffff');
+          R(x - 4, H - 4, 8, 2, '#c98c50');
+        }
+      } else if (style === 'general') {
+        for (let i = 0; i < 3; i++) { R(W - 12 + (i % 2) * 4, H - 10 - i * 7, 9, 8, '#d6a060'); R(W - 12 + (i % 2) * 4, H - 10 - i * 7, 9, 1, '#9a6a3a'); }
+        E(6, H - 6, 5, 6, '#b0743d'); R(1, H - 8, 10, 1, '#5a5a66');
+      }
+    }
+  }
+}
+function LNx(ctx, x0, y0, x1, y1, c) { tools(ctx).LN(x0, y0, x1, y1, c); }

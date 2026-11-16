@@ -1,8 +1,8 @@
 // Frostwhistle Peaks enemies + the boss Grumbleflake. Numbers follow the CLASSES.md sheet at the level each def is
 // designed for (hp 6 L^1.4 x 0.6 per round 2, power 2 + 1.5 L, xp 5 + 3 L); spawns rescale them to the player
 // (zone scaleToPlayer, levelRange [13, 19]). Roles scale the hp: bunny 0.55x, sprite 0.75x, cub 1x, penguin 1.1x, golem 1.5x.
-// Behaviours (one brain each): snow_bunny swarmer, frost_sprite flee (ranged), yeti_cub charger,
-// penguin_knight skirmisher (spear), ice_golem ambusher (pretends to be an ice spire), grumbleflake boss.
+// Behaviours: snow_bunny swarmer (dash + thump), frost_sprite skirmisher (ranged hoverer), yeti_cub charger (snowballs),
+// penguin_knight skirmisher at spear range (jab, slide, shield), ice_golem ambusher (pretends to be an ice spire), grumbleflake boss.
 import { humanoid } from '../../looks.js';
 
 const proj = (model, color, glow, size = 0.6) => ({ rig: 'projectile', model, color, glow, size, trail: true });
@@ -36,12 +36,13 @@ export default {
     boss: null,
   },
 
-  // L14. Flee brain: hovers at 5-6 tiles, blinks away when approached, fires ice shards and a shard fan, drops frost patches.
+  // L14. Flying skirmisher: hovers at 5-6 tiles, blinks away when approached, fires ice shards and a shard fan, drops frost patches.
+  // (The `flee` brain only attacks when cornered, so a ranged hoverer is a skirmisher.)
   frost_sprite: {
     id: 'frost_sprite', name: 'Frost Sprite', level: 14, tags: ['spirit', 'flying'],
     stats: { hp: 108, power: 23, defense: 0, speed: 3.2, radius: 0.3, xp: 47 },
     flying: true,
-    ai: { brain: 'flee', aggro: 9, leash: 14, keepRange: 5.5, blinkCd: 4 },
+    ai: { brain: 'skirmisher', aggro: 9, leash: 14, keepRange: 5.5, blinkCd: 4 },
     attacks: [
       { id: 'ice_shard', use: 'projectile', speed: 9, range: 8, dmg: 1.0, radius: 0.22, pierce: false,
         look: proj('ice', '#bfeaff', '#ffffff', 0.55), cd: 2.4, windup: 0.5, minRange: 2, telegraph: 'line', weight: 3 },
@@ -124,7 +125,7 @@ export default {
   // leap and a grumpy speed buff. Shields (the Unit 4 questions) at 66% and 33%.
   grumbleflake: {
     id: 'grumbleflake', name: 'Grumbleflake', level: 16, tags: ['boss', 'beast', 'yeti'],
-    stats: { hp: 5800, power: 26, defense: 4, speed: 2.2, radius: 1.4, xp: 520 },
+    stats: { hp: 6400, power: 17, defense: 4, speed: 2.2, radius: 1.4, xp: 520 },
     flying: false,
     ai: { brain: 'boss', aggro: 14, leash: 22, keepRange: 2.5, summon: { kind: 'snow_bunny', n: 2, max: 4, cd: 14 } },
     attacks: [

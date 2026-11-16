@@ -61,3 +61,7 @@ Branch `wp/fixview`. Touched only `src/ui`, `css`, `src/render`, `tests/e2e`, th
   visible in both renderers but some are generous (Runestorm, Aegis, Skyfall fill the screen; familiars are small in
   3D). The conjurer's Arcane Nova flashes a red disc in 2D.
 - Timing in the sandbox depends on machine load; the smoke test uses long screenshot timeouts with a retry.
+- 3D archer (L10+) still shows a small dark smudge beside the character during the draw (probably the `charge`/`shadow`
+  tags together); the character is readable but it is not polished.
+- Final runs on this branch: `node --test tests/node` 340/340; smoke (2d and 3d), matrix (2d, 3d), showcase (246 images,
+  about 4.5 min under load), skeleton, ui, r2d-gallery, r3d-gallery all pass.

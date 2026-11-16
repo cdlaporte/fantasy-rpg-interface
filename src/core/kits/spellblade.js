@@ -16,6 +16,7 @@ const BN = (game) => W.snums(game, 'battlemage');
 const elColor = (game, i) => BC(game)[ELEMENTS[i]];
 const foes = [];
 const FROST_SHARD = { id: 'frost', t: 2, p: 0.4 };
+const WEAVE = ['Fire', 'Frost', 'Storm'].map((n) => ['', n + ' x1', n + ' x2', n + ' x3']);
 
 /** The element's effect on t (burn / frost; storm is the chain itself). */
 function applyEl(game, p, t, i) {
@@ -168,6 +169,7 @@ export default {
     const kh = game.kits.kitHud;
     kh.pips = sb.charges; kh.pipsMax = N(game).spellweave.charges;
     if (sb.edge) kh.stance = 'Prismatic Edge';
+    else if (sb.charges > 0) kh.stance = WEAVE[sb.el][Math.min(3, sb.charges)];   // "Frost x3" in the attack box
     hud.kitHud = kh;
   },
 

@@ -123,8 +123,9 @@ export default {
     const sn = p.data.kit.snt;
     if (!sn) return;
     const kh = game.kits.kitHud;
-    if (sn.fort) kh.stance = 'Fortress';
     kh.label = LABELS[Math.min(10, Math.floor(sn.bastion / 10))];
+    if (sn.fort) kh.stance = 'Fortress';
+    else if (!kh.stance && sn.bastion >= 10) kh.stance = kh.label;   // the attack box shows the meter ("Bastion 60%")
     hud.kitHud = kh;
   },
 

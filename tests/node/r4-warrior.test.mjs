@@ -144,6 +144,8 @@ test('Sentinel Bastion: blocks fill the meter; a full meter releases a counter s
       assert.ok(g.fx.list.some((e) => e.type === 'text' && e.text === 'BASTION!'));
       assert.ok(g.foes.some((f) => f.status.stun > 0 || f.hp < 5000));
       assert.match(g.game.hudState().kitHud.label, /^Bastion \d+%$/);
+      g.p.data.kit.snt.bastion = 60;
+      assert.equal(g.game.hudState().kitHud.stance, 'Bastion 60%', 'the attack box shows the meter');
     } else assert.equal(waves.length, 0);
   }
 });
@@ -210,6 +212,7 @@ test('Spellblade Spellweave: Rune Shift charges three swings with the new elemen
     if (m === 'spellblade') {
       assert.equal(g.p.data.kit.sb.charges, 3);
       assert.equal(g.game.hudState().kitHud.pips, 3);
+      assert.equal(g.game.hudState().kitHud.stance, 'Frost x3', 'the attack box shows the charges');
       assert.ok(g.p.glow);
     }
     g.resetCounters();

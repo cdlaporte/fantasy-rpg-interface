@@ -28,7 +28,9 @@ const DIR_OF = (a) => { const c = Math.cos(a), s = Math.sin(a); return Math.abs(
 
 /** A game at `zone`/`marker` with a level-`level` character of `cls` (+ `spec`), its boons, optional companions. */
 export function setup({ cls, spec = null, level, zone = 'forest', marker = 'boss_arena', companions = true, seed = 7, flags = [], boons = true }) {
-  const game = createGame({ data, name: 'Sim', seed, test: true, storage: createMemoryStorage(), zone, marker,
+  // the balance sims measure fights only: no Scholar's chests (they would change the zone's entities and blocked tiles)
+  const simData = Object.assign({}, data, { zones: Object.assign({}, data.zones, { [zone]: Object.assign({}, data.zones[zone], { scholarChests: 0 }) }) });
+  const game = createGame({ data: simData, name: 'Sim', seed, test: true, storage: createMemoryStorage(), zone, marker,
     questions: createQuestions({ mode: 'auto' }) });
   game.quiet = true;
   for (const f of ['has_stick', 'tutorial_done', 'ambush_done', 'look_chosen', 'intro_done', 'class_chosen', 'forest_open'].concat(flags)) game.setFlag(f, true);

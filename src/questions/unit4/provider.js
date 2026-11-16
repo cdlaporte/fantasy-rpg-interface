@@ -17,6 +17,7 @@ export const CONTEXT_INFO = {
   spec: ['Specialization trial', 'Answer, then choose your specialization.'],
   gate: ['Rune gate', 'Answer correctly to break the seal.'],
   chest: ['Rune chest', 'Right answer: bonus treasure inside.'],
+  scholar_chest: ["Scholar's chest", 'Solve it to open the chest. (Wrong: try again with a new problem.)'],
   boss_shield: ['Boss shield', 'Answer correctly to shatter the shield!'],
   focus: ['Focus scroll', 'Right answer: full power and every ability ready.'],
   lesson: ['Lesson', 'Each right answer earns XP and gold.'],

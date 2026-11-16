@@ -637,6 +637,68 @@ export default {
       });
     }
 
+    // ---------- Scholar's chests (placed by world.js; locked behind a Unit 4 question) ----------
+    // Reward per chest is fixed by its zone and index (so a wrong answer cannot reroll it): permanent power / max HP /
+    // defense, gold, or (sometimes) a free boon.
+    function scholarReward(zoneId, i) {
+      let h = 2166136261;
+      for (const ch of zoneId + '#' + i) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+      const r = ((h >>> 0) % 1000) / 1000;
+      return r < 0.25 ? 'power' : r < 0.45 ? 'hp' : r < 0.60 ? 'defense' : r < 0.90 ? 'gold' : 'boon';
+    }
+    function openScholarChest(i, self) {
+      const z = game.zone;
+      const zoneId = z ? z.id : 'none';
+      const flag = `schest_${zoneId}_${i}`;
+      if (game.flags[flag]) { game.toast("It's empty.", 'info'); return undefined; }
+      if (self && self.data) { if (self.data.opening) return undefined; self.data.opening = true; }
+      const range = (z && z.def && z.def.levelRange) || [1, 5];
+      const mid = (range[0] + range[1]) / 2;
+      const difficulty = mid <= 5 ? 1 : mid <= 12 ? 2 : 3;
+      const g = gates();
+      const ask = g && g.ask ? g.ask({ context: 'scholar_chest', difficulty, tags: ['scholar'], blocking: false }) : Promise.resolve({ correct: true });
+      return ask.then((res) => {
+        if (self && self.data) self.data.opening = false;
+        if (!(res && res.correct)) { game.toast('The lock holds. Try again!', 'info'); sfx('ui_bad'); return null; }
+        const pr = game.sys.progression;
+        const p = game.player;
+        let kind = scholarReward(zoneId, i);
+        if (kind === 'boon' && !(pr && pr.classId && pr.offerBoons && pr.offerBoons(1).length > (pr.pendingBoons || 0))) kind = 'gold';
+        if (kind !== 'gold' && !(pr && pr.chestBonus)) kind = 'gold';
+        const x = self ? self.x : p ? p.x : 0, y = self ? self.y : p ? p.y : 0;
+        let text = '';
+        if (kind === 'gold') {
+          const n = 25 + 10 * ((pr && pr.level) || 1);
+          addGold(n);
+          text = `+${n} gold`;
+          game.fx({ type: 'text', x, y, text, style: 'gold' });
+        } else if (kind === 'boon') {
+          pr.bonusBoons = (pr.bonusBoons || 0) + 1;
+          pr.pendingBoons = (pr.pendingBoons || 0) + 1;
+          text = 'A free boon! Press Tab to choose it';
+        } else {
+          const cb = pr.chestBonus;
+          if (kind === 'power') { cb.power = Math.round((cb.power + 0.03) * 1000) / 1000; text = 'Power +3% (permanent)!'; }
+          if (kind === 'hp') { cb.hp = Math.round((cb.hp + 0.04) * 1000) / 1000; text = 'Max HP +4% (permanent)!'; }
+          if (kind === 'defense') { cb.defense = (cb.defense || 0) + 1; text = 'Defense +1 (permanent)!'; }
+          if (pr.recalc) pr.recalc();
+          game.fx({ type: 'levelup', x, y });
+        }
+        game.toast(text, kind === 'gold' ? 'loot' : 'good');
+        game.setFlag(flag, true);
+        if (self) {
+          self.look = Object.assign({}, self.look || { rig: 'effect' }, { model: 'chest_open' });
+          self.lookRev = (self.lookRev || 0) + 1;
+          self.interact = null;
+          self.name = '';
+          game.fx({ type: 'sparkle', x: self.x, y: self.y, n: 24, r: 1.2, color: '#c58cff' });
+        }
+        sfx('levelup');
+        emit('chest:opened', { id: 'scholar_' + i, zone: zoneId, scholar: true, reward: kind });
+        return kind;
+      });
+    }
+
     // ---------- lessons ----------
     function runLesson(lessonId) {
       const def = (data().lessons || {})[lessonId];
@@ -716,7 +778,7 @@ export default {
       openInventory,
       openShop, buy, haggle,
       shopVisit() { return shop ? { id: shop.id, haggled: shop.haggled, tried: shop.tried } : null; },
-      rollLoot, openChest, runLesson,
+      rollLoot, openChest, openScholarChest, runLesson,
       cdFrac(id) { const c = cds[id]; return c && c.left > 0 ? c.left / c.total : 0; },
       buffs() { return buffs.map((b) => ({ kind: b.kind, left: b.left })); },
       reset() {
@@ -766,6 +828,7 @@ export default {
       });
       ops.register('shop', (g, a) => openShop(a[1]));
       ops.register('chest', (g, a, ctx) => openChest(a[1], a[2] || {}, (ctx && ctx.self) || null));
+      ops.register('scholarChest', (g, a, ctx) => openScholarChest(a[1] | 0, (ctx && ctx.self) || null));
       ops.register('lesson', (g, a) => runLesson(a[1]));
       ops.registerCond('hasItem', (g, c) => count(c[1]) >= (c.length > 2 ? Number(c[2]) : 1));
       ops.registerCond('gold', (g, c) => (c.length >= 3 ? compare(api.gold, c[1], Number(c[2])) : api.gold >= Number(c[1] || 0)));

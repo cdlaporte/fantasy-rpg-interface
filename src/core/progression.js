@@ -520,6 +520,9 @@ export default {
           if (m.defense) defense *= m.defense;
         }
       }
+      // Scholar's chests (permanent rewards for answering their questions): +% power and max HP, + flat defense.
+      const cb = api.chestBonus;
+      if (cb) { power *= 1 + (cb.power || 0); hp *= 1 + (cb.hp || 0); defense += cb.defense || 0; }
       // Number scale: the class tables stay in readable base numbers; health and power (hence all damage) scale here.
       const ns = game.config.numberScale || 1;
       power *= ns;
@@ -573,7 +576,7 @@ export default {
 
     // ---------- leveling ----------
     /** Boon slots earned by a level (BOON_LEVELS reached). */
-    function boonSlots(level) { let n = 0; for (const L of BOON_LEVELS) if (L <= level) n++; return n; }
+    function boonSlots(level) { let n = api.bonusBoons || 0; for (const L of BOON_LEVELS) if (L <= level) n++; return n; }
 
     /**
      * round 2 (teacher mode): going DOWN a level. Boons taken above the new level are removed, pending boons are
@@ -998,6 +1001,7 @@ export default {
     // ---------- api ----------
     const api = {
       level: 1, xp: 0, xpTotal: 0, xpNext: xpNext(1), classId: null, specId: null, boons: [],
+      chestBonus: { power: 0, hp: 0, defense: 0 }, bonusBoons: 0,   // Scholar's chests
       /** round 2: boon id -> the level it was taken at (a level-down removes boons taken above the new level). */
       boonLevels: {},
       pendingBoons: 0, pendingSpec: false, offer: null, downed: false, downPromise: null,
@@ -1023,6 +1027,7 @@ export default {
       reset() {
         api.level = 1; api.xp = 0; api.xpTotal = 0; api.xpNext = xpNext(1); api.classId = null; api.specId = null;
         api.boons = []; api.boonLevels = {}; api.pendingBoons = 0; api.pendingSpec = false; api.offer = null; api.downed = false;
+        api.chestBonus = { power: 0, hp: 0, defense: 0 }; api.bonusBoons = 0;
         lastReviveAsk = -Infinity;
         updateNames(); applyKit(); recalc();
         if (game.player) game.player.hp = game.player.hpMax;
@@ -1092,6 +1097,7 @@ export default {
       level: a.level, xp: a.xp, xpTotal: a.xpTotal, classId: a.classId, specId: a.specId, boons: a.boons.slice(),
       boonLevels: Object.assign({}, a.boonLevels),
       pendingBoons: a.pendingBoons, pendingSpec: a.pendingSpec, offer: a.offer ? a.offer.map((o) => Object.assign({}, o)) : null,
+      chestBonus: Object.assign({}, a.chestBonus), bonusBoons: a.bonusBoons || 0,
     };
   },
 
@@ -1112,6 +1118,8 @@ export default {
       a.boonLevels[id] = L > 0 ? L : Math.min(a.level, BOON_LEVELS[Math.min(i, BOON_LEVELS.length - 1)]);
     });
     a.pendingBoons = Math.max(0, j.pendingBoons | 0);
+    a.chestBonus = Object.assign({ power: 0, hp: 0, defense: 0 }, j.chestBonus || null);
+    a.bonusBoons = Math.max(0, j.bonusBoons | 0);
     a.pendingSpec = !!j.pendingSpec;
     a.offer = Array.isArray(j.offer) && j.offer.length ? j.offer : null;
     const p = game.player;

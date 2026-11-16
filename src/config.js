@@ -5,14 +5,17 @@ export const config = {
   startMarker: 'start',
   fallbackZone: 'test',        // used when startZone is missing from data.zones
   levelCap: 20,                // round 3 (was 12)
-  numberScale: 6,
+  numberScale: 6,              // every health and damage number in the game is this many times bigger (see docs/notes/fixcore.md)
   // round 2 (playtest feedback)
   cameraZoom: 1.3,             // 3D camera: closer view (cutscene zooms multiply this)
   modelScale: 1.3,             // 3D: characters and creatures drawn this much bigger (not props, projectiles, effects)
   playerSpeedMul: 1.3,         // player (and companion) walking speed multiplier over the class numbers
   xpCurve: { base: 15, exp: 1.5 },   // xpNext(level) = round(base * level^exp)
   teacherPin: '9631',          // classroom lock for Teacher options (not real security)
-  defaultRenderer: '3d',              // every health and damage number in the game is this many times bigger (see docs/notes/fixcore.md)
+  defaultRenderer: '3d',
+  // Scholar's chests: question-locked chests placed automatically per zone (zone def `scholarChests` wins; zones
+  // with `scaleToPlayer` (the biomes) default to `biome`).
+  scholarChests: { intro: 2, town: 4, academy: 2, forest: 8, biome: 10 },
   dayLengthSeconds: 720,       // a full in-game day = 12 real minutes
   startHour: 8,
   activationRadius: 30,        // tiles; entities farther from the player are asleep
@@ -36,6 +39,7 @@ export const config = {
       spec: { enabled: true, blocking: false },
       gate: { enabled: true, blocking: true },
       chest: { enabled: true, blocking: false },
+      scholar_chest: { enabled: true, blocking: false },   // Scholar's chests: a wrong answer leaves the chest locked
       boss_shield: { enabled: true, blocking: true },
       focus: { enabled: true, blocking: false },
       lesson: { enabled: true, blocking: false },

@@ -157,6 +157,8 @@ export default {
       },
       /** added: blocks projectiles, sight and flyers (block tiles, solid props, seals, chests). */
       wallAt(x, y) { return api.solidAt(x, y, true); },
+      /** Scholar's chest tiles of a zone (tests and tools). */
+      scholarSpots(z) { return scholarSpots(z || api.zone || game.zone); },
       tileDefAt(x, y) {
         const z = game.zone;
         const tx = Math.floor(x), ty = Math.floor(y);
@@ -365,6 +367,81 @@ export default {
       sp.alive++;
       return e;
     }
+    /** Scholar's chests: question-locked chests spread over every zone, deterministic from the zone's data (the same
+     * spots every visit, so their flags `schest_<zone>_<i>` stay valid). Spots: walkable tiles reachable from the
+     * entry, with all 8 neighbours walkable and dry, away from markers, exits, hand-placed chests and each other. */
+    function scholarSpots(z) {
+      const def = z.def, cfg = game.config.scholarChests || {};
+      const n = def.scholarChests != null ? def.scholarChests : cfg[z.id] != null ? cfg[z.id] : def.scaleToPlayer ? (cfg.biome || 0) : 0;
+      if (!n || !z.markers) return [];
+      const W = z.w, H = z.h, solid = z.solid;
+      const entryName = def.entry || { intro: 'start', town: 'gate_south', academy: 'entrance', forest: 'entry_town' }[z.id];
+      const e = (entryName && z.markers[entryName]) || Object.values(z.markers)[0];
+      if (!e) return [];
+      const seen = new Uint8Array(W * H), q = [e[1] * W + e[0]];
+      // rune gates count as walls, so sealed areas (and the boss arenas behind them) get no chests
+      for (const gdef of def.gates || []) {
+        const r = api.rectOf(gdef, 3, 1);
+        if (r) for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (x >= 0 && y >= 0 && x < W && y < H) seen[y * W + x] = 2;
+      }
+      seen[q[0]] = 1;
+      for (let k = 0; k < q.length; k++) {
+        const i = q[k], x = i % W, y = (i / W) | 0;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nx = x + dx, ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue;
+          const j = ny * W + nx;
+          if (seen[j] || solid[j]) continue;
+          seen[j] = 1; q.push(j);
+        }
+      }
+      const avoid = [];
+      for (const m of Object.values(z.markers)) avoid.push(m);
+      for (const c of def.chests || []) { const m = z.markers[c.at]; if (m) avoid.push(m); }
+      const cand = [];
+      for (const i of q) {
+        const x = i % W, y = (i / W) | 0;
+        if (x < 3 || y < 3 || x >= W - 3 || y >= H - 3) continue;
+        let ok = true;
+        for (let dy = -1; dy <= 1 && ok; dy++) for (let dx = -1; dx <= 1 && ok; dx++) if (solid[(y + dy) * W + x + dx] || seen[(y + dy) * W + x + dx] !== 1) ok = false;
+        if (!ok) continue;
+        const ba = z.markers.boss_arena;
+        if (ba && Math.hypot(ba[0] - x, ba[1] - y) < 12) continue;
+        const td = api.tileDefAt(x + 0.5, y + 0.5);
+        if (td && td.shape === 'water') continue;
+        if (avoid.some((m) => Math.abs(m[0] - x) < 4 && Math.abs(m[1] - y) < 4)) continue;
+        cand.push(i);
+      }
+      // seeded shuffle, then greedy spread-out picks (relax the spacing if the zone is small)
+      let s = ((def.seed || 1) * 2654435761 + n * 97) >>> 0;
+      const rnd = () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+      for (let k = cand.length - 1; k > 0; k--) { const j = Math.floor(rnd() * (k + 1)); const t = cand[k]; cand[k] = cand[j]; cand[j] = t; }
+      const out = [];
+      for (let gap = Math.max(6, Math.sqrt((W * H) / n) * 0.7); gap >= 3 && out.length < n; gap *= 0.75) {
+        for (const i of cand) {
+          if (out.length >= n) break;
+          const x = i % W, y = (i / W) | 0;
+          if (out.some((p) => Math.hypot(p[0] - x, p[1] - y) < gap)) continue;
+          out.push([x, y]);
+        }
+      }
+      return out;
+    }
+    function placeScholarChests(z) {
+      scholarSpots(z).forEach(([tx, ty], i) => {
+        const flag = 'schest_' + z.id + '_' + i;
+        const opened = !!game.flags[flag];
+        const model = opened ? 'chest_open' : 'rune_chest';
+        game.ents.create({
+          kind: model, type: 'effect', team: 'neutral', name: opened ? '' : "Scholar's chest",
+          x: tx + 0.5, y: ty + 0.5, solid: false, pushable: false, radius: 0.45,
+          look: { rig: 'effect', model, color: '#c58cff' },
+          data: { chest: 'scholar_' + i, scholar: i, flag },
+          interact: opened ? null : { prompt: 'Solve to open', range: 1.4, do: [['scholarChest', i]] },
+        });
+        api.block(tx, ty, 1, 1, +1);
+      });
+    }
     function furnish(z) {
       const def = z.def;
       for (const ex of def.exits || []) {
@@ -382,6 +459,7 @@ export default {
         const r = api.rectOf(t, t.w || 1, t.h || 1);
         z.triggerState.push({ def: t, rect: r, inside: false, fired: false });
       }
+      placeScholarChests(z);
       for (const gdef of def.gates || []) {
         if (game.flags['gate_' + gdef.id]) continue;
         const r = api.rectOf(gdef, 3, 1);

@@ -408,6 +408,24 @@ export function createTeacherTools(game, opts = {}) {
       return b;
     }));
   }
+  // round 4: the two masteries of the current subclass (labels follow the subclass) and None; equips at the current level
+  const mIds = () => (pr.specId && pr.masteryIds ? pr.masteryIds(pr.specId).slice(0, 2) : []);
+  const mName = (id) => { const d = pr.masteryDef && pr.masteryDef(id); return (d && d.name) || id; };
+  const mBtns = [0, 1].map((i) => btn('', () => {
+    const id = mIds()[i];
+    if (!id) { flash('Choose a subclass first: each subclass has two masteries.', 'bad'); return false; }
+    if (pr.level < 8) { flash('Masteries need level 8 or higher (15 to use the new ultimate).', 'bad'); return false; }
+    if (!T.setMastery(id)) return false;
+    flash(`Now a ${mName(id)} (${nameOf(pr.specId, true)}) at level ${pr.level}.`, 'good');
+    return true;
+  }, 'tch-class tch-mastery', () => { const id = mIds()[i]; return !!id && pr.masteryId === id; }));
+  const mNone = btn('None', () => {
+    if (!pr.masteryId) { flash(pr.specId ? 'No mastery to remove.' : 'Choose a subclass first.', 'bad'); return false; }
+    T.setMastery(null);
+    flash(`Mastery removed: a plain ${nameOf(pr.specId, true)} again.`, 'good');
+    return true;
+  }, 'tch-class tch-mastery-none', () => !!pr.specId && !pr.masteryId);
+  line('MASTERY', mBtns.concat(mNone), 'tch-masteries');
   line('CHEATS', [
     btn('', () => { const on = !T.isGod(); T.god(on); flash(on ? 'God mode on: you cannot be hurt.' : 'God mode off.', 'good'); }, 'tch-god', () => T.isGod()),
     btn('+500 gold', () => { T.gold(500); flash('+500 gold.', 'good'); }),
@@ -431,8 +449,18 @@ export function createTeacherTools(game, opts = {}) {
   function refresh() {
     if (destroyed) return;
     const cls = pr.classId ? nameOf(pr.classId) : 'No class';
-    const sp = pr.specId ? ' · ' + nameOf(pr.specId, true) : '';
+    const sp = (pr.specId ? ' · ' + nameOf(pr.specId, true) : '') + (pr.masteryId ? ' · ' + mName(pr.masteryId) : '');
     setText(status, `Level ${pr.level} · ${cls}${sp} · XP ${pr.xp}/${pr.xpNext} · Rank ${pr.rank()} · Boons ${pr.boons.length}${pr.pendingBoons ? ` (+${pr.pendingBoons} to pick with ${keyLabel('boon')})` : ''}`);
+    const ids = mIds();
+    mBtns.forEach((b, i) => {
+      const id = ids[i];
+      b.textContent = id ? mName(id) : '—';
+      b.dataset.mastery = id || '';
+      const d = id && pr.masteryDef ? pr.masteryDef(id) : null;
+      b.style.setProperty('--cc', (d && d.color) || '#9a8a7a');
+      setClass(b, 'dim', !id || pr.level < 8);
+    });
+    setClass(mNone, 'dim', !pr.masteryId);
     for (const [b, on] of marks) setClass(b, 'on', !!on());
     const godBtn = grid.querySelector('.tch-god');
     if (godBtn) godBtn.textContent = `God mode: ${T && T.isGod() ? 'On' : 'Off'}`;

@@ -1,4 +1,5 @@
-// Town arrival, the class pick in the Grand Hall, and the level-8 specialization ceremony.
+// Town arrival, the class pick in the Grand Hall, the level-8 specialization ceremony and (round 4) the level-15
+// mastery ceremony.
 // `onSkip` (added): ops run instead of the remaining steps when a skippable cutscene is skipped.
 import { tutorialStep as tut } from '../../platform/bindings.js';  // round 2: key names follow the bindings
 const DOWN = 2;
@@ -107,6 +108,39 @@ export default {
       ['say', 'laporte', 'Look at you. Very impressive. I am pretending not to be impressed.', { mood: 'proud' }],
       ['say', 'laporte', 'One more thing. Something is snoring in the old grove. Loudly. Go look.', { mood: 'calm' }],
       ['say', 'laporte', 'Ranger Tam knows the way.', { mood: 'calm' }],
+      ['cameraReset'],
+      ['letterbox', false],
+      ['unlockInput'],
+      ['save'],
+    ],
+  },
+
+  // round 4: the level-15 mastery ceremony (docs/MASTERY.md). Same office, same Laporte, a little less pretending.
+  // ['specPicker', 'mastery'] is the mastery picker (op 'masteryPicker' is the same; the shared name keeps the story
+  // step vocabulary unchanged). Progression asks the 'mastery' question first, then shows the two masteries.
+  mastery_ceremony: {
+    id: 'mastery_ceremony', zone: 'academy', skippable: false,
+    steps: [
+      ['lockInput'],
+      ['letterbox', true],
+      ['camera', { to: 'headmaster', zoom: 1.3, t: 0.8 }],
+      ['say', 'laporte', '{name}. Again. Sit. Or stand. You know the drill by now.', { mood: 'calm' }],
+      ['say', 'laporte', 'Last time you chose a path. This time you master it. New outfit. Bigger finale.', { mood: 'calm' }],
+      ['say', 'laporte', 'One question first. Then you choose. You always get to choose.', { mood: 'calm' }],
+      ['anim', 'laporte', 'cast', 1.0],
+      ['fx', { type: 'sparkle', at: 'laporte', n: 28, r: 1.4, color: '#ffe680' }],
+      ['specPicker', 'mastery'],
+      ['fx', { type: 'screenFlash', color: '#ffffff', dur: 0.35 }],
+      ['fx', { type: 'pillar', at: 'player', r: 1.9, color: '#ffe680', dur: 1.8 }],
+      ['fx', { type: 'shockwave', at: 'player', r: 4, color: '#ffd23f' }],
+      ['fx', { type: 'ring', at: 'player', r: 3.2, color: '#ffffff', dur: 0.9 }],
+      ['fx', { type: 'sparkle', at: 'player', n: 50, r: 2.2, color: '#ffffff' }],
+      ['sfx', 'levelup'],
+      ['camera', { to: 'player', zoom: 1.5, t: 0.5, shake: 0.4 }],
+      ['flag.set', 'mastery_ceremony_done', true],
+      ['wait', 1.0],
+      ['say', 'laporte', 'Look at you. I have stopped pretending. It was not working anyway.', { mood: 'proud' }],
+      ['say', 'laporte', 'Off you go. Try not to outgrow the Academy before the end of term.', { mood: 'happy' }],
       ['cameraReset'],
       ['letterbox', false],
       ['unlockInput'],

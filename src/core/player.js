@@ -49,15 +49,19 @@ export default {
           const sd = specId ? (pr && pr.specDef ? pr.specDef(specId) : data.specs && data.specs[specId]) : null;
           if (cd && cd.look) deepMerge(look, cd.look);
           if (sd && sd.look) deepMerge(look, sd.look);
+          // round 4: the tier-3 mastery's outfit patch goes over the subclass's
+          const mid = p.data.masteryId || (pr && pr.masteryId) || null;
+          const md = mid && pr && pr.masteryDef ? pr.masteryDef(mid) : null;
+          if (md && md.look) deepMerge(look, md.look);
           const kp = p.data.kit && p.data.kit.lookPatch;
           if (kp) deepMerge(look, kp);
           const inv = game.sys.inventory;
           const cos = inv && typeof inv.equippedLookPatch === 'function' ? inv.equippedLookPatch() : null;
           if (cos) deepMerge(look, cos);
           if (classId && levelOf() >= 10) {
-            const aura = (sd && sd.aura) || (cd && cd.aura) || {
+            const aura = (md && md.aura) || (sd && sd.aura) || (cd && cd.aura) || {
               style: CLASS_AURA[classId] || (cd && cd.parent && CLASS_AURA[cd.parent]) || 'glow',
-              color: (sd && sd.color) || (cd && cd.color) || '#ffd24a',
+              color: (md && md.color) || (sd && sd.color) || (cd && cd.color) || '#ffd24a',
             };
             look.aura = clone(aura);
           }
@@ -116,7 +120,7 @@ export default {
     game.commands.interact = () => api.interact();
 
     game.bus.on('flag', ({ key }) => { if (LOOK_FLAGS[key]) api.refreshLook(); });
-    for (const ev of ['class:set', 'spec:set', 'levelup', 'cosmetic:equipped']) game.bus.on(ev, () => api.refreshLook());
+    for (const ev of ['class:set', 'spec:set', 'mastery:set', 'levelup', 'cosmetic:equipped']) game.bus.on(ev, () => api.refreshLook());
 
     const ops = game.sys.ops;
     if (ops && ops.register) {

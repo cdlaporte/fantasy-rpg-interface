@@ -2,6 +2,8 @@
 //  lookPicker  {name, looks: [up to 10 looks]}                     -> pickLook(i)   (5 x 2 portraits + the NAME under each, nothing else)
 //  classPicker {classes: [{id, name, blurb, look, basic, abilities}]} -> pickClass(id)
 //  specPicker  {options: [{id, name, blurb, look, basic, abilities}]} -> pickSpec(id)
+//              round 4: {tier: 3, title, subtitle, options: [{id, name, blurb, look, color, fromName, passive: {name, desc},
+//              ultimate, abilities}]} is the mastery picker (two cards) -> pickMastery(id)
 //  boonPicker  {options: [{id, name, desc, icon}]}                   -> pickBoon(id)
 import { el, add, keycap } from './dom.js';
 import { iconCanvas } from './icons.js';
@@ -64,7 +66,7 @@ function abilityRow(a) {
 
 /** Shared by classPicker and specPicker. */
 function createCardPicker(modal, ctx, { title, subtitle, list, onPick }) {
-  const root = el('div', 'picker class-picker');
+  const root = el('div', 'picker class-picker' + (modal && modal.tier === 3 ? ' mastery-picker' : ''));
   const head = el('div', 'picker-head');
   add(head, el('div', 'picker-title pxfont', title));
   if (subtitle) head.appendChild(el('div', 'picker-sub', subtitle));
@@ -83,9 +85,18 @@ function createCardPicker(modal, ctx, { title, subtitle, list, onPick }) {
     add(banner, pf, kc);
     const nm = el('div', 'class-name pxfont', opt.name || opt.id);
     const blurb = el('div', 'class-blurb', opt.blurb || opt.desc || '');
-    add(card, banner, nm, blurb);
-    const basic = normalizeBasic(opt.basic);
+    add(card, banner, nm);
+    if (opt.tier === 3 && opt.fromName) card.appendChild(el('div', 'class-from pxfont', opt.fromName.toUpperCase() + ' MASTERY'));
+    card.appendChild(blurb);
+    const basic = opt.tier === 3 ? null : normalizeBasic(opt.basic);
     const kit = el('div', 'class-kit');
+    if (opt.passive && (opt.passive.name || opt.passive.desc)) {
+      // round 4: a mastery's signature passive, tagged like the attack row
+      const pr = abilityRow({ icon: opt.passive.icon || 'star', name: opt.passive.name || 'Passive', desc: opt.passive.desc, key: '' });
+      pr.classList.add('ab-basic', 'ab-passive');
+      pr.querySelector('.ab-head').prepend(el('span', 'ab-tag pxfont', 'PASSIVE'));
+      kit.appendChild(pr);
+    }
     if (basic && basic.name) {
       const br = abilityRow({ icon: basic.icon, name: basic.name, desc: basic.desc, key: '' });
       br.classList.add('ab-basic');
@@ -94,7 +105,8 @@ function createCardPicker(modal, ctx, { title, subtitle, list, onPick }) {
     }
     for (const a of normalizeAbilities(opt.abilities)) kit.appendChild(abilityRow(a));
     card.appendChild(kit);
-    tip(card, { title: opt.name || opt.id, lines: [opt.blurb || opt.desc || '', basic && basic.name ? `Attack: ${basic.name}. ${basic.desc || ''}` : ''] });
+    tip(card, { title: opt.name || opt.id, lines: [opt.blurb || opt.desc || '', basic && basic.name ? `Attack: ${basic.name}. ${basic.desc || ''}`
+      : opt.passive && opt.passive.name ? `Passive: ${opt.passive.name}. ${opt.passive.desc || ''}` : ''] });
     row.appendChild(card);
     return card;
   });
@@ -121,6 +133,14 @@ export function createClassPicker(modal, ctx) {
 }
 
 export function createSpecPicker(modal, ctx) {
+  if (modal && modal.tier === 3) {
+    // round 4: the same modal for the tier-3 mastery choice (two cards)
+    return createCardPicker(modal, ctx, {
+      title: modal.title || 'CHOOSE YOUR MASTERY', subtitle: modal.subtitle || 'A mastery: a new look, a passive and an upgraded ultimate.',
+      list: modal.options || [],
+      onPick: (c) => (ctx.game.commands.pickMastery ? ctx.game.commands.pickMastery(c.id) : ctx.game.commands.pickSpec(c.id)),
+    });
+  }
   return createCardPicker(modal, ctx, {
     title: 'CHOOSE YOUR PATH', subtitle: 'A specialization changes how you fight for good.',
     list: modal.options || [], onPick: (c) => ctx.game.commands.pickSpec(c.id),

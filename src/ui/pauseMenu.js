@@ -3,6 +3,7 @@
 // Commands: closeModal(), setQuality(q), saveNow(), quitToTitle().
 import { el, add, setText, clear } from './dom.js';
 import { iconCanvas } from './icons.js';
+import { keyLabel } from '../platform/bindings.js';
 import { K, selectable, hints, controlsCard } from './modalKit.js';
 import { createSettings, QUALITY_NAMES, QUALITY_KEY } from './settings.js';
 import { createTeacherTools } from './teacher.js';
@@ -26,6 +27,7 @@ export function createPauseMenu(modal, ctx) {
     { id: 'sound', icon: 'bolt', label: () => `Sound: ${muted() ? 'Off' : 'On'}`, cycle: true },
     { id: 'save', icon: 'book', label: () => 'Save game' },
     { id: 'controls', icon: 'rune', label: () => 'Controls' },
+    { id: 'quests', icon: 'book', label: () => `Quest log (${keyLabel('quests')})` },
     game.teacher === true ? { id: 'teacher', icon: 'star', label: () => 'Teacher tools' } : null,
     { id: 'quit', icon: 'cloak', label: () => (confirmQuit.armed ? 'Really quit? Enter again' : 'Quit to title') },
   ].filter(Boolean);
@@ -70,6 +72,7 @@ export function createPauseMenu(modal, ctx) {
     if (it.id !== 'quit') confirmQuit.armed = false;
     switch (it.id) {
       case 'resume': game.commands.closeModal(); return;
+      case 'quests': game.openModal({ type: 'questLog' }); return;
       case 'settings':
         openSub(() => createSettings({
           storage: game.storage, sfx: ctx.sfx,

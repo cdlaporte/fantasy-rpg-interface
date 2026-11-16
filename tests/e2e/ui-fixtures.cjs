@@ -114,7 +114,7 @@ async function installHarness(page) {
         ] },
       inventory: { type: 'inventory', items: { potion_small: 3, bread: 5, bomb: 2, smoke_pellet: 1, old_key: 1 },
         cosmetics: [{ id: 'hat_feather', name: 'Feathered Cap', icon: 'hat' }, { id: 'cape_blue', name: 'Sky Cape', icon: 'cloak' }], equipped: { hat: 'hat_feather', cape: null, outfitColor: null } },
-      lookPicker: { type: 'lookPicker', name: 'Rowan', looks: L.PLAYER_LOOKS.slice(0, 8) },
+      lookPicker: { type: 'lookPicker', name: 'Rowan', looks: L.PLAYER_LOOKS.slice(0, 10) },
       classPicker: { type: 'classPicker', classes },
       specPicker: { type: 'specPicker', options: specs },
       boonPicker: { type: 'boonPicker', options: [

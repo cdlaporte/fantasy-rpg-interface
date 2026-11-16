@@ -95,15 +95,15 @@ const OUT = path.join(__dirname, 'out');
       // look picker: names only, no other labels
       await open('lookPicker');
       const lookText = await page.$eval('.look-picker', (n) => n.innerText.replace(/\s+/g, ' ').trim());
-      assert.strictEqual(lookText, Array(8).fill('Rowan').join(' '), 'look picker shows only the name, once per look: ' + lookText);
-      assert.strictEqual(await page.$$eval('.look-card', (n) => n.length), 8, 'eight looks');
+      assert.strictEqual(lookText, Array(10).fill('Rowan').join(' '), 'look picker shows only the name, once per look: ' + lookText);
+      assert.strictEqual(await page.$$eval('.look-card', (n) => n.length), 10, 'ten looks');
       const grid = await page.$$eval('.look-card', (n) => n.map((c) => { const r = c.getBoundingClientRect(); return [Math.round(r.left), Math.round(r.top)]; }));
       assert.strictEqual(new Set(grid.map((g) => g[1])).size, 2, 'two rows');
-      assert.strictEqual(new Set(grid.map((g) => g[0])).size, 4, 'four columns');
+      assert.strictEqual(new Set(grid.map((g) => g[0])).size, 5, 'five columns');
       await key('ArrowRight', 'Enter');
       assert.deepStrictEqual(await calls(), [['pickLook', 1]]);
       await key('ArrowDown', 'ArrowLeft', 'Enter');
-      assert.deepStrictEqual(await calls(), [['pickLook', 4]], 'arrows move through the 4 x 2 grid');
+      assert.deepStrictEqual(await calls(), [['pickLook', 5]], 'arrows move through the 5 x 2 grid');
       await page.hover('.look-card:nth-child(7)');
       await page.mouse.down(); await page.mouse.up();
       assert.deepStrictEqual(await calls(), [['pickLook', 6]], 'mouse picks a look');
@@ -162,7 +162,7 @@ const OUT = path.join(__dirname, 'out');
       await page.close();
     });
 
-    await check('look picker (8 looks) fits the modal area at both sizes', async () => {
+    await check('look picker (10 looks) fits the modal area at both sizes', async () => {
       for (const vp of [{ width: 1366, height: 657 }, { width: 1024, height: 600 }]) {
         const page = await H.newPage(browser, { viewport: vp });
         await H.openGame(page, { base: server.url, renderer: '2d' });

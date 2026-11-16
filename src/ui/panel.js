@@ -159,6 +159,8 @@ export function createPanel(root, ctx = {}) {
   const qProgFill = el('div', 'quest-prog-fill');
   qProg.appendChild(qProgFill);
   add(quest, qTitle, qName, qStep, qProg);
+  quest.classList.add('clickable');
+  quest.addEventListener('click', () => { if (ctx.onQuestClick) ctx.onQuestClick(); });
 
   // --- companions
   const comps = el('div', 'pnl-comps');

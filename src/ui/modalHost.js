@@ -8,6 +8,7 @@ import { createInventoryUI } from './inventoryUI.js';
 import { createLookPicker, createClassPicker, createSpecPicker, createBoonPicker } from './pickers.js';
 import { createQuestionModal, createLessonModal } from './questionModal.js';
 import { createPauseMenu } from './pauseMenu.js';
+import { createQuestLog } from './questLog.js';
 
 export const MODAL_FACTORIES = {
   dialogue: createDialogueBox,
@@ -20,6 +21,7 @@ export const MODAL_FACTORIES = {
   question: createQuestionModal,
   lesson: createLessonModal,
   pause: createPauseMenu,
+  questLog: createQuestLog,
 };
 
 export function createModalHost(root, ctx) {

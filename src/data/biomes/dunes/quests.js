@@ -1,2 +1,41 @@
-// Sunscorch Dunes: quest defs. Stub by the lead's prep (round 3); owned by this biome's package.
-export default {};
+// Sunscorch Dunes quests. Rewards: about 40% of a level at the zone band (level 10-16: ~280-700 xp per level).
+// Zone props set the flags (dunes_crate_1..3, dunes_spring_filled, dunes_rubbing_*), so the steps complete in any order.
+export default {
+  dunes_lost_caravan: {
+    id: 'dunes_lost_caravan', name: 'The Lost Caravan', giver: 'ziva', req: [['flag', 'biomes_open']], companions: null,
+    steps: [
+      { text: 'Find the first lost cart in the northern dunes.', goal: { type: 'flag', key: 'dunes_crate_1' } },
+      { text: 'Find the second cart in the cactus garden.', goal: { type: 'flag', key: 'dunes_crate_2' } },
+      { text: 'Find the third cart near the oasis canyon.', goal: { type: 'flag', key: 'dunes_crate_3' } },
+      { text: 'Tell Ziva the carts are safe.', goal: { type: 'talk', npc: 'ziva' } },
+      { text: 'Follow the caravan trail to the ruins.', goal: { type: 'reach', zone: 'dunes', marker: 'ruins', r: 7 } },
+      { text: 'Unseal the sphinx\'s rune gate.', goal: { type: 'flag', key: 'gate_sphinx_gate' } },
+      { text: 'Defeat Sultana Sandsnout.', goal: { type: 'boss', kind: 'sultana_sandsnout' } },
+      { text: 'Tell Ziva the road is clear.', goal: { type: 'talk', npc: 'ziva' } },
+    ],
+    rewards: { xp: 300, gold: 150, items: [{ id: 'potion_big', n: 2 }, { id: 'sand_veil', n: 2 }] },
+    onDone: [['rel', 'ziva', 2], ['toast', 'The caravan can cross the dunes again. Ziva is already counting the profits.', 'quest']],
+  },
+  dunes_oasis_water: {
+    id: 'dunes_oasis_water', name: 'Water for the Camp', giver: 'ziva', req: [['flag', 'biomes_open']], companions: null,
+    steps: [
+      { text: 'Walk to the oasis, south of the dust flats.', goal: { type: 'reach', zone: 'dunes', marker: 'oasis', r: 5 } },
+      { text: 'Chase the canyon scorpions away. (4)', goal: { type: 'kill', kind: 'sand_scorpion', n: 4 } },
+      { text: 'Fill the waterskins at the oasis well.', goal: { type: 'flag', key: 'dunes_spring_filled' } },
+      { text: 'Bring the water back to Ziva.', goal: { type: 'talk', npc: 'ziva' } },
+    ],
+    rewards: { xp: 150, gold: 70, items: [{ id: 'cactus_water', n: 3 }, { id: 'shield_charm', n: 1 }] },
+    onDone: [['rel', 'ziva', 2]],
+  },
+  dunes_obelisk_rubbings: {
+    id: 'dunes_obelisk_rubbings', name: 'Glyphs of the Sun Court', giver: 'professor_dusty', req: [['flag', 'biomes_open']], companions: null,
+    steps: [
+      { text: 'Study the sun obelisk in the west of the ruins.', goal: { type: 'flag', key: 'dunes_rubbing_sun' } },
+      { text: 'Study the moon obelisk in the east of the ruins.', goal: { type: 'flag', key: 'dunes_rubbing_moon' } },
+      { text: 'Study the star obelisk by the south wall.', goal: { type: 'flag', key: 'dunes_rubbing_star' } },
+      { text: 'Show your glyph copies to Professor Dusty.', goal: { type: 'talk', npc: 'professor_dusty' } },
+    ],
+    rewards: { xp: 110, gold: 50, items: [{ id: 'hat_sun_explorer', n: 1 }, { id: 'cactus_water', n: 2 }] },
+    onDone: [['rel', 'professor_dusty', 2]],
+  },
+};

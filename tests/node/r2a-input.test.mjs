@@ -150,7 +150,7 @@ test('DOM input follows the bindings (defaults, extra keys, runtime rebinding)',
   w.fire('keyup', 'KeyU');
   w.fire('keydown', 'KeyQ');
   st = inp.sample();
-  assert.ok(st.pressed.q, 'Q still works');
+  assert.ok(!st.pressed.q, 'Q is the quest log now, not an ability key');
   w.fire('keyup', 'KeyQ');
   w.fire('keydown', 'ShiftLeft'); w.fire('keydown', 'ShiftRight'); w.fire('keyup', 'ShiftLeft');
   st = inp.sample();

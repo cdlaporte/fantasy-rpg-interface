@@ -10,18 +10,18 @@ import { createMemoryStorage } from '../../src/platform/storage.js';
 import cutscenes from '../../src/data/cutscenes/intro.js';
 import rescue from '../../src/data/cutscenes/rescue.js';
 
-test('defaults: WASD move, IJKL + arrows attack, Space dash, U/O/H abilities with Q/F/Shift kept', () => {
+test('defaults: WASD move, IJKL + arrows attack, Space dash, U/O/H abilities with F/Shift kept (Q is the quest log)', () => {
   resetBindings();
   assert.deepEqual(['move_up', 'move_left', 'move_down', 'move_right'].map(keyLabel), ['W', 'A', 'S', 'D']);
   assert.deepEqual(['attack_up', 'attack_left', 'attack_down', 'attack_right'].map(keyLabel), ['I', 'J', 'K', 'L']);
   assert.deepEqual(keyLabels('attack_up'), ['I', '↑']);
   assert.deepEqual(['space', 'q', 'f', 'shift'].map(keyLabel), ['Space', 'U', 'O', 'H']);
-  assert.deepEqual(altLabels('q'), ['Q']);
+  assert.deepEqual(altLabels('q'), []);
   assert.deepEqual(altLabels('shift'), ['Shift'], 'both Shift keys show as one label');
-  assert.equal(actionFor('KeyQ'), 'q');
+  assert.equal(actionFor('KeyQ'), 'quests');
   assert.equal(actionFor('ShiftRight'), 'shift');
   assert.equal(actionFor('ArrowLeft'), 'attack_left');
-  assert.deepEqual(['interact', 'item1', 'item6', 'boon', 'map', 'pause', 'inventory'].map(keyLabel), ['E', '1', '6', 'Tab', 'M', 'Esc', 'B']);
+  assert.deepEqual(['interact', 'item1', 'item6', 'boon', 'map', 'pause', 'inventory', 'quests'].map(keyLabel), ['E', '1', '6', 'Tab', 'M', 'Esc', 'B', 'Q']);
   assert.equal(codeLabel('Numpad3'), 'Num3');
   for (const a of ACTIONS) assert.ok(ACTION_INFO[a] && ACTION_INFO[a].name, 'every action has a display name: ' + a);
   assert.deepEqual(unboundActions(), []);
@@ -33,9 +33,9 @@ test('rebinding: primary and extra keys, the new binding wins, refusals', () => 
   const off = onBindingsChange((b) => seen.push(b.q.slice()));
   let r = rebind('q', 'KeyY');
   assert.ok(r.ok);
-  assert.deepEqual(getBindings().q, ['KeyY', 'KeyQ'], 'primary replaced, extra kept');
+  assert.deepEqual(getBindings().q, ['KeyY'], 'primary replaced');
   assert.equal(keyLabel('q'), 'Y');
-  assert.deepEqual(seen.at(-1), ['KeyY', 'KeyQ'], 'listeners notified');
+  assert.deepEqual(seen.at(-1), ['KeyY'], 'listeners notified');
   // take a key from another action: E -> q; interact is left with no key
   r = rebind('q', 'KeyE');
   assert.deepEqual(r.took, [{ action: 'interact', empty: true }]);

@@ -115,7 +115,7 @@ test('bot: new game -> intro -> ambush -> rescue -> town -> class pick -> forest
     await bot.press('item1');
     assert.equal(ev.used[0], 'potion_small');
     const lp = await bot.waitModal('lookPicker', { timeout: 60 });
-    assert.equal(lp.looks.length, 8);
+    assert.equal(lp.looks.length, 10);
     game.commands.pickLook(1);
     await bot.until(() => game.flags.look_chosen, { timeout: 5, what: 'look_chosen' });
     assert.equal(game.flags.look_choice, 1);

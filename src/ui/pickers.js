@@ -1,5 +1,5 @@
 // Picker modals: lookPicker, classPicker, specPicker, boonPicker (CONTRACTS 9).
-//  lookPicker  {name, looks: [up to 8 looks]}                      -> pickLook(i)   (4 x 2 portraits + the NAME under each, nothing else)
+//  lookPicker  {name, looks: [up to 10 looks]}                     -> pickLook(i)   (5 x 2 portraits + the NAME under each, nothing else)
 //  classPicker {classes: [{id, name, blurb, look, basic, abilities}]} -> pickClass(id)
 //  specPicker  {options: [{id, name, blurb, look, basic, abilities}]} -> pickSpec(id)
 //  boonPicker  {options: [{id, name, desc, icon}]}                   -> pickBoon(id)
@@ -11,11 +11,11 @@ import { tip } from './tooltip.js';
 import { keyLabel } from '../platform/bindings.js';
 
 export function createLookPicker(modal, ctx) {
-  // Round 2: up to eight looks (two builds x four skin tones) in a 4 x 2 grid, each labeled only with the player's name.
+  // Round 2: up to ten looks in a 5 x 2 grid, each labeled only with the player's name.
   const root = el('div', 'picker look-picker');
   const grid = el('div', 'look-grid');
-  const looks = (modal.looks || []).slice(0, 8);
-  const cols = looks.length > 4 ? 4 : Math.max(1, looks.length);
+  const looks = (modal.looks || []).slice(0, 10);
+  const cols = looks.length > 5 ? 5 : Math.max(1, looks.length);
   grid.style.setProperty('--cols', cols);
   const portraits = [];
   const cards = looks.map((lk) => {

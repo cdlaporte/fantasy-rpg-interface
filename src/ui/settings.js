@@ -132,7 +132,7 @@ export function createSettings(opts = {}) {
         setClass(cell.el, 'changed', cell.slot === 0 && (b[a] || [])[0] !== DEFAULT_BINDINGS[a][0]);
       }
     }
-    setText(fixed, `Menu keys (fixed): ${keyLabel('pause')} or P pause · ${keyLabel('inventory')} bag · ${keyLabel('map')} map`);
+    setText(fixed, `Menu keys (fixed): ${keyLabel('pause')} or P pause · ${keyLabel('inventory')} bag · ${keyLabel('map')} map · ${keyLabel('quests')} quest log`);
     setClass(root, 'capturing', !!capturing);
   }
 

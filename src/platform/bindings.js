@@ -11,7 +11,7 @@ export const ACTIONS = Object.freeze([
   'attack_up', 'attack_down', 'attack_left', 'attack_right',
   'interact', 'space', 'q', 'f', 'shift',
   'item1', 'item2', 'item3', 'item4', 'item5', 'item6',
-  'boon', 'map', 'pause', 'inventory',
+  'boon', 'map', 'pause', 'inventory', 'quests',
 ]);
 
 /** Ability slots keep their historical names (space, q, f, shift); only their keys change. */
@@ -20,9 +20,9 @@ export const DEFAULT_BINDINGS = Object.freeze({
   attack_up: ['KeyI', 'ArrowUp'], attack_down: ['KeyK', 'ArrowDown'],
   attack_left: ['KeyJ', 'ArrowLeft'], attack_right: ['KeyL', 'ArrowRight'],
   interact: ['KeyE'],
-  space: ['Space'], q: ['KeyU', 'KeyQ'], f: ['KeyO', 'KeyF'], shift: ['KeyH', 'ShiftLeft', 'ShiftRight'],
+  space: ['Space'], q: ['KeyU'], f: ['KeyO', 'KeyF'], shift: ['KeyH', 'ShiftLeft', 'ShiftRight'],
   item1: ['Digit1'], item2: ['Digit2'], item3: ['Digit3'], item4: ['Digit4'], item5: ['Digit5'], item6: ['Digit6'],
-  boon: ['Tab'], map: ['KeyM'], pause: ['Escape', 'KeyP'], inventory: ['KeyB'],
+  boon: ['Tab'], map: ['KeyM'], pause: ['Escape', 'KeyP'], inventory: ['KeyB'], quests: ['KeyQ'],
 });
 
 const SPECIAL = {
@@ -46,7 +46,13 @@ export function codeLabel(code) {
 let current = clone(DEFAULT_BINDINGS);
 const listeners = new Set();
 
-function clone(b) { const o = {}; for (const a of ACTIONS) o[a] = (b[a] || DEFAULT_BINDINGS[a] || []).slice(); return o; }
+function clone(b) {
+  const o = {};
+  for (const a of ACTIONS) o[a] = (b[a] || DEFAULT_BINDINGS[a] || []).slice();
+  // Round 3: Q belongs to the quest log; old saved settings that still list it as an ability key lose it
+  for (const a of ACTIONS) if (a !== 'quests') o[a] = o[a].filter((c) => c !== 'KeyQ');
+  return o;
+}
 function emit() { for (const fn of listeners) { try { fn(current); } catch { /* ignore */ } } }
 
 /** The live bindings object {action: [codes]} (do not mutate; use setBindings). */
@@ -93,12 +99,13 @@ export const ACTION_INFO = Object.freeze({
   item4: { name: 'Item 4', group: 'item' }, item5: { name: 'Item 5', group: 'item' }, item6: { name: 'Item 6', group: 'item' },
   boon: { name: 'Choose a boon', group: 'other' }, map: { name: 'Map', group: 'menu' },
   pause: { name: 'Pause', group: 'menu' }, inventory: { name: 'Bag', group: 'menu' },
+  quests: { name: 'Quest log', group: 'menu' },
 });
 
 /** The menu keys are handled by the UI layer (ui/index.js) with fixed keys, so they cannot be rebound. */
-export const FIXED_ACTIONS = Object.freeze(['map', 'pause', 'inventory']);
+export const FIXED_ACTIONS = Object.freeze(['map', 'pause', 'inventory', 'quests']);
 /** Codes that can never be given to another action (Escape also cancels a rebind). */
-export const RESERVED_CODES = Object.freeze(['Escape', 'KeyP', 'KeyB', 'KeyM', 'MetaLeft', 'MetaRight', 'ContextMenu', 'CapsLock']);
+export const RESERVED_CODES = Object.freeze(['Escape', 'KeyP', 'KeyB', 'KeyM', 'KeyQ', 'MetaLeft', 'MetaRight', 'ContextMenu', 'CapsLock']);
 /** Grouped action lists, in the order the settings screen shows them. */
 export const MOVE_ACTIONS = Object.freeze(['move_up', 'move_left', 'move_down', 'move_right']);
 export const ATTACK_ACTIONS = Object.freeze(['attack_up', 'attack_left', 'attack_down', 'attack_right']);

@@ -16,8 +16,8 @@ export function humanoid(o) {
 const fit = (style, primary, secondary, accent) => ({ style, primary, secondary, accent });
 
 /**
- * Eight player looks (round 2): two builds (a broader, b slighter) x four skin tones (light, medium, dark, storybook
- * green). Never labeled. Index 0 and 1 are the original two looks (old saves store the index); the rest are mixed
+ * Ten player looks: two builds (a broader, b slighter) x light, medium, dark and storybook green skin (round 2: eight;
+ * round 3 appended two more light ones, indexes 8 and 9, so saved indexes stay valid). Never labeled. Index 0 and 1 are the original two looks (old saves store the index); the rest are mixed
  * in a fixed order with varied hair and outfit colors.
  */
 export const PLAYER_LOOKS = [
@@ -52,6 +52,14 @@ export const PLAYER_LOOKS = [
   humanoid({ // 7: dark, build a
     build: 'a', skin: '#6f4630', hair: { style: 'short', color: '#2a1a10' },
     outfit: fit('tunic', '#7a4fb0', '#efe2c4', '#7fd6e0'),
+  }),
+  humanoid({ // 8: light (rosy), build a, braids (round 3)
+    build: 'a', skin: '#f3d2b8', hair: { style: 'braids', color: '#e39a6b' },
+    outfit: fit('tunic', '#d4568a', '#f4ecd8', '#6fd0c0'),
+  }),
+  humanoid({ // 9: light (warm), build b, bun (round 3)
+    build: 'b', skin: '#e9c39d', hair: { style: 'bun', color: '#14110f' },
+    outfit: fit('tunic', '#e0742c', '#efe2c4', '#3f5fc0'),
   }),
 ];
 

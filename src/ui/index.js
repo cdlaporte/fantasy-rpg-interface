@@ -61,6 +61,13 @@ export function createUI(rootEl, opts = {}) {
     }
   }
 
+  function openQuestLog() {
+    if (!game || game.modal) return;
+    const cs = game.cutscene;
+    if (cs && cs.active) return;
+    game.openModal({ type: 'questLog' });
+  }
+
   function canSkip() {
     const cs = game && game.cutscene;
     return !!(cs && cs.active && cs.skippable && (!game.modal || game.modal.type === 'dialogue'));
@@ -89,7 +96,8 @@ export function createUI(rootEl, opts = {}) {
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.code === 'KeyM') { if (minimap) minimap.toggleBig(); return; }
     if (e.code === 'Escape' || e.code === 'KeyP') { e.stopPropagation(); e.preventDefault(); openPause(); return; }
-    if (e.code === 'KeyB') { e.stopPropagation(); openInventory(); }
+    if (e.code === 'KeyB') { e.stopPropagation(); openInventory(); return; }
+    if (e.code === 'KeyQ') { e.stopPropagation(); e.preventDefault(); openQuestLog(); }
   }
 
   function poll(now) {
@@ -120,7 +128,7 @@ export function createUI(rootEl, opts = {}) {
     mount(g, r) {
       game = g;
       renderer = r;
-      panel = createPanel(panelEl, { game, onBoonNudge: () => {} });
+      panel = createPanel(panelEl, { game, onBoonNudge: () => {}, onQuestClick: openQuestLog });
       toasts = createToasts($('toasts'));
       minimap = createMinimap($('minimap'), ctx);
       overlay = createWorldOverlay(overlayEl, { onPromptPlaced: (pr) => feedback && feedback.setPromptFallback(pr) });

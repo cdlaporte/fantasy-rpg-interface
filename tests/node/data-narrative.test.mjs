@@ -249,11 +249,11 @@ test('required STORY ids exist', () => {
 test('looks use only section 6 vocabulary', () => {
   const L = looksNs;
   // round 2: 8 looks = 2 builds x 4 skin tones; index 0 and 1 stay the original looks (old saves store the index)
-  assert.equal(L.PLAYER_LOOKS.length, 8);
+  assert.equal(L.PLAYER_LOOKS.length, 10);
   assert.deepEqual(L.PLAYER_LOOKS.slice(0, 2).map((l) => l.build), ['a', 'b']);
-  assert.equal(L.PLAYER_LOOKS.filter((l) => l.build === 'a').length, 4);
-  assert.equal(L.PLAYER_LOOKS.filter((l) => l.build === 'b').length, 4);
-  assert.equal(new Set(L.PLAYER_LOOKS.map((l) => l.skin)).size, 8, 'every look has its own skin color');
+  assert.equal(L.PLAYER_LOOKS.filter((l) => l.build === 'a').length, 5);
+  assert.equal(L.PLAYER_LOOKS.filter((l) => l.build === 'b').length, 5);
+  assert.equal(new Set(L.PLAYER_LOOKS.map((l) => l.skin)).size, 10, 'every look has its own skin color');
   assert.deepEqual(L.CLASS_OUTFITS, {});
   assert.equal(L.LAPORTE_LOOK.hero, 'laporte');
   assert.ok(L.LAPORTE_LOOK.cape && L.LAPORTE_LOOK.held && L.LAPORTE_LOOK.held.style === 'staff');

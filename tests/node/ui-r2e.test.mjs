@@ -34,8 +34,8 @@ test('overlay head heights follow the 3D model scale', () => {
   assert.ok(Math.abs(headHeight(jump, 2) - (0.95 * 2 + 0.5)) < 1e-9, 'z is not scaled');
 });
 
-test('eight player looks: 2 builds x 4 skin tones, each a portrait', () => {
-  assert.equal(PLAYER_LOOKS.length, 8);
+test('ten player looks (8 from round 2 + 2 light ones in round 3), each a portrait', () => {
+  assert.equal(PLAYER_LOOKS.length, 10);
   for (const l of PLAYER_LOOKS) {
     assert.equal(l.rig, 'humanoid');
     const g = buildPortrait(l, { mood: 'calm', t: 0, bg: 'academy' });

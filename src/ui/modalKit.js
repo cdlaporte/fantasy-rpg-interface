@@ -126,6 +126,7 @@ export function controlRows() {
     [[L('boon')], 'Choose a boon'],
     [[L('map')], 'Map'],
     [[L('inventory')], 'Bag'],
+    [[L('quests')], 'Quest log'],
     [[L('pause')], 'Pause'],
   ];
 }

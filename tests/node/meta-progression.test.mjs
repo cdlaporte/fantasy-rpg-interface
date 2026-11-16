@@ -82,7 +82,7 @@ test('stats from the balance sheet, spec mods, data overrides', () => {
   pr.setLevel(3, { quiet: true });
   pr.setClass('warrior', { quiet: true });
   assert.equal(p.hpMax, (44 + 9 * 3) * NS);
-  assert.equal(p.stats.power, Math.round(8.9 * NS * 100) / 100);
+  { const b = game.data.classes.warrior.base; assert.equal(p.stats.power, Math.round((b.power + b.powerPerLevel * 3) * NS * 100) / 100); }
   assert.equal(p.stats.speed, r2(3.4 * SPD));
   pr.setLevel(8, { quiet: true });
   pr.setSpec('knight', { quiet: true });
@@ -95,7 +95,8 @@ test('stats from the balance sheet, spec mods, data overrides', () => {
   // statMods hook (kits / items)
   p.data.statMods = { test: { power: 2 } };
   pr.recalc();
-  assert.equal(p.stats.power, Math.round((5 + 1.3 * 8) * 2 * NS * 100) / 100);
+  { const b = game.data.classes.warrior.base;   // round 2: power growth lives in data
+    assert.equal(p.stats.power, Math.round((b.power + b.powerPerLevel * 8) * 2 * NS * 100) / 100); }
   // data overrides the defaults field by field
   ({ game } = make({ data: {
     classes: { warrior: { id: 'warrior', name: 'Brawler', base: { hp: 100, hpPerLevel: 0, power: 10, powerPerLevel: 0, speed: 5, defense: 2 } } },

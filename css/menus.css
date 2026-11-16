@@ -51,7 +51,7 @@
 .set-plus { font-size: 18px; color: #b8a890; }
 .set-wait { font-size: 15px; color: #3b5fb8; animation: blink-soft 0.8s steps(2) infinite; }
 .settings.capturing .set-key:not(.sel) { opacity: 0.65; }
-.set-fixed { font-size: 16px; color: var(--ink-2); text-align: center; }
+.set-fixed { font-variant-ligatures: none; font-size: 16px; color: var(--ink-2); text-align: center; }
 .set-foot { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 6px; }
 .set-btn { font-size: 11px; padding: 11px 12px 9px; }
 
@@ -115,9 +115,12 @@
 .teacher-badge { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 4; pointer-events: none; font-size: 11px; color: #fff;
   background: #6a4bc4; padding: 6px 10px 5px; box-shadow: var(--notch); text-shadow: 1px 1px 0 #000; letter-spacing: 1px; opacity: 0.92; }
 
-@media (max-height: 640px) {
+@media (max-height: 700px) {
   .settings { padding: 8px 14px 6px; gap: 3px; }
-  .set-key { height: 32px; }
+  .set-key { height: 30px; margin: 1px 3px; }
+  .set-msg { min-height: 20px; }
+}
+@media (max-height: 640px) {
   .tch-tools .hints { display: none; }
 }
 

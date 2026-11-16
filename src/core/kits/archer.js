@@ -144,7 +144,8 @@ const STAR_PICK = { range: 10, mode: 'strongest', los: true, out: { x: 0, y: 0 }
 
 // ---------- Arrow Rain ----------
 function spawnFalling(game, p, x, y, color) {
-  const ar = p.data.kit.ar;
+  const ar = p.data.kit && p.data.kit.ar;
+  if (!ar) return;   // the kit changed (teacher subclass switch, respec) while a rain zone was still ticking
   const e = game.ents.create({ kind: 'falling_arrow', type: 'effect', team: 'player', owner: p.id, x, y, z: 5 + game.rng.next() * 2,
     angle: Math.PI / 2 + (game.rng.next() - 0.5) * 0.3, solid: false, ttl: 1.2, look: ar.rainLook && ar.rainLook.color === color ? ar.rainLook
       : (ar.rainLook = arrowLook(color, '#ffffff', 0.9)) });

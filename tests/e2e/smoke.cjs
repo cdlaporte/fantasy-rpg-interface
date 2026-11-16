@@ -1,20 +1,23 @@
-// Integration smoke test (Playwright, CommonJS): for renderer=2d and renderer=3d (debug renderers for now), with
-// test=1&debug=1&questions=stub:
+// Integration smoke test (Playwright, CommonJS): 3D is the renderer the game offers (round 2), so the default run is
+// 3D only; `node tests/e2e/smoke.cjs 2d` runs the same script on the 2D fallback renderer, `all` runs both. With
+// test=1&debug=1&questions=stub (the real Unit 4 question provider):
 //  1. every debug scenario returns {ok: true} with real content (screenshot each);
 //  2. the first ~two minutes of a real new game (intro tutorial, ambush, rescue, town, academy, class pick), driven
 //     by the in-page bot (tests/node/bot-helpers.mjs) for walking/fighting, while EVERY modal is answered by
-//     keyboard as a player would (dialogue advance and choices, look picker, class picker);
-//  3. the remaining modals by keyboard: shop, inventory, pause with a live 2D/3D switch, the stub question card
-//     (and its answer key `1` must not also drink hotbar item 1), boon picker by Tab;
+//     keyboard as a player would (dialogue advance and choices, look picker (8 looks, number key 6), class picker).
+//     Question cards on the way are answered through __game.answerQuestion(true);
+//  3. the remaining modals by keyboard: shop, inventory, pause -> Settings -> back, the Unit 4 question card typed
+//     by keyboard (answer computed from Questions.preview; a number key on a multiple-choice card must not also
+//     drink hotbar item 1), boon picker by Tab;
 //  4. no console errors / pageerrors and an empty __game.errors(); a screenshot per milestone in tests/e2e/out/.
-// Run: node tests/e2e/smoke.cjs [2d|3d]
+// Run: node tests/e2e/smoke.cjs [3d|2d|all]
 const path = require('node:path');
 const fs = require('node:fs');
 const assert = require('node:assert');
 const H = require('./helpers.cjs');
 
 const OUT = path.join(__dirname, 'out');
-const only = process.argv[2];
+const only = process.argv[2] || '3d';
 
 async function modalInfo(page) {
   return page.evaluate(() => {
@@ -34,11 +37,17 @@ async function answer(page, policy = () => null, log = []) {
   const info = await modalInfo(page);
   if (!info) return null;
   let key = policy(info);
-  if (!key) {
+  if (!key && info.type !== 'question') {
     if (info.type === 'dialogue') key = info.options ? 'Digit1' : 'Enter';
-    else if (info.type === 'question') key = 'Digit1';
     else if (['lookPicker', 'classPicker', 'specPicker', 'boonPicker'].includes(info.type)) key = 'Digit1';
     else key = 'Escape';
+  }
+  if (info.type === 'question') {
+    // gates, boss shields, lessons, boon trials: the real card is up; answer without the DOM (typing is tested below)
+    log.push('question:answerQuestion');
+    await page.evaluate(() => window.__game.answerQuestion(true));
+    await stepPage(page, 2);
+    return info;
   }
   log.push(info.type + ':' + key);
   if (process.env.SMOKE_VERBOSE) console.log('      key', info.type, key, (info.text || '').slice(0, 40));
@@ -87,7 +96,7 @@ async function play(page, body, { timeout = 90, policy, until, log = [], onModal
   };
   try {
     for (const renderer of ['2d', '3d']) {
-      if (only && only !== renderer) continue;
+      if (only !== 'all' && only !== renderer) continue;
       // the machine is shared and 3D is slow: give screenshots a long timeout and one retry
       const shot = async (page, name) => {
         const file = path.join(OUT, `smoke-${renderer}-${name}.png`);
@@ -188,11 +197,12 @@ async function play(page, body, { timeout = 90, policy, until, log = [], onModal
         await play(page, `await bot.press('item1'); return true;`, { log });
         await play(page, `return game.flags.look_chosen === true;`, {
           log, onModal, timeout: 60,
-          policy: (info) => (info.type === 'lookPicker' ? 'Digit2' : null),
+          policy: (info) => (info.type === 'lookPicker' ? 'Digit6' : null),
           until: async () => { pickedLook = pickedLook || (await page.evaluate(() => !!window.__game.game.flags.look_chosen)); return false; },
         });
         const look = await page.evaluate(() => ({ hood: window.__game.game.player.look.hood, style: window.__game.game.player.look.outfit.style, choice: window.__game.game.flags.look_choice }));
-        assert.strictEqual(look.choice, 1, 'look picker choice 2 by keyboard');
+        assert.strictEqual(look.choice, 5, 'look picker choice 6 (index 5) by keyboard');
+        assert.strictEqual(await page.evaluate(() => window.__game.game.modal && window.__game.game.modal.type), null, 'look picker closed');
         assert.notStrictEqual(look.style, 'cloak');
         await S('08-revealed');
         // escort to town, town arrival, academy
@@ -242,29 +252,57 @@ async function play(page, body, { timeout = 90, policy, until, log = [], onModal
         await page.keyboard.press('Escape'); await stepPage(page, 2);
         assert.strictEqual(await modalInfo(page), null, 'Esc leaves the shop');
 
-        // the stub question card: answered with 1; key 1 must not ALSO drink hotbar item 1 afterwards
-        await page.evaluate(() => { const g = window.__game.game; g.inventory.give('potion_small', 1, { silent: true }); g.inventory.assignSlot('potion_small', 0); g.player.hp = Math.max(1, g.player.hp - 10); window.__q = g.gates.ask({ context: 'gate', difficulty: 1 }); });
-        await stepPage(page, 2);
-        assert.strictEqual((await modalInfo(page) || {}).type, 'question');
-        await H.frames(page);
-        await S('14-question-stub');
+        // the Unit 4 question card by keyboard. Questions.preview() makes the NEXT asked problem a known one, so the
+        // answer is computed, not guessed: first a multiple-choice card (its number key must not ALSO drink hotbar item
+        // 1), then a typed answer (letters / digits go into the box, never to the game).
+        await page.evaluate(() => { const g = window.__game.game; g.inventory.give('potion_small', 1, { silent: true }); g.inventory.assignSlot('potion_small', 0); g.player.hp = Math.max(1, g.player.hp - 10); });
         const n0 = await page.evaluate(() => window.__game.game.inventory.count('potion_small'));
-        await page.keyboard.down('Digit1'); await stepPage(page, 3); await page.keyboard.up('Digit1'); await stepPage(page, 3);
-        const q = await page.evaluate(async () => { const r = await window.__q; return r; });
-        assert.strictEqual(q.correct, true, 'stub answered correct with 1');
-        const n1 = await page.evaluate(() => window.__game.game.inventory.count('potion_small'));
-        assert.strictEqual(n1, n0, 'the answer key did not leak into gameplay (potion not drunk)');
+        const askPreview = async (topic, d, seed, context) => {
+          const prob = await page.evaluate(({ topic, d, seed, context }) => {
+            const g = window.__game.game; g.questions.teacher = false;
+            const q = g.questions.preview(topic, d, seed);
+            window.__q = g.gates.ask({ context, difficulty: d });
+            return { id: q.id, type: q.type, answerPlain: q.answerPlain, answerIndex: q.answerIndex, choices: q.choices && q.choices.length };
+          }, { topic, d, seed, context });
+          await stepPage(page, 2);
+          assert.strictEqual((await modalInfo(page) || {}).type, 'question');
+          await page.waitForSelector(`.q4[data-qid="${prob.id}"]`, { timeout: 10000 });
+          await H.frames(page);
+          await page.waitForTimeout(400);
+          return prob;
+        };
+        let prob = await askPreview('similarity_proof', 2, 4, 'chest');
+        assert.ok(prob.choices, 'multiple-choice problem');
+        await S('14a-question-choice');
+        await page.keyboard.down('Digit' + (prob.answerIndex + 1)); await stepPage(page, 3); await page.keyboard.up('Digit' + (prob.answerIndex + 1)); await stepPage(page, 3);
+        let q = await page.evaluate(async () => window.__q);
+        assert.strictEqual(q.correct, true, 'multiple choice answered right with its number key');
+        assert.strictEqual(await page.evaluate(() => window.__game.game.inventory.count('potion_small')), n0, 'the answer key did not leak into gameplay (potion not drunk)');
+        await page.waitForFunction(() => !document.querySelector('.q4'));
+        prob = await askPreview('proportion', 2, 6, 'gate');
+        assert.ok(!prob.choices, 'typed problem');
+        await page.keyboard.type(String(prob.answerPlain));
+        await S('14b-question-typed');
+        const posBefore = await page.evaluate(() => { const p = window.__game.game.player; return [p.x, p.y]; });
+        await page.keyboard.press('Enter'); await stepPage(page, 3);
+        q = await page.evaluate(async () => window.__q);
+        assert.strictEqual(q.correct, true, 'typed answer accepted');
+        assert.strictEqual(await page.evaluate(() => window.__game.game.inventory.count('potion_small')), n0, 'typed digits never used the hotbar');
+        await page.waitForFunction(() => !document.querySelector('.q4'));
+        assert.ok(posBefore, 'player known');
 
-        // pause: Esc opens, switch the look 2D <-> 3D live, back
+        // pause: Esc opens; Settings (second row) opens in place of the pause box, Esc returns to it, Esc closes
         await page.keyboard.press('Escape'); await stepPage(page, 1);
         assert.strictEqual((await modalInfo(page) || {}).type, 'pause');
         await page.keyboard.press('ArrowDown'); await page.keyboard.press('Enter');
-        const other = renderer === '2d' ? '3d' : '2d';
-        await page.waitForFunction((id) => document.querySelector('#view canvas') && document.querySelector('#view canvas').className === 'r' + id, other, { timeout: 15000 });
-        await H.frames(page, 3);
-        await S('15-pause-switched');
-        await page.keyboard.press('Enter');
-        await page.waitForFunction((id) => document.querySelector('#view canvas').className === 'r' + id, renderer, { timeout: 15000 });
+        await page.waitForSelector('.settings', { timeout: 5000 });
+        await H.frames(page, 2);
+        await S('15-pause-settings');
+        const setBox = await page.evaluate(() => { const r = document.querySelector('.settings').getBoundingClientRect(); const f = document.querySelector('.set-foot').getBoundingClientRect(); return { b: r.bottom, fb: f.bottom, f: f.top, vh: innerHeight }; });
+        assert.ok(setBox.b <= setBox.vh + 1, 'settings card fits the view ' + JSON.stringify(setBox));
+        await page.keyboard.press('Escape');
+        await page.waitForFunction(() => !document.querySelector('.settings'), null, { timeout: 5000 });
+        assert.strictEqual((await modalInfo(page) || {}).type, 'pause', 'Esc in Settings returns to the pause menu');
         await page.keyboard.press('Escape'); await stepPage(page, 2);
         assert.strictEqual(await modalInfo(page), null, 'pause closed');
 

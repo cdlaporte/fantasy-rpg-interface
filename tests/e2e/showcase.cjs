@@ -2,7 +2,7 @@
 // tests/e2e/out/showcase/<renderer>-<kit>-L<level>-<ability>.png ('basic' for the basic attack, else the ability id).
 // Each shot is framed on the player with training dummies around, a few frames after the cast (see PEAK in
 // kitdriver.cjs). Also asserts renderStats().unknown, __game.errors() and the console stay clean.
-// Run: node tests/e2e/showcase.cjs [2d|3d] [kitId] [level]    (all kits, both renderers: about 5 minutes)
+// Run: node tests/e2e/showcase.cjs [3d|2d|all] [kitId] [level]    (all kits, 3D by default: about 3 minutes)
 const path = require('node:path');
 const fs = require('node:fs');
 const H = require('./helpers.cjs');
@@ -10,7 +10,7 @@ const K = require('./kitdriver.cjs');
 
 const OUT = path.join(__dirname, 'out', 'showcase');
 const args = process.argv.slice(2);
-const only = args.find((a) => a === '2d' || a === '3d');
+const only = args.includes('all') ? null : (args.find((a) => a === '2d' || a === '3d') || '3d');   // round 2: 3D is the renderer; 2d / all opt in
 const onlyKit = args.find((a) => K.KITS.some((k) => k.id === a));
 const onlyLevel = args.find((a) => /^\d+$/.test(a));
 const HIDE = '.banner-host, .zone-card, #minimap, .toast, #toasts { display: none !important; }';

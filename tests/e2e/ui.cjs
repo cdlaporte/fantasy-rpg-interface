@@ -21,7 +21,7 @@ const OUT = path.join(__dirname, 'out');
     return list;
   };
   try {
-    await check('title screen: type a name, pick 3D, start a new game by keyboard', async () => {
+    await check('title screen: type a name, start a new game by keyboard', async () => {
       const page = await H.newPage(browser);
       const errors = H.collectErrors(page);
       await page.goto(`${server.url}/?debug=1&questions=auto`);
@@ -29,9 +29,7 @@ const OUT = path.join(__dirname, 'out');
       await page.keyboard.type('Ro$wan!!  the Great');           // filtered to letters/numbers/single spaces, max 12
       const typed = await page.$eval('.name-input', (i) => i.value);
       assert.strictEqual(typed, 'Rowan the Gr');
-      await page.keyboard.press('ArrowDown');                     // look row
-      await page.keyboard.press('ArrowRight');                    // 3D
-      await page.keyboard.press('ArrowDown');                     // buttons
+      await page.keyboard.press('ArrowDown');                     // buttons (3D is the only look; no look row)
       await page.keyboard.press('Enter');                         // New Game
       await page.waitForFunction(() => window.__game && window.__game.ready === true, null, { timeout: 20000 });
       const st = await page.evaluate(() => ({ name: window.__game.game.name, r: document.querySelector('#view canvas').className, title: !!document.querySelector('.title-screen') }));

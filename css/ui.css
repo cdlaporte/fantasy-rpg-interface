@@ -279,6 +279,8 @@ canvas.icon-xl { width: 48px; height: 48px; }
 
 /* ------------------------------------------------------------------ HUD: boss bar */
 #bossbar { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 4; }
+/* QA r2: the centred boss bar is ~470 px wide and covered the toast stack; push the toasts below it during a boss fight */
+.has-boss #toasts { top: 74px; }
 .boss { width: 440px; max-width: calc(100vw - 600px); min-width: 300px; padding: 8px 12px 10px; display: flex; flex-direction: column; gap: 6px; align-items: stretch; position: relative; }
 .boss-name { font-size: calc(13px * var(--ui-scale)); color: #ffd0c8; text-shadow: 2px 2px 0 #000; text-align: center; }
 .boss-track { height: 16px; background: #1b1420; box-shadow: 0 0 0 3px #000, inset 0 3px 0 rgba(0, 0, 0, 0.5); position: relative; overflow: hidden; }

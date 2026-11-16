@@ -35,8 +35,7 @@ const c = (L, k, d) => C((L && L[k]) || d);
 function tree(k, L, w, d, rnd) {
   const trunk = c(L, 'trunk', '#8a5a33'), leaves = c(L, 'leaves', '#3fae4f');
   const sc = 0.92 + rnd() * 0.16;
-  k.color(trunk).add(T.cyl(0.75, 1, 7), [0, 0.32 * sc, 0], [0.13, 0.64 * sc, 0.13]);
-  k.color(mul(trunk, 0.8)).add(T.cyl(1, 1, 7), [0, 0.04, 0], [0.18, 0.08, 0.18]);
+  k.color(trunk).add(T.cyl(0.75, 1.15, 6), [0, 0.32 * sc, 0], [0.13, 0.64 * sc, 0.13]);
   const blobs = [[0, 1.12, 0, 0.5], [0.24, 0.98, 0.08, 0.36], [-0.25, 1.0, -0.02, 0.37], [0.04, 1.45, -0.04, 0.36]];
   // one detailed main blob, cheaper round side blobs (trees are the most common prop)
   blobs.forEach(([x, y, z, r], i) => k.color(i === 3 ? mix(leaves, '#b8e878', 0.25) : i % 2 ? mul(leaves, 0.9) : leaves).add(i ? T.sphere(6, 4) : T.ico(1), [x * sc, y * sc, z * sc], r * sc, [rnd(), rnd(), 0]));
@@ -100,7 +99,8 @@ function flowerbed(k, L, w, d, rnd) {
   k.color('#4f9e3a').add(T.ico(0), [0, 0.17, 0], [0.34, 0.06, 0.34]);
   for (let i = 0; i < 9; i++) {
     const x = ((i % 3) - 1) * 0.25 + (rnd() - 0.5) * 0.08, z = (Math.floor(i / 3) - 1) * 0.25 + (rnd() - 0.5) * 0.08;
-    k.color(i % 2 ? p1 : p2).add(T.sphere(5, 3), [x, 0.25, z], [0.075, 0.045, 0.075]);
+    if (i === 1 || i === 7) continue;
+    k.color(i % 2 ? p1 : p2).add(T.sphere(5, 3), [x, 0.25, z], [0.085, 0.05, 0.085]);
   }
   k.lineless = false;
 }
@@ -161,7 +161,9 @@ function lamp(k, L) {
   k.color(pole).add(T.cyl(1, 0.6, 6), [0, 1.32, 0], [0.16, 0.06, 0.16]);
   k.color(light, 1).add(T.cyl(0.85, 1, 6), [0, 1.43, 0], [0.12, 0.18, 0.12]);
   k.color(pole).add(T.cone(6), [0, 1.6, 0], [0.18, 0.15, 0.18]);
-  k.color(pole).add(T.sphere(5, 4), [0, 1.69, 0], 0.035);
+  k.lineless = true;
+  k.color(pole).add(T.sphere(4, 3), [0, 1.69, 0], 0.035);
+  k.lineless = false;
   return [{ type: 'lamp', x: 0, y: 0, h: 1.43, color: '#' + C(light).getHexString() }];
 }
 
@@ -212,10 +214,10 @@ function fountain(k, L, w) {
 
 function statue(k, L) {
   const stone = c(L, 'stone', '#d8dae4'), base = c(L, 'base', '#a3a7b8');
-  k.color(base).add(T.rbox(0.25), [0, 0.18, 0], [0.75, 0.36, 0.75]);
+  k.color(base).add(T.box(), [0, 0.18, 0], [0.75, 0.36, 0.75]);
   k.color(mul(base, 1.1)).add(T.box(), [0, 0.38, 0], [0.62, 0.05, 0.62]);
   k.color(stone).add(T.cyl(0.55, 1, 10), [0, 0.68, 0], [0.22, 0.56, 0.18]);
-  k.color(stone).add(T.sphere(10, 8), [0, 1.1, 0], 0.17);
+  k.color(stone).add(T.sphere(8, 6), [0, 1.1, 0], 0.17);
   k.color(stone).add(T.cone(8), [0, 1.36, 0], [0.18, 0.3, 0.18], [-0.15, 0, 0]);
   k.color(stone).add(T.cyl(1, 1, 10), [0, 1.22, 0], [0.24, 0.02, 0.24]);
   k.color(stone).add(T.capsule(1.6, 6), [0.2, 0.78, 0.04], [0.08, 0.08, 0.08], [0, 0, -0.5]);
@@ -226,7 +228,9 @@ function statue(k, L) {
 function barrel(k, L) {
   const wood = c(L, 'wood', '#b0743d'), band = c(L, 'band', '#5a5a66');
   k.color(wood).add(barrelT(), [0, 0, 0], [0.62, 0.72, 0.62]);
-  for (const y of [0.15, 0.57]) k.color(band).add(T.torus(0.08, 4, 14), [0, y, 0], [0.3, 0.3, 0.3], [Math.PI / 2, 0, 0]);
+  k.lineless = true;
+  for (const y of [0.15, 0.57]) k.color(band).add(T.cyl(1, 1, 10), [0, y, 0], [0.3, 0.035, 0.3]);
+  k.lineless = false;
   k.color(mul(wood, 0.8)).add(T.cyl(1, 1, 10), [0, 0.715, 0], [0.25, 0.012, 0.25]);
 }
 
@@ -255,11 +259,15 @@ function stall(k, L, w, d, rnd) {
   for (let i = 0; i < n; i++) {
     const x = -W / 2 + (W / n) * (i + 0.5);
     k.color(i % 2 ? aw2 : aw).add(T.box(), [x, 1.55, 0], [W / n + 0.002, 0.05, D + 0.2], [0.25, 0, 0]);
-    k.color(i % 2 ? aw2 : aw).add(T.cyl(1, 1, 6), [x, 1.38, D / 2 + 0.13], [W / n / 2, 0.14, 0.03], [0, 0, 0]);
+    k.lineless = true;
+    k.color(i % 2 ? aw2 : aw).add(T.box(), [x, 1.38, D / 2 + 0.13], [W / n, 0.14, 0.03]);
+    k.lineless = false;
   }
   // goods
   const goods = ['#ff6b6b', '#ffd24a', '#7cc95a', '#ff9a3c', '#c9a6ff'];
-  for (let i = 0; i < 9; i++) k.color(goods[(rnd() * goods.length) | 0]).add(T.sphere(6, 5), [-W / 2 + 0.3 + (i % 5) * (W - 0.6) / 4, 0.92, D * 0.15 + Math.floor(i / 5) * 0.16], 0.08);
+  k.lineless = true;
+  for (let i = 0; i < 9; i++) k.color(goods[(rnd() * goods.length) | 0]).add(T.sphere(5, 4), [-W / 2 + 0.3 + (i % 5) * (W - 0.6) / 4, 0.92, D * 0.15 + Math.floor(i / 5) * 0.16], 0.085);
+  k.lineless = false;
 }
 
 function cart(k, L, w) {
@@ -547,8 +555,11 @@ function academy(k, L, w, d) {
   return [];
 }
 
-function gate_arch(k, L, w) {
+function gate_arch(k, L, w0, d0) {
   const stone = c(L, 'stone', '#d8dae4'), trim = c(L, 'trim', '#ffd24a');
+  // the arch spans the footprint's long axis (gate_arch_v_* are 1x5: rotate)
+  const vert = (d0 || 1) > w0, w = vert ? d0 : w0;
+  if (vert) k.push().tf(0, 0, 0, 0, Math.PI / 2, 0);
   const half = w / 2 - 0.3;
   for (const s of [-1, 1]) {
     k.color(stone).add(T.box(), [s * half, 0.85, 0], [0.5, 1.7, 0.5]);
@@ -559,6 +570,17 @@ function gate_arch(k, L, w) {
   k.color(stone).add(T.torus(0.22, 5, 14, Math.PI), [0, 1.35, 0], [half, 0.45, 1.3]);
   k.color(stone).add(T.box(), [0, 1.85, 0], [w * 0.9, 0.22, 0.42]);
   k.color(trim).add(T.box(), [0, 1.85, 0.22], [w * 0.55, 0.12, 0.02]);
+  if (vert) k.pop();
+  if ((L.variant | 0) === 5 && !vert) {
+    // the Aether portal: a shimmering membrane in the arch
+    k.lineless = true;
+    k.color(mix(trim, '#ffffff', 0.25), 0.85).add(T.cyl(1, 1, 16), [0, 0.95, 0], [half - 0.28, 0.02, 0.85], [Math.PI / 2, 0, 0]);
+    k.color('#ffffff', 1).add(T.cyl(1, 1, 12), [0, 0.95, 0.015], [(half - 0.28) * 0.45, 0.02, 0.4], [Math.PI / 2, 0, 0]);
+    k.lineless = false;
+    return [{ type: 'rune', x: 0, y: 0.1, h: 1.0, color: '#' + C(trim).getHexString() },
+      { type: 'crystal', x: half * 0.5, y: 0.1, h: 1.6, color: '#ffffff' }, { type: 'crystal', x: -half * 0.5, y: 0.1, h: 0.9, color: '#' + C(trim).getHexString() }];
+  }
+  return [];
 }
 
 function rune_gate(k, L, w) {
@@ -786,8 +808,10 @@ function goodsHeap(k, x, z, rnd, n) {
       k.color('#d6a060').add(T.box(), [ox, 0.17, oz], [0.32, 0.32, 0.32], [0, rnd() * 0.4, 0]);
       k.color('#9a6a3a').add(T.box(), [ox, 0.17, oz + 0.165], [0.33, 0.04, 0.02]);
     } else if (t === 1) {
-      k.color('#b0743d').add(barrelT(), [ox, 0, oz], [0.34, 0.4, 0.34]);
-      k.color('#5a5a66').add(T.torus(0.08, 4, 12), [ox, 0.3, oz], [0.165, 0.165, 0.165], [Math.PI / 2, 0, 0]);
+      k.color('#b0743d').add(T.cyl(0.9, 1, 8), [ox, 0.2, oz], [0.17, 0.4, 0.17]);
+      k.lineless = true;
+      k.color('#5a5a66').add(T.cyl(1, 1, 8), [ox, 0.3, oz], [0.18, 0.04, 0.18]);
+      k.lineless = false;
     } else {
       k.color('#e8d6a8').add(T.sphere(7, 5), [ox, 0.15, oz], [0.17, 0.17, 0.15]);
       k.color('#c8b07a').add(T.cyl(1, 0.6, 6), [ox, 0.3, oz], [0.06, 0.06, 0.06]);
@@ -797,23 +821,24 @@ function goodsHeap(k, x, z, rnd, n) {
 
 function sCottage(k, L, w, d, rnd, dx) {
   const wall = c(L, 'wall', '#fff1d6'), roof = c(L, 'roof', '#e2b45c'), trim = c(L, 'trim', '#8a5a33'), door = c(L, 'door', '#4f8a4a');
-  const W = w * 0.78, D = d * 0.62, H = 1.0, y0 = 0.14, zf = D / 2;
+  const W = w * 0.8, D = d * 0.6, H = 1.12, y0 = 0.14, zf = D / 2;
   plinth(k, W, D, '#c9c2b0');
-  k.color(wall).add(T.rbox(0.18), [0, y0 + H / 2, 0], [W, H, D]);
-  // thick rounded thatch: a squashed dome over a rounded slab, with eaves bands
-  k.color(roof).add(T.rbox(0.55, 10, 6), [0, y0 + H + 0.18, 0], [W + 0.55, 0.62, D + 0.6]);
-  k.color(roof).add(T.dome(12, 5), [0, y0 + H + 0.32, 0], [W * 0.62, 0.95, D * 0.72]);
-  k.color(mul(roof, 0.82)).add(T.torus(0.09, 4, 14), [0, y0 + H + 0.02, 0], [W * 0.66, D * 0.68, 1], [Math.PI / 2, 0, 0]);
-  k.color(lighten(roof, 0.18)).add(T.capsule(1.2, 7), [0, y0 + H + 1.22, 0], [0.16, 0.16, D * 0.6], [Math.PI / 2, 0, 0]);
+  k.color(wall).add(T.box(), [0, y0 + H / 2, 0], [W, H, D]);
+  for (const s of [-1, 1]) k.color(mul(wall, 0.92)).add(T.box(), [s * W / 2, y0 + H / 2, zf], [0.1, H, 0.1]);
+  // thick rounded thatch, set back so the front wall shows: a rounded slab, a squashed dome, an eaves roll
+  k.color(roof).add(T.rbox(0.55, 10, 6), [0, y0 + H + 0.14, -0.12], [W + 0.4, 0.5, D + 0.3]);
+  k.color(roof).add(T.dome(12, 5), [0, y0 + H + 0.26, -0.14], [W * 0.56, 0.78, D * 0.62]);
+  k.color(mul(roof, 0.8)).add(T.capsule(W * 1.6, 6), [0, y0 + H - 0.02, zf - 0.02], [0.13, 0.13, 0.13], [0, 0, Math.PI / 2]);
+  k.color(lighten(roof, 0.18)).add(T.capsule(1.2, 7), [0, y0 + H + 1.0, -0.14], [0.14, 0.14, D * 0.5], [Math.PI / 2, 0, 0]);
   k.lineless = true;
   for (let i = 0; i < 5; i++) k.color(mul(roof, 0.86)).add(T.box(), [-W * 0.4 + i * W * 0.2, y0 + H + 0.35 + (i % 2) * 0.12, zf + 0.33], [0.12, 0.02, 0.02], [0, 0, (rnd() - 0.5) * 0.4]);
   k.lineless = false;
   // eyebrow dormer with a round window
-  k.color(roof).add(T.dome(10, 4), [W * 0.18, y0 + H + 0.62, zf + 0.12], [0.34, 0.3, 0.3]);
-  roundWindow(k, W * 0.18, y0 + H + 0.72, zf + 0.35, 0.11, trim);
+  k.color(roof).add(T.dome(10, 4), [W * 0.18, y0 + H + 0.42, zf - 0.12], [0.32, 0.3, 0.3]);
+  roundWindow(k, W * 0.18, y0 + H + 0.52, zf + 0.12, 0.1, trim);
   // stone chimney
-  k.color('#a8a49a').add(T.rbox(0.3), [-W * 0.32, y0 + H + 0.9, -0.15], [0.3, 0.9, 0.3]);
-  k.color('#8a8478').add(T.box(), [-W * 0.32, y0 + H + 1.36, -0.15], [0.36, 0.06, 0.36]);
+  k.color('#a8a49a').add(T.box(), [-W * 0.32, y0 + H + 0.75, -0.25], [0.28, 0.9, 0.28]);
+  k.color('#8a8478').add(T.box(), [-W * 0.32, y0 + H + 1.2, -0.25], [0.34, 0.06, 0.34]);
   doorAt(k, dx, zf, 0.46, 0.74, door, trim);
   const wx = dx > 0 ? -W * 0.28 : W * 0.28;
   windowAt(k, wx, 0.72, zf + 0.02, 0.36, 0.36, trim, mix(door, '#ffffff', 0.1));
@@ -827,7 +852,7 @@ function sCottage(k, L, w, d, rnd, dx) {
   } else {
     k.color('#7a5ad9').add(T.ico(1), [W * 0.5, 0.2, zf + 0.15], [0.2, 0.2, 0.18]);
   }
-  return [smoke(-W * 0.32, -0.15, y0 + H + 1.4)];
+  return [smoke(-W * 0.32, -0.25, y0 + H + 1.25)];
 }
 
 function sTownhouse(k, L, w, d, rnd, dx) {
@@ -896,13 +921,13 @@ function sTowerHouse(k, L, w, d, rnd, dx) {
 
 function sMushroom(k, L, w, d, rnd, dx) {
   const stem = c(L, 'wall', '#fff3e0'), cap = c(L, 'roof', '#e8503c'), spots = c(L, 'trim', '#ffffff'), door = c(L, 'door', '#8a5a33');
-  const R = Math.min(w, d) * 0.3, H = 1.15, y0 = 0.02;
+  const R = Math.min(w, d) * 0.31, H = 1.35, y0 = 0.02;
   // bulging stem house
   k.color(stem).add(T.lathe('mushstem', [[0, 0], [0.92, 0], [1.0, 0.25], [0.98, 0.6], [0.86, 1], [0, 1]], 14), [0, y0, 0], [R, H, R]);
   // cap: wide dome with a gill rim
-  const capR = Math.min(w, d) * 0.5, yc = y0 + H - 0.05;
+  const capR = Math.min(w, d) * 0.43, yc = y0 + H - 0.05;
   k.color(mix(stem, '#c8a878', 0.4)).add(T.cyl(1, 0.55, 10), [0, yc + 0.02, 0], [capR * 0.98, 0.12, capR * 0.98]);
-  k.color(cap).add(T.dome(12, 5), [0, yc + 0.06, 0], [capR, 1.15, capR]);
+  k.color(cap).add(T.dome(12, 5), [0, yc + 0.06, -0.08], [capR, 1.0, capR]);
   const sp = [[0, 1.12, 0.1, 0.2], [0.55, 0.85, 0.5, 0.15], [-0.6, 0.8, 0.45, 0.17], [0.7, 0.6, -0.4, 0.13], [-0.4, 0.95, -0.5, 0.14],
     [0.1, 0.62, 0.95, 0.13], [-0.95, 0.45, 0.1, 0.12], [0.95, 0.45, 0.25, 0.11]];
   for (const [x, y, z, r] of sp) {
@@ -930,7 +955,7 @@ function sMushroom(k, L, w, d, rnd, dx) {
 
 function sWindmill(k, L, w, d, rnd, dx) {
   const wall = c(L, 'wall', '#f4ecd8'), roof = c(L, 'roof', '#9a6a43'), sail = c(L, 'trim', '#fffaf0'), door = c(L, 'door', '#6b4423');
-  const R0 = Math.min(w, d) * 0.36, R1 = R0 * 0.68, H = 2.0, y0 = 0.14;
+  const R0 = Math.min(w, d) * 0.34, R1 = R0 * 0.66, H = 2.1, y0 = 0.14;
   k.color('#a3a7b8').add(T.cyl(1, 1, 12), [0, 0.07, 0], [R0 + 0.12, 0.14, R0 + 0.12]);
   k.color(wall).add(T.cyl(R1 / R0, 1, 12), [0, y0 + H / 2, 0], [R0, H, R0]);
   for (const y of [0.75, 1.45]) k.color(mul(wall, 0.85)).add(T.cyl(1, 1, 12), [0, y0 + y, 0], [R0 - (R0 - R1) * (y / H) + 0.03, 0.06, R0 - (R0 - R1) * (y / H) + 0.03]);
@@ -942,12 +967,13 @@ function sWindmill(k, L, w, d, rnd, dx) {
   const hy = yc + 0.12, hz = R1 + 0.3;
   k.color('#6b4423').add(T.cyl(1, 1, 8), [0, hy, hz - 0.2], [0.07, 0.5, 0.07], [Math.PI / 2, 0, 0]);
   k.color('#5a3a22').add(T.sphere(8, 6), [0, hy, hz + 0.05], 0.12);
-  const len = 1.05;
+  const len = 1.3;
   for (let i = 0; i < 4; i++) {
     const a = 0.35 + i * Math.PI / 2;
     k.push().tf(0, hy, hz, 0, 0, a);
-    k.color('#7a4e2c').add(T.box(), [0, len / 2 + 0.05, 0], [0.06, len, 0.05]);
-    k.color(sail).add(T.box(), [0.13, len * 0.58 + 0.05, 0.01], [0.2, len * 0.78, 0.02]);
+    k.color('#7a4e2c').add(T.box(), [0, len / 2 + 0.05, 0], [0.07, len, 0.06]);
+    k.color('#c8503c').add(T.box(), [0.14, len * 0.58 + 0.05, 0.005], [0.27, len * 0.8, 0.02]);
+    k.color(sail).add(T.box(), [0.14, len * 0.58 + 0.05, 0.015], [0.21, len * 0.74, 0.02]);
     k.lineless = true;
     for (let j = 1; j < 4; j++) k.color('#c8b89a').add(T.box(), [0.13, 0.05 + len * 0.2 + j * len * 0.19, 0.025], [0.2, 0.02, 0.005]);
     k.lineless = false;
@@ -1081,7 +1107,7 @@ function sPotion(k, L, w, d, rnd, dx) {
   const R = Math.min(w, d) * 0.33, zc = -0.35, y0 = 0.14;
   k.color('#8a7aa8').add(T.cyl(1, 1, 10), [0, 0.07, zc], [R + 0.12, 0.14, R + 0.12]);
   // three crooked stacked drums, each leaning a little more
-  const segs = [[0.75, 0, 0, 1.0], [0.62, 0.07, 0.07, 0.94], [0.5, 0.15, -0.1, 0.9]];
+  const segs = [[0.8, 0, 0, 1.0], [0.72, 0.08, 0.07, 0.94], [0.62, 0.16, -0.1, 0.88]];
   let y = y0, x = 0;
   segs.forEach(([h, ox, rz, s], i) => {
     x += ox;
@@ -1093,11 +1119,11 @@ function sPotion(k, L, w, d, rnd, dx) {
   });
   // bent witch-hat roof
   k.push().tf(x + 0.05, y, zc, 0, 0, -0.12);
-  k.color(roof).add(T.cyl(1, 1, 12), [0, 0.02, 0], [R + 0.3, 0.06, R + 0.3]);
-  k.color(roof).add(T.cyl(0.6, 1, 12), [0, 0.28, 0], [R * 0.8, 0.5, R * 0.8]);
+  k.color(roof).add(T.cyl(1, 1, 10), [0, 0.02, 0], [R + 0.14, 0.06, R + 0.14]);
+  k.color(roof).add(T.cyl(0.6, 1, 10), [0, 0.28, 0], [R * 0.72, 0.5, R * 0.72]);
   k.color(roof).add(T.cyl(0.4, 1, 10), [0.08, 0.68, 0], [R * 0.48, 0.36, R * 0.48], [0, 0, -0.35]);
   k.color(roof).add(T.cone(8), [0.23, 0.95, 0], [R * 0.2, 0.3, R * 0.2], [0, 0, -0.85]);
-  k.color(trim).add(T.torus(0.15, 4, 14), [0, 0.12, 0], [R * 0.82, R * 0.82, 0.5], [Math.PI / 2, 0, 0]);
+  k.color(trim).add(T.torus(0.15, 4, 14), [0, 0.12, 0], [R * 0.74, R * 0.74, 0.5], [Math.PI / 2, 0, 0]);
   k.color(trim).add(T.octa(), [0.4, 1.02, 0], 0.07);
   k.pop();
   // porch with the door, a moon window, potion bottles on the sill
@@ -1219,7 +1245,7 @@ function sGeneral(k, L, w, d, rnd, dx) {
   k.color(roof).add(T.box(), [0, y0 + H + 0.25, zf + 0.09], [W * 0.7, 0.26, 0.02]);
   doorAt(k, 0, zf, 0.5, 0.82, door, trim);
   windowAt(k, -W * 0.3, 0.8, zf + 0.02, 0.36, 0.46, trim, null);
-  k.color(trim).add(T.box(), [0, 1.18, zf + 0.25], [W * 0.95, 0.05, 0.5], [0.3, 0, 0]);
+  k.color(mix(roof, '#ffffff', 0.25)).add(T.box(), [0, 1.18, zf + 0.25], [W * 0.95, 0.05, 0.5], [0.3, 0, 0]);
   for (const s of [-1, 1]) k.color(trim).add(T.box(), [s * W * 0.45, 0.6, zf + 0.46], [0.06, 1.2, 0.06]);
   k.pop();
   // lean-to shed on the east with a sloping single roof, open front, crates
@@ -1333,23 +1359,26 @@ function sBridgeArch(k, L, w, d) {
   k.lineless = false;
   // parapets: a low curved wall each side, coping on top, rounded end posts with lanterns
   for (const s of [-1, 1]) {
-    for (let i = 0; i < n; i++) {
-      const u = -len / 2 + (i + 0.5) * (len / n);
-      const y = 0.06 + Math.sin(((i + 0.5) / n) * Math.PI) * 0.12;
-      k.color(rail).add(T.box(), [u, y + 0.24, s * (wid / 2 - 0.05)], [len / n + 0.012, 0.42, 0.12]);
-      k.color(lighten(rail, 0.2)).add(T.box(), [u, y + 0.47, s * (wid / 2 - 0.05)], [len / n + 0.015, 0.05, 0.17]);
+    const z = s * (wid / 2 - 0.05);
+    // a sloped, a level and a sloped stretch of parapet with coping
+    const seg = (len - 0.4) / 3, rise = 0.1, ang = Math.atan2(rise, seg);
+    for (const [u, y, r] of [[-seg, 0.2, ang], [0, 0.26, 0], [seg, 0.2, -ang]]) {
+      k.color(rail).add(T.box(), [u, y + 0.2, z], [seg + 0.04, 0.4, 0.12], [0, 0, r]);
+      k.color(lighten(rail, 0.2)).add(T.box(), [u, y + 0.42, z], [seg + 0.06, 0.05, 0.17], [0, 0, r]);
     }
     for (const e of [-1, 1]) {
       const u = e * (len / 2 - 0.1);
-      k.color(rail).add(T.box(), [u, 0.35, s * (wid / 2 - 0.05)], [0.24, 0.7, 0.24]);
-      k.color(lighten(rail, 0.2)).add(T.sphere(8, 6), [u, 0.76, s * (wid / 2 - 0.05)], 0.11);
+      k.color(rail).add(T.box(), [u, 0.35, z], [0.24, 0.7, 0.24]);
+      k.color(lighten(rail, 0.2)).add(T.sphere(6, 4), [u, 0.76, z], 0.11);
     }
   }
   // the arch itself shows on both faces over the water
+  k.lineless = true;
   for (const s of [-1, 1]) {
-    k.color(mul(stone, 0.85)).add(T.torus(0.1, 4, 14, Math.PI), [0, -0.35, s * wid / 2], [len * 0.36, 0.5, 1]);
+    k.color(mul(stone, 0.85)).add(T.torus(0.1, 4, 12, Math.PI), [0, -0.35, s * wid / 2], [len * 0.36, 0.5, 1]);
     k.color(mul(rail, 0.9)).add(T.box(), [0, 0.0, s * wid / 2], [len * 0.95, 0.14, 0.05]);
   }
+  k.lineless = false;
   k.pop();
   return [];
 }

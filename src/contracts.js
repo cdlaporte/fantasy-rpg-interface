@@ -64,7 +64,8 @@ export const ABILITY_BLOCKS = Object.freeze(['melee_arc', 'projectile', 'multish
 // ---- World vocab (section 5) ----
 export const TILE_SHAPES = Object.freeze(['flat', 'block', 'water', 'pit']);
 export const TILE_PATTERNS = Object.freeze(['grass', 'flowers', 'tallgrass', 'dirt', 'path', 'cobble', 'sand', 'wet_sand',
-  'shallows', 'water', 'planks', 'stone', 'carpet', 'brick', 'hedge', 'trees', 'cliff', 'crystal', 'cloud', 'starfloor']);
+  'shallows', 'water', 'planks', 'stone', 'carpet', 'brick', 'hedge', 'trees', 'cliff', 'crystal', 'cloud', 'starfloor',
+  'snow', 'ice', 'sky']);   // round 3 (package B): snow fields, frozen ponds, the Aether sky void
 export const PROP_MODELS = Object.freeze(['tree', 'pine', 'bush', 'rock', 'stump', 'log', 'flowerbed', 'mushroom_big',
   'crystal', 'fence', 'hedge_arch', 'lamp', 'sign', 'bench', 'well', 'fountain', 'statue', 'barrel', 'crate', 'stall',
   'cart', 'campfire', 'tent', 'house', 'shop', 'tower', 'academy', 'gate_arch', 'rune_gate', 'bridge', 'banner',

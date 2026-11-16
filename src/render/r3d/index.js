@@ -123,11 +123,14 @@ export function create() {
   }
   function buildZoneMeshes() {
     freeBorder();
-    for (const bg of buildBorder(zd)) {
-      const m = new THREE.Mesh(bg, mats.chunk);
-      if (borderMeshes.length === 0) m.frustumCulled = false;   // the first is the ground plane
+    const bl = buildBorder(zd);
+    borderEmitters = bl.emitters || [];
+    bl.forEach((bg, i) => {
+      if (!bg) return;
+      const m = new THREE.Mesh(bg, bg.userData.water ? mats.water : mats.chunk);
+      if (i === 0) m.frustumCulled = false;   // the first is the ground plane
       scene.add(m); borderMeshes.push(m);
-    }
+    });
     chunkCols = Math.ceil(zd.zv.w / CHUNK);
     chunkRows = Math.ceil(zd.zv.h / CHUNK);
     chunks = new Array(chunkCols * chunkRows);
@@ -148,6 +151,7 @@ export function create() {
   function collectEmitters() {
     emitters = [];
     for (const c of chunks) if (c) for (const e of c.emitters) emitters.push(e);
+    for (const e of borderEmitters) emitters.push(e);
   }
   function refreshUnknown() {
     if (unknown.size === unknownSize) return;
@@ -253,7 +257,7 @@ export function create() {
     }
     if (rig === 'humanoid') {
       const spec = meta.s;
-      if (spec.aura && quality >= 0) { auraC.copy(C(spec.aura.color)); fx.aura(spec.aura.style, auraC, x, y, H, t, s.seed); }
+      if (spec.aura && quality >= 0) { auraC.copy(C(spec.aura.color)); fx.aura(spec.aura.style, auraC, x, y, H, t, s.seed, size / MODEL_SCALE); }
       if (meta.glowAt && meta.glow) {
         v3.set(meta.glowAt[0], meta.glowAt[1], meta.glowAt[2]).applyMatrix4(M);
         glowC.copy(C(meta.glow));
@@ -317,6 +321,7 @@ export function create() {
 
   // ---------------- emitters ----------------
   const em = new THREE.Color();
+  const em2 = new THREE.Color();
   function drawEmitters(t, rect) {
     for (let i = 0; i < emitters.length; i++) {
       const e = emitters[i];
@@ -375,6 +380,47 @@ export function create() {
         case 'rune':
           fx.glowAt(e.x, e.y + 0.1, e.h, 0.9 + 0.1 * Math.sin(t * 3 + sd), em, 0.35);
           break;
+        // ---- round 3 biome emitters ----
+        case 'beacon': {
+          // lighthouse lamp: a big warm glow and a slowly sweeping flare
+          fx.glowAt(e.x, e.y + 0.05, e.h, 1.5 + 0.15 * Math.sin(t * 2 + sd), em, 0.6);
+          const a = t * 1.2 + sd;
+          fx.bill('star', e.x + Math.cos(a) * 0.3, e.y + 0.05 + Math.sin(a) * 0.25, e.h, a, 0.55 + 0.25 * Math.max(0, Math.sin(a)), em, 0.9);
+          fx.bill('glow', e.x + Math.cos(a) * 1.1, e.y + Math.sin(a) * 0.9, e.h, 0, 0.7, em, 0.25 + 0.2 * Math.max(0, Math.sin(a)));
+          break;
+        }
+        case 'bloom':
+          fx.glowAt(e.x, e.y + 0.02, e.h, 0.42 + 0.06 * Math.sin(t * 1.6 + sd), em, 0.45);
+          if (((t * 0.4 + sd) % 1) < 0.25) fx.bill('star', e.x + 0.08, e.y, e.h + 0.12, t * 2, 0.1, em, 0.9);
+          break;
+        case 'glint': {
+          const g = (t * 0.6 + sd) % 1;
+          if (g < 0.35) fx.bill('star', e.x + Math.sin(sd * 3) * (e.r || 0.5) * 0.5, e.y + Math.cos(sd * 5) * (e.r || 0.5) * 0.4, e.h + 0.05, t * 2, 0.16 * Math.sin(g / 0.35 * Math.PI), em, 1);
+          break;
+        }
+        case 'orrery': {
+          // planets riding the tilted rings; turning slowly
+          for (let j = 0; j < 3; j++) {
+            const outer = j > 0;
+            const rr = outer ? e.r2 : e.r1, tl = outer ? e.t2 : e.t1;
+            const a = t * (outer ? 0.25 : 0.42) + j * 2.6 + sd;
+            const ox = Math.cos(a) * rr, oz0 = Math.sin(a) * rr;
+            const oy = -Math.sin(tl) * oz0, oz = Math.cos(tl) * oz0;
+            em2.copy(C(j === 1 ? e.color2 : j === 2 ? '#9fe0a0' : e.color));
+            fx.ball('orb', e.x + ox, e.y + oz, e.h + oy, j === 2 ? 0.1 : 0.15, em2, 1);
+            if (j === 1) fx.ground('ring', e.x + ox, e.y + oz, e.h + oy - 0.065, a, 0.24, 0.24, em, 0.8);
+          }
+          break;
+        }
+        case 'cloud': {
+          // a soft cloud drifting far below an Aether sky void (or beyond the map edge): three overlapping soft discs
+          const u = ((t * 0.02 + sd * 0.137) % 1);
+          const dx = (u - 0.5) * (e.r || 6), a = 0.75 * Math.sin(u * Math.PI), sz = e.s || 0.8;
+          fx.ground('glowN', e.x + dx, e.y, e.h, 0, sz * 1.3, sz * 0.9, em, a);
+          fx.ground('glowN', e.x + dx + sz * 0.7, e.y - sz * 0.2, e.h + 0.02, 0, sz * 0.9, sz * 0.7, em, a);
+          fx.ground('glowN', e.x + dx - sz * 0.6, e.y + sz * 0.15, e.h + 0.01, 0, sz, sz * 0.7, em, a * 0.9);
+          break;
+        }
         default: break;
       }
     }
@@ -406,7 +452,8 @@ export function create() {
   const rectTmp = { x0: 0, y0: 0, x1: 0, y1: 0 };
   const sp = new THREE.Vector3();
   let borderMeshes = [];
-  function freeBorder() { for (const m of borderMeshes) { scene.remove(m); m.geometry.dispose(); } borderMeshes = []; }
+  let borderEmitters = [];
+  function freeBorder() { for (const m of borderMeshes) { scene.remove(m); m.geometry.dispose(); } borderMeshes = []; borderEmitters = []; }
 
   const r = {
     id: '3d',

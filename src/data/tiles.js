@@ -29,4 +29,10 @@ export default [
   T('palisade', 'planks', 'block', true, 1.5, '#b0743d', '#8a5a33', '#7a4e2c'),
   T('rune_floor', 'starfloor', 'flat', false, 0, '#8f88b8', '#c9a6ff'),
   T('mossy_stone', 'stone', 'flat', false, 0, '#a9b8a0', '#8fa58a'),
+  // --- round 3 biome tiles by package B (art; append only) ---
+  T('snow', 'snow', 'flat', false, 0, '#f4f9ff', '#dde9f6', '#c2d4ea'),
+  T('ice', 'ice', 'flat', false, 0, '#bfeeff', '#e6fbff', '#8fd0ee'),
+  T('snow_bank', 'snow', 'block', true, 1, '#f6faff', '#dfeaf6', '#b6cae2'),
+  // open sky between floating islands (Aether): solid, drawn as a drop into the sky with clouds far below
+  T('sky_void', 'sky', 'pit', true, 0, '#d4dcff', '#ffffff', '#b8a8e0'),
 ];

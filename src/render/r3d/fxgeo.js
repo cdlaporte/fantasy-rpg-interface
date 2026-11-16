@@ -355,7 +355,7 @@ export function puff() {
 
 /** Shaded debris chunk (cube) / shard (octahedron). */
 export function solid(kind) {
-  const g = kind === 'cube' ? new THREE.BoxGeometry(1, 1, 1).toNonIndexed() : new THREE.OctahedronGeometry(1, 0);
+  const g = kind === 'cube' ? new THREE.BoxGeometry(1, 1, 1).toNonIndexed() : kind === 'sphere' ? new THREE.IcosahedronGeometry(1, 1) : new THREE.OctahedronGeometry(1, 0);
   g.computeVertexNormals();
   const n = g.attributes.normal;
   const col = [];

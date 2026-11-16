@@ -1,14 +1,18 @@
 // Creature rigs: quadruped, blob, flyer, plant, golem (+ hero 'mossback'). Same part ids as humanoids:
 // 0 body, 1 head, 2/3 leg pairs, 4/5 arms | wings | leaves, 7 tail (yaw wag). Facing +Z, feet at y = 0, size 1.
 import { Kit, T, C, mul, mix, lighten, darken } from '../kit.js';
+import { BOSS_BUILDERS, quadAntennae, quadClaws, quadStinger, quadShell, quadEars, quadHorns, blobTentacles, blobBubbles, insectWings,
+  plantCactus, plantSeaweed, golemBiome } from './biomeCreatures.js';
 
 const FEATURES = {
-  quadruped: ['tail_thin', 'tail_bushy', 'tusks', 'ears_round', 'ears_pointy', 'spikes', 'mane'],
-  blob: ['crown', 'drips', 'core_glow', 'spots'],
-  flyer: ['wings_bat', 'wings_bird', 'wings_fairy', 'orb', 'glow'],
-  plant: ['cap_mushroom', 'thorns', 'leaves', 'flower', 'bark_face', 'vines'],
-  golem: ['mossy', 'rocky', 'wood', 'crystal', 'antlers'],
+  quadruped: ['tail_thin', 'tail_bushy', 'tusks', 'ears_round', 'ears_pointy', 'spikes', 'mane',
+    'claws', 'stinger', 'shell_back', 'long_ears', 'horns'],
+  blob: ['crown', 'drips', 'core_glow', 'spots', 'tentacles', 'bubbles'],
+  flyer: ['wings_bat', 'wings_bird', 'wings_fairy', 'orb', 'glow', 'wings_insect'],
+  plant: ['cap_mushroom', 'thorns', 'leaves', 'flower', 'bark_face', 'vines', 'cactus', 'seaweed'],
+  golem: ['mossy', 'rocky', 'wood', 'crystal', 'antlers', 'sandy', 'icy', 'coral', 'starry'],
 };
+const HEROES = { mossback: 'golem', sphinx: 'quadruped', crab_king: 'quadruped', yeti: 'golem' };
 
 function spec(look, unknown) {
   const c = (look && look.colors) || {};
@@ -18,15 +22,15 @@ function spec(look, unknown) {
     if (FEATURES[rig] && FEATURES[rig].includes(f)) feats.add(f);
     else unknown.add(rig + '.feature:' + f);
   }
-  if (look.hero && look.hero !== 'mossback') unknown.add('hero:' + look.hero);
+  if (look.hero && !HEROES[look.hero]) unknown.add('hero:' + look.hero);
   return {
     body: C(c.body || '#9a8a7a'), belly: C(c.belly || '#d8c8b8'), accent: C(c.accent || '#ff9aa8'), eye: C(c.eye || '#222222'),
-    f: feats, hero: look.hero === 'mossback' ? 'mossback' : null,
+    f: feats, hero: HEROES[look.hero] ? look.hero : null,
   };
 }
 
 /** Cute eyes on a face plane: center (x, y, z) facing +Z. */
-function eyes(k, x, y, z, r, eyeC, gap, glowy = false) {
+export function eyes(k, x, y, z, r, eyeC, gap, glowy = false) {
   k.lineless = true;
   for (const side of [1, -1]) {
     if (glowy) {
@@ -45,6 +49,11 @@ export function buildCreature(look, unknown) {
   const k = new Kit({ skin: true });
   k.grad = [0.82, 1.08];
   const meta = { tip: [0, 0.4, 0.4], height: 0.8, glowAt: null, radius: 0.4 };
+  if (s.hero && s.hero !== 'mossback' && BOSS_BUILDERS[s.hero]) {
+    BOSS_BUILDERS[s.hero](k, s, meta);
+    k.grad = null;
+    return { geo: k.build(), meta };
+  }
   switch (look.rig) {
     case 'quadruped': quadruped(k, s, meta); break;
     case 'blob': blob(k, s, meta); break;
@@ -69,12 +78,16 @@ function quadruped(k, s, meta) {
   k.part(0);
   k.color(body).add(T.sphere(10, 7), [0, 0.36, 0], [0.26, 0.21, 0.36]);
   k.color(belly).add(T.sphere(8, 6), [0, 0.3, 0.02], [0.2, 0.15, 0.3]);
+  if (s.f.has('shell_back')) quadShell(k, s);
   if (s.f.has('spikes')) {
-    for (let i = 0; i < 4; i++) k.color(accent).add(T.cone(5), [0, 0.56 - Math.abs(i - 1.5) * 0.02, 0.18 - i * 0.13], [0.05, 0.13, 0.05], [-0.35, 0, 0]);
+    const sy = s.f.has('shell_back') ? 0.1 : 0;
+    for (let i = 0; i < 4; i++) k.color(accent).add(T.cone(5), [0, 0.56 + sy - Math.abs(i - 1.5) * 0.02, 0.18 - i * 0.13], [0.05, 0.13, 0.05], [-0.35, 0, 0]);
   }
   // tail (part 7, wags)
   k.part(7, 0, 0.4, -0.33);
-  if (s.f.has('tail_bushy')) {
+  if (s.f.has('stinger')) {
+    quadStinger(k, s);
+  } else if (s.f.has('tail_bushy')) {
     k.color(body).add(T.sphere(9, 7), [0, 0.5, -0.45], [0.12, 0.17, 0.12], [-0.6, 0, 0]);
     k.color(lighten(body, 0.4)).add(T.sphere(8, 6), [0, 0.6, -0.52], [0.08, 0.09, 0.08]);
   } else if (s.f.has('tail_thin')) {
@@ -98,13 +111,19 @@ function quadruped(k, s, meta) {
   k.color(accent).add(T.sphere(5, 3), [0, hy - 0.03, hz + 0.24], [0.04, 0.03, 0.03]);
   k.lineless = false;
   eyes(k, 0, hy + 0.05, hz + 0.16, 0.035, s.eye, 0.085);
-  if (s.f.has('ears_pointy')) {
+  if (s.f.has('claws')) quadClaws(k, s, hy, hz);
+  if (s.f.has('horns')) quadHorns(k, s, hy, hz);
+  if (s.f.has('long_ears')) quadEars(k, s, hy, hz);
+  else if (s.f.has('ears_pointy')) {
     for (const side of [1, -1]) {
       k.color(body).add(T.cone(5), [0.11 * side, hy + 0.2, hz - 0.03], [0.065, 0.15, 0.04], [0, 0, -0.3 * side]);
       k.color(accent).add(T.cone(4), [0.11 * side, hy + 0.19, hz - 0.01], [0.035, 0.1, 0.02], [0, 0, -0.3 * side]);
     }
   }
-  if (s.f.has('ears_round') || !s.f.has('ears_pointy')) {
+  // critters with a shell, claws or a stinger get no default round ears (antennae on shelled ones)
+  const critter = s.f.has('shell_back') || s.f.has('claws') || s.f.has('stinger');
+  if (critter && s.f.has('shell_back') && !s.f.has('ears_round') && !s.f.has('ears_pointy') && !s.f.has('long_ears')) quadAntennae(k, s, hy, hz);
+  if (!s.f.has('long_ears') && (s.f.has('ears_round') || (!s.f.has('ears_pointy') && !critter))) {
     if (!s.f.has('ears_pointy')) for (const side of [1, -1]) {
       k.color(body).add(T.sphere(7, 4), [0.14 * side, hy + 0.15, hz - 0.03], [0.075, 0.075, 0.03]);
       k.lineless = true;
@@ -120,9 +139,12 @@ function quadruped(k, s, meta) {
 
 function blob(k, s, meta) {
   const { body, belly, accent } = s;
+  const floaty = s.f.has('tentacles');
   k.part(0);
+  if (floaty) { blobTentacles(k, s); k.push().tf(0, 0.26, 0); }
   k.color(body).add(T.sphere(12, 8), [0, 0.3, 0], [0.38, 0.32, 0.36]);
-  k.color(mul(body, 0.85)).add(T.cyl(1, 0.9, 14), [0, 0.04, 0], [0.38, 0.08, 0.36]);
+  if (!floaty) k.color(mul(body, 0.85)).add(T.cyl(1, 0.9, 14), [0, 0.04, 0], [0.38, 0.08, 0.36]);
+  else k.color(mix(body, '#ffffff', 0.25)).add(T.cyl(1, 0.85, 14), [0, 0.06, 0], [0.38, 0.06, 0.36]);
   k.color(belly).add(T.sphere(10, 7), [0, 0.24, 0.18], [0.22, 0.17, 0.16]);
   if (s.f.has('spots')) {
     const spots = [[0.2, 0.48, -0.05, 0.07], [-0.24, 0.38, -0.12, 0.06], [0.05, 0.56, -0.18, 0.055], [-0.1, 0.5, 0.15, 0.045], [0.28, 0.25, -0.18, 0.05]];
@@ -142,7 +164,7 @@ function blob(k, s, meta) {
     k.lineless = false;
     meta.glowAt = [0, 0.3, 0.3];
   }
-  k.part(1, 0, 0.3, 0);
+  k.part(1, 0, floaty ? 0.56 : 0.3, 0);
   k.push().tf(0, 0.3, 0, -0.55, 0, 0).tf(0, -0.3, 0);
   eyes(k, 0, 0.36, 0.31, 0.06, s.eye, 0.12);
   k.lineless = true;
@@ -157,7 +179,9 @@ function blob(k, s, meta) {
     }
     k.color('#ff4a6a', 0.4).add(T.octa(), [0, 0.66, 0.12], 0.03);
   }
-  meta.height = 0.7; meta.radius = 0.38; meta.tip = [0, 0.3, 0.38];
+  if (s.f.has('bubbles')) blobBubbles(k, s);
+  if (floaty) { k.pop(); if (meta.glowAt) meta.glowAt[1] += 0.26; }
+  meta.height = floaty ? 0.95 : 0.7; meta.radius = 0.38; meta.tip = [0, floaty ? 0.56 : 0.3, 0.38];
 }
 
 function flyer(k, s, meta) {
@@ -177,10 +201,12 @@ function flyer(k, s, meta) {
   // ears / tufts
   for (const side of [1, -1]) k.color(body).add(T.cone(5), [0.11 * side, 0.52, 0], [0.05, 0.1, 0.04], [0, 0, -0.35 * side]);
   // wings (parts 4 / 5) pivot at the shoulder; wings lie along +-X
-  const type = s.f.has('wings_bat') ? 'bat' : s.f.has('wings_fairy') ? 'fairy' : 'bird';
+  const type = s.f.has('wings_bat') ? 'bat' : s.f.has('wings_fairy') ? 'fairy' : s.f.has('wings_insect') ? 'insect' : 'bird';
   for (const side of [1, -1]) {
     k.part(side > 0 ? 4 : 5, 0.18 * side, 0.36, -0.02);
-    if (type === 'bat') {
+    if (type === 'insect') {
+      insectWings(k, s, side);
+    } else if (type === 'bat') {
       const wc = mul(body, 0.7);
       k.color(wc).add(T.shape('batwing', [[0, 0], [0.45, 0.15], [0.42, -0.1], [0.3, -0.02], [0.22, -0.16], [0.12, -0.04], [0, -0.12]], 0.02), [0.18 * side, 0.36, -0.02], [side, 1, 1], [Math.PI / 2 - 0.3, 0, 0]);
       k.color(mul(body, 0.5)).add(T.cyl(1, 1, 4), [0.4 * side, 0.36, -0.02], [0.015, 0.45, 0.015], [0, 0, Math.PI / 2]);
@@ -209,6 +235,7 @@ function plant(k, s, meta) {
     k.color(mul(bark ? '#8a5a33' : body, 0.75)).add(T.sphere(7, 5), [0.12 * side, 0.04, 0.03], [0.1, 0.06, 0.12]);
   }
   k.part(0);
+  if (s.f.has('cactus')) { plantCactus(k, s, meta); return; }
   const stemC = bark ? C('#8a5a33') : body;
   k.color(stemC).add(T.cyl(0.8, 1, 10), [0, 0.22, 0], [0.2, 0.36, 0.2]);
   k.color(mul(stemC, 0.85)).add(T.cyl(1, 1, 10), [0, 0.06, 0], [0.22, 0.1, 0.22]);
@@ -267,6 +294,9 @@ function plant(k, s, meta) {
     }
     k.color('#ffe066').add(T.sphere(8, 6), [0, 0.52, 0], [0.09, 0.05, 0.09]);
     meta.height = 0.65;
+  } else if (s.f.has('seaweed')) {
+    plantSeaweed(k, s);
+    meta.height = 0.9;
   } else {
     for (let i = 0; i < 3; i++) {
       const a = (i / 3) * Math.PI * 2;
@@ -304,17 +334,20 @@ function golem(k, s, meta) {
     const cr = [[0.13, 0.86, -0.1, 0.32, 0.35], [-0.14, 0.84, -0.08, 0.26, -0.35], [0, 0.9, -0.18, 0.38, 0], [0.24, 0.6, -0.14, 0.22, 0.9]];
     cr.forEach(([x, y, z, h, rz], i) => k.color(i % 2 ? mix(accent, '#9fe6ff', 0.5) : mix(accent, '#c9a6ff', 0.4), 0.45).add(T.cyl(0, 1, 5), [x, y, z], [0.085, h, 0.085], [-0.3, 0, rz]));
   }
+  golemBiome(k, s, base, 'body');
   // arms (4 / 5)
   for (const side of [1, -1]) {
     k.part(side > 0 ? 4 : 5, 0.33 * side, 0.62, 0);
     k.color(mul(base, 0.95)).add(T.rbox(0.45), [0.36 * side, 0.6, 0], [0.18, 0.18, 0.18]);
     k.color(base).add(T.rbox(0.45), [0.38 * side, 0.4, 0.02], [0.15, 0.24, 0.15]);
     k.color(mul(base, 0.9)).add(T.rbox(0.45), [0.39 * side, 0.22, 0.04], [0.2, 0.17, 0.2]);
+    golemBiome(k, s, base, 'arm', side);
   }
   k.part(1, 0, 0.7, 0);
   k.color(base).add(T.rbox(0.45), [0, 0.84, 0.04], [0.3, 0.22, 0.26]);
   eyes(k, 0, 0.86, 0.17, 0.04, s.eye, 0.07, true);
   meta.glowEyes = true;
+  golemBiome(k, s, base, 'head');
   if (s.f.has('antlers')) antlers(k, 0, 0.95, 0, '#c8a070', 1);
   meta.height = 1.05; meta.radius = 0.42; meta.tip = [0.39, 0.22, 0.2];
 }

@@ -10,7 +10,8 @@ import props from '../src/data/props.js';
 import { PALETTES } from '../src/data/palettes.js';
 import { PLAYER_LOOKS, LAPORTE_LOOK, CLOAKED } from '../src/data/looks.js';
 
-export const PAGE_TITLES = ['Humanoids', 'Creatures', 'Projectiles & effects', 'FX & fxTags', 'Tiles & props'];
+export const PAGE_TITLES = ['Humanoids', 'Creatures', 'Projectiles & effects', 'FX & fxTags', 'Tiles & props',
+  'Biome: Sunscorch Dunes', 'Biome: Gullwing Cove', 'Biome: Frostwhistle Peaks', 'Biome: Aether Gardens'];
 export const PAGE_COUNT = PAGE_TITLES.length;
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
@@ -185,6 +186,7 @@ function page4() {
   let cx = 1, cy = propStartY, rowH = 0;
   for (const id of Object.keys(props)) {
     const d = props[id];
+    if (BIOME_PROP_IDS.has(id)) continue;   // the biome pages show these
     const fw = d.footprint ? d.footprint[0] : 1, fh = d.footprint ? d.footprint[1] : 1;
     if (cx + fw > W - 1) { cx = 1; cy += rowH + 2; rowH = 0; }
     placed.push({ id, def: d, x: cx, y: cy, w: fw, h: fh });
@@ -204,7 +206,139 @@ function page4() {
   return { zone, items };
 }
 
-const BUILDERS = [page0, page1, page2, page3, page4];
+// ---------------------------------------------------------------- round 3 biome pages (package B)
+// Each page: the biome palette (so the map edge shows the biome scenery), a row of tile patches, every biome prop
+// (with its look variants) and the creature features and boss heroes the biome uses. The Aether page has a sky
+// void channel between two islands.
+const BIOMES = {
+  dunes: {
+    fill: 'sand', tiles: ['sand', 'wet_sand', 'dirt', 'path', 'cobble', 'tallgrass', 'grass', 'shallows', 'water', 'cliff'],
+    props: ['palm', 'palm_tall', 'palm_bent', 'cactus', 'cactus_round', 'cactus_pear', 'ruin_pillar', 'ruin_pillar_broken',
+      'ruin_pillar_bleached', 'ruin_pillar_bleached_broken', 'ruin_wall', 'ruin_wall_bleached', 'obelisk', 'obelisk_bleached',
+      'pottery', 'pottery_tall', 'pottery_stack', 'dune', 'dune_ripple', 'rock_sandstone', 'tent_caravan', 'bush_desert'],
+    ents: [
+      { label: 'scarab (shell_back claws)', look: { rig: 'quadruped', size: 0.6, colors: { body: '#3fa0a0', belly: '#2a6a78', accent: '#ffd24a', eye: '#1a1a2a' }, features: ['shell_back', 'claws'] } },
+      { label: 'sand_scorpion (stinger claws)', look: { rig: 'quadruped', size: 0.95, colors: { body: '#e0904a', belly: '#f4c88a', accent: '#a04ad0', eye: '#1a1a2a' }, features: ['stinger', 'claws'] } },
+      { label: 'quadruped horns', look: { rig: 'quadruped', size: 1, colors: { body: '#d8b07a', belly: '#f4e0b8', accent: '#c86a42', eye: '#222222' }, features: ['horns', 'tail_thin', 'ears_pointy'] } },
+      { label: 'cactling (plant cactus)', look: { rig: 'plant', size: 0.9, colors: { body: '#5cbf62', belly: '#c8e6a0', accent: '#ff7aa8', eye: '#1a1a2a' }, features: ['cactus'] } },
+      { label: 'dust_devil (flyer glow)', look: { rig: 'flyer', size: 0.9, colors: { body: '#e8c27a', belly: '#f6e0b0', accent: '#fff2c0', eye: '#5a3a22' }, features: ['wings_bird', 'glow'] } },
+      { label: 'sandstone golem (sandy)', look: { rig: 'golem', size: 1.3, colors: { body: '#e8b878', belly: '#f4d8a8', accent: '#3fc8d8', eye: '#3fc8d8' }, features: ['sandy', 'rocky'] } },
+      { label: 'hero sphinx', look: { rig: 'quadruped', size: 2.0, colors: { body: '#eec27e', belly: '#f8e2b4', accent: '#3d6ac8', eye: '#2a4a8a' }, features: [], hero: 'sphinx' } },
+      { label: 'sphinx attack', look: { rig: 'quadruped', size: 2.0, colors: { body: '#eec27e', belly: '#f8e2b4', accent: '#3d6ac8', eye: '#2a4a8a' }, features: [], hero: 'sphinx' }, anim: 'attack', dir: DIR.RIGHT },
+    ],
+  },
+  cove: {
+    fill: 'sand', tiles: ['sand', 'wet_sand', 'shallows', 'water', 'planks', 'grass', 'tallgrass', 'path', 'cliff'],
+    props: ['shell', 'shell_conch', 'starfish', 'coral', 'coral_blue', 'coral_yellow', 'coral_fan', 'boat', 'boat_red', 'rowboat',
+      'tidepool', 'lighthouse', 'lighthouse_blue', 'rock_sea', 'fence_driftwood', 'banner_sea'],
+    ents: [
+      { label: 'snippy_crab (claws shell_back)', look: { rig: 'quadruped', size: 0.8, colors: { body: '#ff6a5a', belly: '#ffc8a8', accent: '#ffd24a', eye: '#1a1a2a' }, features: ['claws', 'shell_back'] } },
+      { label: 'bubble_jelly (tentacles bubbles)', look: { rig: 'blob', size: 0.9, colors: { body: '#c89aff', belly: '#f0e0ff', accent: '#7fe0ff', eye: '#3a2a5a' }, features: ['tentacles', 'bubbles'] } },
+      { label: 'blob bubbles', look: { rig: 'blob', size: 0.9, colors: { body: '#6fd8e0', belly: '#c8f4f4', accent: '#ffffff', eye: '#1a1a2a' }, features: ['bubbles', 'spots'] } },
+      { label: 'plant seaweed', look: { rig: 'plant', size: 1, colors: { body: '#4fb08a', belly: '#c8f0d8', accent: '#ffd24a', eye: '#1a1a2a' }, features: ['seaweed'] } },
+      { label: 'gull (wings_bird)', look: { rig: 'flyer', size: 0.8, colors: { body: '#ffffff', belly: '#f0f4f8', accent: '#ffb03c', eye: '#1a1a2a' }, features: ['wings_bird'] } },
+      { label: 'coral golem', look: { rig: 'golem', size: 1.3, colors: { body: '#e8d8c8', belly: '#fff0e6', accent: '#ff7a8a', eye: '#5ae0e0' }, features: ['coral'] } },
+      { label: 'pirate_imp', look: { rig: 'humanoid', build: 'b', size: 0.85, skin: '#8fd080', hair: { style: 'spiky', color: '#3a2a22' }, facial: 'none', outfit: { style: 'vest', primary: '#e05050', secondary: '#f4ecd8', accent: '#ffd24a' }, hood: false, hat: { style: 'bandana', color: '#e05050' }, cape: null, held: { style: 'sword', color: '#d8dce8', glow: null }, aura: null, ears: 'pointed', hero: null }, dir: DIR.RIGHT },
+      { label: 'hero crab_king', look: { rig: 'quadruped', size: 2.2, colors: { body: '#ff5a4a', belly: '#ffc8a8', accent: '#2a3a6a', eye: '#1a1a2a' }, features: [], hero: 'crab_king' } },
+      { label: 'crab_king attack', look: { rig: 'quadruped', size: 2.2, colors: { body: '#ff5a4a', belly: '#ffc8a8', accent: '#2a3a6a', eye: '#1a1a2a' }, features: [], hero: 'crab_king' }, anim: 'attack' },
+    ],
+  },
+  peaks: {
+    fill: 'snow', tiles: ['snow', 'ice', 'snow_bank', 'path', 'grass', 'water', 'cliff', 'trees', 'crystal'],
+    props: ['snowman', 'snowman_small', 'igloo', 'igloo_big', 'snow_pine', 'snow_pine_small', 'snow_pine_frosted', 'ice_spire',
+      'ice_spire_cluster', 'ice_spire_aurora', 'rock_snowy', 'crystal_ice', 'bush_snowy'],
+    ents: [
+      { label: 'snow_bunny (long_ears)', look: { rig: 'quadruped', size: 0.6, colors: { body: '#ffffff', belly: '#f0f4ff', accent: '#ffb8d0', eye: '#1a1a2a' }, features: ['long_ears', 'tail_bushy'] } },
+      { label: 'yeti_cub (mane)', look: { rig: 'quadruped', size: 0.9, colors: { body: '#eef4ff', belly: '#ffffff', accent: '#c8dcf4', eye: '#2a3a5a' }, features: ['mane', 'ears_round'] } },
+      { label: 'frost_sprite (fairy glow)', look: { rig: 'flyer', size: 0.7, colors: { body: '#bfeeff', belly: '#ffffff', accent: '#7fd6ff', eye: '#2a4a8a' }, features: ['wings_fairy', 'glow'] } },
+      { label: 'ice golem (icy)', look: { rig: 'golem', size: 1.3, colors: { body: '#a8d8f4', belly: '#e0f4ff', accent: '#7fd6ff', eye: '#ffffff' }, features: ['icy'] } },
+      { label: 'penguin_knight', look: { rig: 'humanoid', build: 'a', size: 0.85, skin: '#3a3a4a', hair: { style: 'bald', color: '#3a3a4a' }, facial: 'none', outfit: { style: 'plate', primary: '#c8d4e8', secondary: '#3a3a4a', accent: '#ffb03c' }, hood: false, hat: { style: 'helm', color: '#c8d4e8' }, cape: { color: '#3fa0e0' }, held: { style: 'spear', color: '#d8dce8', glow: null }, aura: null, ears: 'round', hero: null }, dir: DIR.RIGHT },
+      { label: 'hero yeti', look: { rig: 'golem', size: 2.0, colors: { body: '#f4f8ff', belly: '#dceaf8', accent: '#8fb0d8', eye: '#1a2a4a' }, features: [], hero: 'yeti' } },
+      { label: 'yeti attack', look: { rig: 'golem', size: 2.0, colors: { body: '#f4f8ff', belly: '#dceaf8', accent: '#8fb0d8', eye: '#1a2a4a' }, features: [], hero: 'yeti' }, anim: 'attack' },
+    ],
+  },
+  aether: {
+    fill: 'grass', tiles: ['cloud', 'starfloor', 'rune_floor', 'grass', 'flowers', 'path', 'cobble', 'crystal', 'sky_void'],
+    props: ['cloud_puff', 'cloud_puff_pink', 'floating_rock', 'floating_rock_small', 'floating_rock_crystal', 'star_lamp', 'star_lamp_gold',
+      'orrery', 'moon_flower', 'moon_flower_blue', 'obelisk_star', 'ruin_pillar_sky', 'crystal_sky', 'tree_lilac', 'bush_sky'],
+    ents: [
+      { label: 'moon_moth (wings_insect)', look: { rig: 'flyer', size: 0.9, colors: { body: '#c8b8f0', belly: '#f0e8ff', accent: '#9fd0ff', eye: '#2a2a5a' }, features: ['wings_insect'] } },
+      { label: 'star_sprite (glow)', look: { rig: 'flyer', size: 0.7, colors: { body: '#fff2a8', belly: '#ffffff', accent: '#ffe066', eye: '#5a4a2a' }, features: ['wings_fairy', 'glow'] } },
+      { label: 'cloud_puffling (blob)', look: { rig: 'blob', size: 0.9, colors: { body: '#ffffff', belly: '#f0ecff', accent: '#c9a6ff', eye: '#3a3a6a' }, features: ['bubbles'] } },
+      { label: 'clockwork_owl (wings_bird)', look: { rig: 'flyer', size: 0.9, colors: { body: '#e0b850', belly: '#f8e8b0', accent: '#7fd6ff', eye: '#2a2a3a' }, features: ['wings_bird', 'orb'] } },
+      { label: 'astral golem (starry crystal)', look: { rig: 'golem', size: 1.3, colors: { body: '#5a5ab8', belly: '#8a8ad8', accent: '#ffe680', eye: '#ffe680' }, features: ['starry', 'crystal'] } },
+      { label: 'malgrim ascended', look: { rig: 'humanoid', build: 'a', size: 1.6, skin: '#d8b090', hair: { style: 'short', color: '#2a1a3a' }, facial: 'goatee', outfit: { style: 'robe', primary: '#4a2e6a', secondary: '#2a1a3a', accent: '#c9a6ff' }, hood: false, hat: null, cape: { color: '#3a2a5a' }, held: { style: 'staff', color: '#3a2a4a', glow: '#c9a6ff' }, aura: { style: 'storm', color: '#c9a6ff' }, ears: 'round', hero: 'malgrim' } },
+      { label: 'malgrim ascended cast', look: { rig: 'humanoid', build: 'a', size: 1.6, skin: '#d8b090', hair: { style: 'short', color: '#2a1a3a' }, facial: 'goatee', outfit: { style: 'robe', primary: '#4a2e6a', secondary: '#2a1a3a', accent: '#c9a6ff' }, hood: false, hat: null, cape: { color: '#3a2a5a' }, held: { style: 'staff', color: '#3a2a4a', glow: '#c9a6ff' }, aura: { style: 'storm', color: '#c9a6ff' }, ears: 'round', hero: 'malgrim' }, anim: 'cast' },
+      { label: 'player (scale)', look: H0() },
+    ],
+  },
+};
+const BIOME_PROP_IDS = new Set([].concat(...Object.values(BIOMES).map((b) => b.props)));
+export const BIOME_PAGES = Object.keys(BIOMES);
+
+function biomePage(id) {
+  const B = BIOMES[id];
+  const W = 34;
+  const items = [];
+  // props: row-packed with headroom for tall models
+  const placed = [];
+  let cx = 1, cy = 7, rowH = 0;
+  for (const pid of B.props) {
+    const d = props[pid];
+    if (!d) continue;
+    const fw = d.footprint ? d.footprint[0] : 1, fh = d.footprint ? d.footprint[1] : 1;
+    if (cx + fw > W - 1) { cx = 1; cy += rowH + 3; rowH = 0; }
+    placed.push({ id: pid, def: d, x: cx, y: cy + (d.tall > 2.5 ? 1 : 0), w: fw, h: fh });
+    cx += fw + 2; rowH = Math.max(rowH, fh + (d.tall > 2.5 ? 1 : 0));
+  }
+  const entY = cy + rowH + 3;
+  const cols = 5, sp = 5;
+  const entRows = Math.ceil(B.ents.length / cols);
+  const H = entY + entRows * sp + 2;
+  const zone = flatZone('gallery_' + id, W, H, B.fill);
+  zone.palette = PALETTES[id] || PALETTES.default;
+  // tile patches: 3 wide x 3 tall, side by side in the top band
+  B.tiles.forEach((tid, i) => {
+    const ti = tileIndex[tid];
+    if (ti === undefined) return;
+    const x0 = 1 + i * 3, y0 = 1;
+    for (let y = y0; y < y0 + 3; y++) for (let x = x0; x < x0 + 3; x++) zone.tiles[y * W + x] = ti;
+    items.push({ label: tid, x: x0 + 1.5, y: y0 + 3.5 });
+  });
+  if (id === 'aether') {
+    // a sky void channel (with a cloud bridge) splitting the page into two islands
+    const vx = W - 5;
+    for (let y = 5; y < H; y++) for (let x = vx; x < vx + 3; x++) zone.tiles[y * W + x] = tileIndex.sky_void;
+    for (let x = vx; x < vx + 3; x++) zone.tiles[(H - 4) * W + x] = tileIndex.cloud;
+    for (let y = 0; y < 5; y++) for (let x = W - 2; x < W; x++) zone.tiles[y * W + x] = tileIndex.sky_void;
+    // a grassy island under the creatures with a starry rune plaza
+    for (let y = entY - 1; y < H - 1; y++) for (let x = 1; x < 26; x++) zone.tiles[y * W + x] = tileIndex.grass;
+    for (let y = entY + 2; y < entY + 6; y++) for (let x = 1; x < 15; x++) zone.tiles[y * W + x] = tileIndex[(x + y) % 4 ? 'starfloor' : 'rune_floor'];
+  }
+  if (id === 'cove') {
+    // a strip of sea along the east edge so the ocean border meets real water tiles
+    for (let y = 0; y < H; y++) for (let x = W - 3; x < W; x++) zone.tiles[y * W + x] = tileIndex[x === W - 3 ? 'shallows' : 'water'];
+  }
+  if (id === 'peaks') {
+    for (let y = H - 5; y < H - 1; y++) for (let x = 25; x < 30; x++) zone.tiles[y * W + x] = tileIndex.ice;
+  }
+  for (const p of placed) {
+    zone.props.push({ id: 'g_' + p.id, kind: p.id, def: p.def, look: clone(p.def.look), x: p.x, y: p.y, w: p.w, h: p.h });
+    items.push({ label: p.id, x: p.x + p.w / 2, y: p.y + p.h + 0.6 });
+  }
+  B.ents.forEach((en, i) => {
+    const x = 2.5 + (i % cols) * sp, y = entY + 1.5 + Math.floor(i / cols) * sp;
+    const look = clone(en.look);
+    if (look.rig !== 'humanoid' && look.hero === undefined) look.hero = null;
+    const it = { label: en.label, x, y, cycleAnims: false, fx: null, fxPeriod: 2, fxOffset: 0 };
+    it.view = view({ kind: 'gallery', type: en.type || (look.rig === 'humanoid' ? 'npc' : 'enemy'), look, x, y, z: 0,
+      dir: en.dir ?? DIR.DOWN, anim: en.anim || 'idle', fxTags: [], radius: 0.35 * (look.size || 1), name: en.label, hpFrac: 1, glow: null });
+    items.push(it);
+  });
+  return { zone, items };
+}
+
+const BUILDERS = [page0, page1, page2, page3, page4, () => biomePage('dunes'), () => biomePage('cove'), () => biomePage('peaks'), () => biomePage('aether')];
 
 export function buildPage(n) {
   const i = Math.max(0, Math.min(PAGE_COUNT - 1, n | 0));

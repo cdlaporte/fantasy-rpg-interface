@@ -87,7 +87,103 @@ export const PALETTES = {
 };
 
 /** Resolve a palette id to a palette object (default when missing). */
-// round 3: biome palette stubs (lead prep); package B (art) replaces them with real palettes.
-for (const id of ['dunes', 'cove', 'peaks', 'aether']) if (!PALETTES[id]) PALETTES[id] = Object.assign({}, PALETTES.default, { id });
+// round 3 biome palettes (package B). `edge` picks the scenery beyond the map in both renderers
+// (dunes | ocean | mountains | sky; absent = the tree canopy). Never dark: these are sunny holiday places.
+Object.assign(PALETTES, {
+  // Sunscorch Dunes: warm golden sand, terracotta sandstone, turquoise oasis water, dry golden grass
+  dunes: {
+    id: 'dunes', edge: 'dunes', bg: '#e0b070', sky: '#ffe9c4', fog: '#ffe6c0', light: '#fff2d8',
+    patterns: {
+      sand: { a: '#f6d68e', b: '#e8c172', side: '#d6a45e' },
+      wet_sand: { a: '#e8c482', b: '#d8ae6a', side: '#c49656' },
+      dirt: { a: '#e2a46a', b: '#cf8c56', side: '#b87446' },
+      path: { a: '#f8e2b0', b: '#ecd096', side: '#d8b47a' },
+      cobble: { a: '#f0d29c', b: '#dcb67e', side: '#c49a66' },
+      cliff: { a: '#eab47a', b: '#d69860', side: '#c87a4a' },
+      brick: { a: '#e0905e', b: '#c8744a', side: '#b0603c' },
+      grass: { a: '#9cd46a', b: '#86c458', side: '#6aa846' },
+      flowers: { a: '#9cd46a', b: '#ff8fb8', side: '#ffe066' },
+      tallgrass: { a: '#dcc86a', b: '#efdc86', side: '#c4ae52' },
+      hedge: { a: '#6cbf5a', b: '#58a84a', side: '#4a903e' },
+      trees: { a: '#5cc060', b: '#46a64e', side: '#a8764a' },
+      water: { a: '#2fc4d4', b: '#6ee0e6', side: '#2398b0' },
+      shallows: { a: '#86ecdf', b: '#b2f6ec', side: '#66d2c8' },
+      planks: { a: '#d8a066', b: '#c08650', side: '#9a6a3e' },
+      starfloor: { a: '#4f7ab8', b: '#ffe680', side: '#3a5c94' },
+    },
+  },
+  // Gullwing Cove: pale sand, turquoise / teal sea, coral pink, sea-grass greens, sun-bleached pier planks
+  cove: {
+    id: 'cove', edge: 'ocean', bg: '#2fb4c8', sky: '#c8f0ff', fog: '#d8f4ff', light: '#fff8e8',
+    patterns: {
+      sand: { a: '#fbeec6', b: '#efdcaa', side: '#dcc48e' },
+      wet_sand: { a: '#e8d4a0', b: '#d8c08a', side: '#c4aa74' },
+      water: { a: '#24b4c8', b: '#58d6e0', side: '#1a90a8' },
+      shallows: { a: '#7ae8e0', b: '#a8f6ee', side: '#58d0cc' },
+      grass: { a: '#92d872', b: '#7ec660', side: '#64ac4a' },
+      flowers: { a: '#92d872', b: '#ff9ab8', side: '#fff07a' },
+      tallgrass: { a: '#a6d46c', b: '#c4e686', side: '#86b852' },
+      path: { a: '#f4e2b4', b: '#e6cf98', side: '#d0b47e' },
+      dirt: { a: '#d8b080', b: '#c49a6a', side: '#a88256' },
+      cobble: { a: '#dcd8cc', b: '#c4beb0', side: '#aaa496' },
+      planks: { a: '#d8ac78', b: '#bf9060', side: '#946a44' },
+      cliff: { a: '#c4bcb2', b: '#aaa298', side: '#948c84' },
+      hedge: { a: '#58b060', b: '#46984e', side: '#3a8242' },
+      trees: { a: '#4ab85c', b: '#38a04c', side: '#9a6a43' },
+      brick: { a: '#e8907a', b: '#d07462', side: '#b8604e' },
+      starfloor: { a: '#3a8ab0', b: '#fff0a0', side: '#2a6a90' },
+    },
+  },
+  // Frostwhistle Peaks: bright white-blue snow, ice cyan, evergreen pines, blue-grey rock; sparkly, not grim
+  peaks: {
+    id: 'peaks', edge: 'mountains', bg: '#cfe0f4', sky: '#d6f0ff', fog: '#eaf6ff', light: '#f4fbff',
+    patterns: {
+      snow: { a: '#dfeaf7', b: '#cad9ec', side: '#a8bedc' },
+      ice: { a: '#b8ecff', b: '#e4faff', side: '#86cbee' },
+      sand: { a: '#dce8f6', b: '#c8d7ea', side: '#a8bcd8' },       // sand tiles read as packed snow here
+      wet_sand: { a: '#dce8f6', b: '#c8d8ec', side: '#aac0dc' },
+      cloud: { a: '#ffffff', b: '#e8f2ff', side: '#c8daf0' },
+      grass: { a: '#a8dc9a', b: '#92cc88', side: '#76b070' },     // alpine meadow
+      flowers: { a: '#a8dc9a', b: '#b8a8ff', side: '#ffffff' },
+      tallgrass: { a: '#8cc890', b: '#b2e0b0', side: '#6aa874' },
+      path: { a: '#ecf2fa', b: '#dbe5f2', side: '#b2c4dc' },
+      dirt: { a: '#cdbcac', b: '#b8a696', side: '#9c8a7a' },
+      cobble: { a: '#d6dce8', b: '#bcc4d4', side: '#a2acbe' },
+      cliff: { a: '#e8f0fa', b: '#d0dcec', side: '#94a6c4' },
+      hedge: { a: '#3a9a78', b: '#2e8466', side: '#256e56' },
+      trees: { a: '#2f9670', b: '#24805e', side: '#7a5233' },
+      water: { a: '#5cc4f0', b: '#8ad8f6', side: '#3aa0d0' },
+      shallows: { a: '#a8eaf8', b: '#ccf4fc', side: '#86d6ec' },
+      crystal: { a: '#bfeeff', b: '#e6f8ff', side: '#86c8ee' },
+      planks: { a: '#c8905a', b: '#ae7846', side: '#8a5a33' },
+      brick: { a: '#d88a6a', b: '#c07056', side: '#a65c46' },
+      starfloor: { a: '#5a7ac8', b: '#ffffff', side: '#4a62a8' },
+    },
+  },
+  // Aether Gardens: pastel lavender, peach, mint; starry rune floors, soft clouds, open sky below
+  aether: {
+    id: 'aether', edge: 'sky', bg: '#d8ccf6', sky: '#cfd6ff', fog: '#ece6ff', light: '#fff4fa',
+    patterns: {
+      cloud: { a: '#ffffff', b: '#ece4ff', side: '#cfc2f0' },
+      sky: { a: '#cfd6ff', b: '#ffffff', side: '#b8a8e0' },
+      starfloor: { a: '#7a6ad0', b: '#fff2a8', side: '#5a4cae' },
+      grass: { a: '#ace8a6', b: '#96da94', side: '#7cc07c' },
+      flowers: { a: '#ace8a6', b: '#ffb8e0', side: '#fff0a0' },
+      tallgrass: { a: '#96dcb0', b: '#c0f0c8', side: '#76c094' },
+      path: { a: '#ffdcc0', b: '#f6c8a8', side: '#e0ac8c' },
+      dirt: { a: '#e8c0b0', b: '#d6a898', side: '#bc8e80' },
+      cobble: { a: '#e2d8f6', b: '#cbbfe8', side: '#b0a2d4' },
+      cliff: { a: '#c8b8ec', b: '#b0a0dc', side: '#9a88c8' },
+      crystal: { a: '#c9b8ff', b: '#ffd0f0', side: '#a088e8' },
+      hedge: { a: '#9ad8c0', b: '#84c8ac', side: '#6cb094' },
+      trees: { a: '#b8a0ec', b: '#a088dc', side: '#9a7ac0' },
+      water: { a: '#8ad0ff', b: '#b4e4ff', side: '#6cb0e8' },
+      shallows: { a: '#bdeaff', b: '#dcf6ff', side: '#9ad4f0' },
+      planks: { a: '#e8c098', b: '#d4a67c', side: '#b48860' },
+      brick: { a: '#e8a8c0', b: '#d490ac', side: '#bc7896' },
+      sand: { a: '#fff0d8', b: '#f6e0c0', side: '#e0c8a4' },
+    },
+  },
+});
 
 export function resolvePalette(id) { return PALETTES[id] || PALETTES.default; }

@@ -4,6 +4,7 @@
 // Heights: decor <= ~1.8 tiles, buildings <= ~3 (the renderer cuts away anything in front of the player).
 import * as THREE from 'three';
 import { T, C, tpl, mul, mix, lighten, darken } from './kit.js';
+import { BIOME_BUILDERS, BIOME_SHADOW, BIOME_HEIGHT, BIOME_DOORS } from './biomeProps.js';
 
 const roofPrism = () => tpl('roofprism', () => {
   const s = new THREE.Shape();
@@ -22,7 +23,9 @@ const potT = () => T.lathe('pot', [[0, 0], [0.5, 0.02], [0.85, 0.2], [1, 0.5], [
 export const PROP_MODELS = ['tree', 'pine', 'bush', 'rock', 'stump', 'log', 'flowerbed', 'mushroom_big', 'crystal', 'fence', 'hedge_arch',
   'lamp', 'sign', 'bench', 'well', 'fountain', 'statue', 'barrel', 'crate', 'stall', 'cart', 'campfire', 'tent',
   'house', 'shop', 'tower', 'academy', 'gate_arch', 'rune_gate', 'bridge', 'banner',
-  'bookshelf', 'desk', 'table', 'chair', 'bed', 'cauldron', 'chalkboard', 'rug', 'chest'];
+  'bookshelf', 'desk', 'table', 'chair', 'bed', 'cauldron', 'chalkboard', 'rug', 'chest',
+  // round 3 biome models (biomeProps.js)
+  ...Object.keys(BIOME_BUILDERS)];
 
 /** Deterministic rng from prop position. */
 export function propRng(x, y) {
@@ -1431,15 +1434,17 @@ const BUILDERS = {
   desk: (k, L, w, d, r) => table(k, L, w, d, r, true),
   table: (k, L, w, d, r) => table(k, L, w, d, r, false),
   chair, bed, cauldron, chalkboard, rug, chest: chestProp,
+  ...BIOME_BUILDERS,
 };
 
 /** Blob-shadow radius per model (drawn by the fx shadow batch). */
 const SHADOW = { tree: 0.62, pine: 0.5, bush: 0.5, rock: 0.48, stump: 0.38, log: 0.5, mushroom_big: 0.55, crystal: 0.42, lamp: 0.22,
   sign: 0.22, bench: 0.55, well: 0.75, statue: 0.45, barrel: 0.36, crate: 0.42, stall: 0.9, cart: 0.6, tent: 0.95, banner: 0.18,
-  cauldron: 0.38, chest: 0.4, table: 0.6, desk: 0.6, chair: 0.25, bed: 0.5, bookshelf: 0.55, chalkboard: 0.5 };
+  cauldron: 0.38, chest: 0.4, table: 0.6, desk: 0.6, chair: 0.25, bed: 0.5, bookshelf: 0.55, chalkboard: 0.5, ...BIOME_SHADOW };
 
 /** Approximate top height per model (for the debug notes / tests). */
-export const PROP_HEIGHT = { tree: 1.85, pine: 1.9, house: 2.3, shop: 2.3, tower: 3.0, academy: 3.6, gate_arch: 2.0, lamp: 1.7, banner: 1.8 };
+export const PROP_HEIGHT = { tree: 1.85, pine: 1.9, house: 2.3, shop: 2.3, tower: 3.0, academy: 3.6, gate_arch: 2.0, lamp: 1.7, banner: 1.8,
+  ...BIOME_HEIGHT };
 /** Approximate top height per building style (look.style). */
 export const STYLE_HEIGHT = { cottage: 2.6, townhouse: 3.0, tower_house: 3.4, mushroom: 2.6, windmill: 3.2, greenhouse: 1.8, bakery: 2.6,
   library: 3.4, potion: 3.3, outfitter: 2.9, cafe: 2.3, general: 2.4, guardhouse: 3.1, clock: 3.5, arch: 0.8 };
@@ -1463,6 +1468,11 @@ export function buildProp(k, p, unknown) {
     const door = p.def && p.def.door !== undefined ? p.def.door : Math.floor(w / 2);
     const dx = door + 0.5 - w / 2;
     fn = (kk, LL, ww, hh, rr) => STYLE_FNS[style](kk, LL, ww, hh, rr, dx);
+  } else if (BIOME_DOORS[model]) {
+    const door = p.def && p.def.door !== undefined ? p.def.door : Math.floor(w / 2);
+    const dx = door + 0.5 - w / 2;
+    const f0 = fn;
+    fn = (kk, LL, ww, hh, rr) => f0(kk, LL, ww, hh, rr, dx);
   }
   k.push();
   k.tf(cx, 0, cz);

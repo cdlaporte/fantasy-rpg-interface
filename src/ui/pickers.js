@@ -1,5 +1,5 @@
 // Picker modals: lookPicker, classPicker, specPicker, boonPicker (CONTRACTS 9).
-//  lookPicker  {name, looks: [lookA, lookB]}                       -> pickLook(i)   (two portraits + the NAME under each, nothing else)
+//  lookPicker  {name, looks: [up to 8 looks]}                      -> pickLook(i)   (4 x 2 portraits + the NAME under each, nothing else)
 //  classPicker {classes: [{id, name, blurb, look, basic, abilities}]} -> pickClass(id)
 //  specPicker  {options: [{id, name, blurb, look, basic, abilities}]} -> pickSpec(id)
 //  boonPicker  {options: [{id, name, desc, icon}]}                   -> pickBoon(id)
@@ -7,11 +7,16 @@ import { el, add, keycap } from './dom.js';
 import { iconCanvas } from './icons.js';
 import { normalizeAbilities, normalizeBasic } from './format.js';
 import { selectable, livePortrait, hints, classColor } from './modalKit.js';
+import { tip } from './tooltip.js';
+import { keyLabel } from '../platform/bindings.js';
 
 export function createLookPicker(modal, ctx) {
+  // Round 2: up to eight looks (two builds x four skin tones) in a 4 x 2 grid, each labeled only with the player's name.
   const root = el('div', 'picker look-picker');
-  const row = el('div', 'look-row');
-  const looks = (modal.looks || []).slice(0, 2);
+  const grid = el('div', 'look-grid');
+  const looks = (modal.looks || []).slice(0, 8);
+  const cols = looks.length > 4 ? 4 : Math.max(1, looks.length);
+  grid.style.setProperty('--cols', cols);
   const portraits = [];
   const cards = looks.map((lk) => {
     const card = el('div', 'look-card');
@@ -23,12 +28,12 @@ export function createLookPicker(modal, ctx) {
     const nm = el('div', 'look-name pxfont');
     nm.textContent = modal.name || ctx.game.name || '';
     add(card, cursor, frame, nm);
-    row.appendChild(card);
+    grid.appendChild(card);
     return card;
   });
-  root.appendChild(row);
+  root.appendChild(grid);
   const sel = selectable(cards, {
-    layout: 'horizontal', sfx: ctx.sfx,
+    layout: 'grid', columns: cols, sfx: ctx.sfx,
     onMove: (i) => { portraits.forEach((p, j) => { p.mood = j === i ? 'happy' : 'calm'; }); },
     onPick: (i) => ctx.game.commands.pickLook(i),
   });
@@ -43,7 +48,7 @@ export function createLookPicker(modal, ctx) {
 
 function abilityRow(a) {
   const r = el('div', 'ab-row');
-  const key = a.key || '';
+  const key = (a.slot && keyLabel(a.slot)) || a.key || '';
   add(r, iconCanvas(a.icon || 'star', 'icon-md'));
   const t = el('div', 'ab-text');
   const head = el('div', 'ab-head');
@@ -53,6 +58,7 @@ function abilityRow(a) {
   t.appendChild(head);
   if (a.desc) t.appendChild(el('div', 'ab-desc', a.desc));
   r.appendChild(t);
+  tip(r, { title: a.name, tag: key, meta: a.unlock ? ['Unlocks at level ' + a.unlock] : [], lines: [a.desc || ''] });
   return r;
 }
 
@@ -88,6 +94,7 @@ function createCardPicker(modal, ctx, { title, subtitle, list, onPick }) {
     }
     for (const a of normalizeAbilities(opt.abilities)) kit.appendChild(abilityRow(a));
     card.appendChild(kit);
+    tip(card, { title: opt.name || opt.id, lines: [opt.blurb || opt.desc || '', basic && basic.name ? `Attack: ${basic.name}. ${basic.desc || ''}` : ''] });
     row.appendChild(card);
     return card;
   });
@@ -133,6 +140,7 @@ export function createBoonPicker(modal, ctx) {
     ic.appendChild(iconCanvas(b.icon || 'star', 'icon-xl'));
     add(top, ic, keycap(String(i + 1), 'card-key big'));
     add(card, top, el('div', 'boon-name pxfont', b.name || b.id), el('div', 'boon-desc', b.desc || ''));
+    tip(card, { title: b.name || b.id, lines: [b.desc || ''] });
     row.appendChild(card);
     return card;
   });

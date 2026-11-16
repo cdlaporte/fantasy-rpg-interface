@@ -250,7 +250,7 @@ test('class, spec and look pickers through ops and commands', async () => {
   const lp = game.ops.run([['lookPicker']]);
   assert.equal(game.modal.type, 'lookPicker');
   assert.equal(game.modal.name, 'Tester');
-  assert.equal(game.modal.looks.length, 2);
+  assert.equal(game.modal.looks.length, 8);   // round 2: 8 looks
   game.commands.pickLook(1);
   assert.equal(await lp, undefined);
   assert.equal(game.flags.look_choice, 1);

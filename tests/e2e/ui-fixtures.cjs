@@ -38,7 +38,7 @@ async function installHarness(page) {
       for (const k of Object.keys(src)) {
         const v = src[k];
         if (v && typeof v === 'object' && !Array.isArray(v) && dst[k] && typeof dst[k] === 'object' && !Array.isArray(dst[k]) && k !== 'look') merge(dst[k], v);
-        else dst[k] = Array.isArray(v) ? v.slice() : v;
+        else dst[k] = Array.isArray(v) ? JSON.parse(JSON.stringify(v)) : v;   // deep copy: the core mutates its hud arrays in place
       }
     };
     const origHud = game.hudState.bind(game);
@@ -114,7 +114,7 @@ async function installHarness(page) {
         ] },
       inventory: { type: 'inventory', items: { potion_small: 3, bread: 5, bomb: 2, smoke_pellet: 1, old_key: 1 },
         cosmetics: [{ id: 'hat_feather', name: 'Feathered Cap', icon: 'hat' }, { id: 'cape_blue', name: 'Sky Cape', icon: 'cloak' }], equipped: { hat: 'hat_feather', cape: null, outfitColor: null } },
-      lookPicker: { type: 'lookPicker', name: 'Rowan', looks: [L.PLAYER_LOOKS[0], L.PLAYER_LOOKS[1]] },
+      lookPicker: { type: 'lookPicker', name: 'Rowan', looks: L.PLAYER_LOOKS.slice(0, 8) },
       classPicker: { type: 'classPicker', classes },
       specPicker: { type: 'specPicker', options: specs },
       boonPicker: { type: 'boonPicker', options: [

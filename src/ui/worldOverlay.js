@@ -6,6 +6,7 @@
 // Inputs: addText(fxEvent) for every FxEvent of type 'text' (fed by the UI from each FrameState), render(frame, hud).
 
 import { config } from '../config.js';
+import { keyLabel } from '../platform/bindings.js';
 
 const FONT_PX = '"Press Start 2P", ui-monospace, monospace';
 const FONT_BODY = '"Pixelify Sans", ui-monospace, monospace';
@@ -256,11 +257,13 @@ export function createWorldOverlay(canvas, ctx = {}) {
 
   function drawPrompt(cx, y, pr, now) {
     const bob = Math.floor(now / 300) % 2;
-    const key = pr.key || 'E';
+    const key = pr.key && pr.key !== 'E' ? pr.key : keyLabel('interact');
     const text = pr.text || '';
     g.font = `bold 17px ${FONT_BODY}`;
     const tw = Math.ceil(g.measureText(text).width);
-    const kw = 28, pad = 7;
+    g.font = `10px ${FONT_PX}`;
+    const kw = Math.max(28, Math.ceil(g.measureText(key).width) + 12), pad = 7;
+    g.font = `bold 17px ${FONT_BODY}`;
     const W = kw + pad * 3 + tw, H = 32;
     const x = Math.round(cx - W / 2), yy = Math.round(y - H - bob);
     // notched parchment box with outline + hard shadow
@@ -276,7 +279,7 @@ export function createWorldOverlay(canvas, ctx = {}) {
     g.font = `10px ${FONT_PX}`;
     g.textAlign = 'center';
     g.textBaseline = 'middle';
-    g.fillText(key.length > 2 ? key.slice(0, 1) : key, x + pad + kw / 2, yy + H / 2 - 1);
+    g.fillText(key, x + pad + kw / 2, yy + H / 2 - 1);
     g.font = `bold 17px ${FONT_BODY}`;
     g.textAlign = 'left';
     g.fillText(text, x + pad * 2 + kw, yy + H / 2);

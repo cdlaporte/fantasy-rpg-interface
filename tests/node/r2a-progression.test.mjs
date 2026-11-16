@@ -156,7 +156,8 @@ test('teacher tools work only in a teacher game', () => {
 test('Go to: places keep the player and make the story flags consistent', () => {
   const { game, pr } = make(true);
   const T = game.debug.teacher;
-  assert.deepEqual(T.places().map((p) => p.id), ['road', 'ambush', 'town', 'academy', 'forest', 'forest_boss']);
+  assert.deepEqual(T.places().map((p) => p.id), ['road', 'ambush', 'town', 'academy', 'forest', 'forest_boss',
+    'dunes', 'dunes_boss', 'cove', 'cove_boss', 'peaks', 'peaks_boss', 'aether', 'aether_boss']);   // round 3 biomes
   T.setLevel(7); T.setSpec('archer');
   game.setFlag('teacher_game', true);
   let r = T.goTo('town');

@@ -43,6 +43,7 @@ const MARKERS = {
 // integration: the World package is merged, so every marker this content relies on must exist in the real zones,
 // and the real zones' extra markers (boss_spawn, office_visitor, ...) are valid targets too.
 const STORY_MARKERS = JSON.parse(JSON.stringify(MARKERS));
+for (const z of Object.keys(data.zones)) if (!MARKERS[z]) MARKERS[z] = [];   // round 3: biome zones bring their own markers
 for (const z of Object.keys(MARKERS)) MARKERS[z] = [...new Set([...MARKERS[z], ...Object.keys((data.zones[z] && data.zones[z].markers) || {})])];
 const CUTSCENE_ZONE = { intro_wake: 'intro', ambush: 'intro', rescue: 'intro', town_arrival: 'town', class_pick: 'academy',
   spec_ceremony: 'academy', forest_boss_intro: 'forest', forest_boss_outro: 'forest' };
@@ -472,10 +473,10 @@ test('dialogues: ops, gotos, termination', () => {
 
 test('cutscenes follow the STORY sequence with valid steps', () => {
   for (const [id, cs] of Object.entries(data.cutscenes)) {
-    const ctx = { zone: CUTSCENE_ZONE[id], cutscene: true };
+    const ctx = { zone: CUTSCENE_ZONE[id] || cs.zone, cutscene: true };   // round 3: biome cutscenes carry `zone`
     if (cs.id !== id || !Array.isArray(cs.steps) || typeof cs.skippable !== 'boolean') fail(id, 'shape');
     actions(`cutscene ${id}`, cs.steps, ctx);
-    if (cs.onSkip) actions(`cutscene ${id} onSkip`, cs.onSkip, { zone: CUTSCENE_ZONE[id] });
+    if (cs.onSkip) actions(`cutscene ${id} onSkip`, cs.onSkip, { zone: CUTSCENE_ZONE[id] || cs.zone });
   }
   const names = (id) => data.cutscenes[id].steps.map((s) => s[0]);
   const has = (id, pred, msg) => assert.ok(data.cutscenes[id].steps.some(pred), `${id}: ${msg}`);

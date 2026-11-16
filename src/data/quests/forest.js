@@ -31,6 +31,6 @@ export default {
       { text: 'Tell Ranger Tam the grove is safe.', goal: { type: 'talk', npc: 'ranger_tam' } },
     ],
     rewards: { xp: 280, gold: 120, items: [{ id: 'potion_big', n: 2 }, { id: 'hat_moon_circlet', n: 1 }] },
-    onDone: [['rel', 'ranger_tam', 2], ['toast', 'The other gates stay sealed until next term.', 'info']],
+    onDone: [['rel', 'ranger_tam', 2], ['toast', 'The four town gates are open: Dunes, Cove, Peaks and the Aether portal.', 'quest']],
   },
 };

@@ -4,7 +4,7 @@ export const config = {
   startZone: 'intro',          // zone loaded for a new game
   startMarker: 'start',
   fallbackZone: 'test',        // used when startZone is missing from data.zones
-  levelCap: 12,
+  levelCap: 20,                // round 3 (was 12)
   numberScale: 6,
   // round 2 (playtest feedback)
   cameraZoom: 1.3,             // 3D camera: closer view (cutscene zooms multiply this)

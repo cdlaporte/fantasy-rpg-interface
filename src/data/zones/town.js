@@ -135,10 +135,10 @@ export default {
       { at: 'academy_enter', w: 3, h: 1, to: 'academy', marker: 'entrance' },
       { at: 'exit_forest', w: 1, h: 3, to: 'forest', marker: 'entry_town', if: [['flag', 'forest_open']], locked: 'Mr. Laporte said to enroll first.' },
       { at: 'exit_south', w: 3, h: 1, to: 'intro', marker: 'exit_town', if: [['flag', 'next_term']], locked: 'The road south is closed. Flinkerton is the other way!' },
-      { at: 'exit_dunes', w: 1, h: 3, to: 'town', marker: 'gate_dunes', if: [['flag', 'next_term']], locked: 'Sealed until next term. Something out there keeps sneezing sand through the keyhole.' },
-      { at: 'exit_cove', w: 3, h: 1, to: 'town', marker: 'gate_cove', if: [['flag', 'next_term']], locked: 'Sealed until next term. The gatekeeper has gone fishing.' },
-      { at: 'exit_peaks', w: 3, h: 1, to: 'town', marker: 'gate_peaks', if: [['flag', 'next_term']], locked: 'Sealed until next term. Also, it is very cold up there. Bring a scarf.' },
-      { at: 'exit_aether', w: 3, h: 1, to: 'town', marker: 'gate_aether', if: [['flag', 'next_term']], locked: 'Sealed until next term. The portal hums politely but does not open.' },
+      { at: 'exit_dunes', w: 1, h: 3, to: 'dunes', marker: 'entry_town', if: [['flag', 'biomes_open']], locked: 'Sealed for now. Something out there keeps sneezing sand through the keyhole. (Calm whatever stirs in Whisperwood first.)' },
+      { at: 'exit_cove', w: 3, h: 1, to: 'cove', marker: 'entry_town', if: [['flag', 'biomes_open']], locked: 'Sealed for now. The gatekeeper has gone fishing. (Calm whatever stirs in Whisperwood first.)' },
+      { at: 'exit_peaks', w: 3, h: 1, to: 'peaks', marker: 'entry_town', if: [['flag', 'biomes_open']], locked: 'Sealed for now. Also, it is very cold up there. Bring a scarf. (Calm whatever stirs in Whisperwood first.)' },
+      { at: 'exit_aether', w: 3, h: 1, to: 'aether', marker: 'entry_town', if: [['flag', 'biomes_open']], locked: 'Sealed for now. The portal hums politely but does not open. (Calm whatever stirs in Whisperwood first.)' },
     ],
     props: [
       // Academy terrace

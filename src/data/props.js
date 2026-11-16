@@ -9,7 +9,9 @@ const P = (id, model, footprint, solid, look, extra) =>
 export const PROP_MODELS = ['tree', 'pine', 'bush', 'rock', 'stump', 'log', 'flowerbed', 'mushroom_big', 'crystal', 'fence',
   'hedge_arch', 'lamp', 'sign', 'bench', 'well', 'fountain', 'statue', 'barrel', 'crate', 'stall', 'cart', 'campfire', 'tent',
   'house', 'shop', 'tower', 'academy', 'gate_arch', 'rune_gate', 'bridge', 'banner', 'bookshelf', 'desk', 'table', 'chair',
-  'bed', 'cauldron', 'chalkboard', 'rug', 'chest'];
+  'bed', 'cauldron', 'chalkboard', 'rug', 'chest',
+  // round 3: biome props (docs/BIOMES.md)
+  'palm', 'cactus', 'ruin_pillar', 'obelisk', 'pottery', 'dune', 'shell', 'coral', 'boat', 'tidepool', 'lighthouse', 'snowman', 'igloo', 'snow_pine', 'ice_spire', 'cloud_puff', 'floating_rock', 'star_lamp', 'orrery', 'moon_flower'];
 
 const defs = [
   // --- nature (one def per model, plus variants) ---
@@ -136,6 +138,31 @@ const defs = [
   P('rug_blue', 'rug', null, false, { main: '#3d5aa8', border: '#ffd24a', variant: 1 }),
   P('rug_green', 'rug', null, false, { main: '#3f9e4a', border: '#f4ecd8', variant: 2 }),
   P('chest', 'chest', [1, 1], true, { wood: '#b0743d', metal: '#ffd24a' }),
+  // --- round 3: biome props (docs/BIOMES.md). Base defs by the lead; package B (art) refines looks and adds variants.
+  P('palm', 'palm', [1, 1], true, { trunk: '#b08050', leaves: '#3fbf6a' }, { tall: 3 }),
+  P('palm_tall', 'palm', [1, 1], true, { trunk: '#a8764a', leaves: '#2fae5a', variant: 1 }, { tall: 3.4 }),
+  P('cactus', 'cactus', [1, 1], true, { body: '#4caf5a', flower: '#ff7aa8' }, { tall: 1.6 }),
+  P('cactus_round', 'cactus', [1, 1], true, { body: '#5cbf62', flower: '#ffd24a', variant: 1 }, { tall: 1 }),
+  P('ruin_pillar', 'ruin_pillar', [1, 1], true, { stone: '#e2c08a', trim: '#c9a26a' }, { tall: 2 }),
+  P('ruin_pillar_broken', 'ruin_pillar', [1, 1], true, { stone: '#e2c08a', trim: '#c9a26a', variant: 1 }, { tall: 1 }),
+  P('obelisk', 'obelisk', [1, 1], true, { stone: '#d8b880', glyph: '#3fa0c0' }, { tall: 3 }),
+  P('pottery', 'pottery', [1, 1], true, { clay: '#d0784a', paint: '#3f8fb0' }),
+  P('dune', 'dune', null, false, { sand: '#f0d090', shade: '#d8b070' }),
+  P('shell', 'shell', null, false, { shell: '#ffd8c8', inner: '#ff9ab0' }),
+  P('coral', 'coral', [1, 1], true, { body: '#ff7a8a', tips: '#ffd0a0' }),
+  P('coral_blue', 'coral', [1, 1], true, { body: '#5ab0e0', tips: '#d0f4ff', variant: 1 }),
+  P('boat', 'boat', [3, 2], true, { hull: '#b0743d', trim: '#ffffff', sail: '#f4ecd8' }),
+  P('tidepool', 'tidepool', [2, 2], false, { water: '#4fc8e0', rim: '#c9c0b0' }),
+  P('lighthouse', 'lighthouse', [3, 3], true, { wall: '#ffffff', stripe: '#e05050', roof: '#3d5aa8', light: '#ffe680' }, { tall: 3.5, door: 1 }),
+  P('snowman', 'snowman', [1, 1], true, { snow: '#ffffff', scarf: '#e05050', hat: '#3a3a4a' }),
+  P('igloo', 'igloo', [3, 2], true, { ice: '#e8f6ff', shade: '#b8d8f0' }, { door: 1 }),
+  P('snow_pine', 'snow_pine', [1, 1], true, { trunk: '#7a4e2c', leaves: '#2c7f6a', snow: '#ffffff' }, { tall: 3 }),
+  P('ice_spire', 'ice_spire', [1, 1], true, { ice: '#bfeaff', glow: '#7fd6ff' }, { tall: 2.4 }),
+  P('cloud_puff', 'cloud_puff', null, false, { cloud: '#ffffff', shade: '#dfe8ff' }),
+  P('floating_rock', 'floating_rock', [2, 2], true, { rock: '#b8a8d8', grass: '#9fe0a0' }, { tall: 1.5 }),
+  P('star_lamp', 'star_lamp', [1, 1], true, { metal: '#c8a0ff', star: '#fff2a0' }, { tall: 2 }),
+  P('orrery', 'orrery', [3, 3], true, { metal: '#e0b850', planet: '#7fb0ff', planet2: '#ff9ab0' }, { tall: 2.5 }),
+  P('moon_flower', 'moon_flower', null, false, { petal: '#e8e0ff', glow: '#bfa8ff' }),
 ];
 
 const PROPS = {};

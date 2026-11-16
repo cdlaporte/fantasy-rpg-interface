@@ -25,7 +25,8 @@ export const ENEMY_IDS = ['rat', 'giant_rat', 'hexguard', 'malgrim', 'training_d
 export const LOOT_IDS = ['forest_small', 'forest_rune', 'boss_mossback'];
 export const SHOP_IDS = ['potions', 'outfitter', 'general', 'bakery'];
 export const LESSON_IDS = ['lesson_1', 'lesson_2'];
-export const ZONE_IDS = ['intro', 'town', 'academy', 'forest', 'test'];
+// round 3: every zone in the data is validated (biomes included)
+export const ZONE_IDS = Object.keys(data.zones);
 export const OPS = ['teleport', 'travel', 'spawn', 'despawn', 'gate.open', 'heal', 'setLook', 'companions', 'kill', 'flag.set', 'toast',
   'fx', 'sfx', 'quest.start', 'quest.advance', 'dialogue', 'cutscene', 'rel', 'give', 'take', 'gold', 'xp', 'shop', 'gate', 'chest',
   'lesson', 'classPicker', 'specPicker', 'lookPicker', 'save'];
@@ -144,7 +145,7 @@ export function validateZone(id, d = data) {
   const inb = (x, y) => x >= 0 && y >= 0 && x < w && y < h;
 
   // markers
-  for (const m of REQUIRED_MARKERS[id] || []) if (!markers[m]) E(`required marker '${m}' missing`);
+  for (const m of REQUIRED_MARKERS[id] || def.required || []) if (!markers[m]) E(`required marker '${m}' missing`);
   const free = def.freeMarkers || [];
   for (const [name, m] of Object.entries(markers)) {
     if (free.includes(name)) continue;
@@ -199,7 +200,7 @@ export function validateZone(id, d = data) {
   // spawns
   (def.spawns || []).forEach((s, k) => {
     const tag = `spawn #${k} (${s.kind})`;
-    if (!ENEMY_IDS.includes(s.kind)) E(`${tag}: kind not in the STORY.md enemy list`);
+    if (!ENEMY_IDS.includes(s.kind) && !(d.enemies && d.enemies[s.kind])) E(`${tag}: unknown enemy kind`);
     else if (!d.enemies || !d.enemies[s.kind]) E(`${tag}: no enemy def in data.enemies`);   // integration: content is merged
     const r = s.area || furnitureRect(s, markers);
     if (!r) { E(`${tag}: no area`); return; }
@@ -249,7 +250,7 @@ export function validateZone(id, d = data) {
   for (const c of def.chests || []) {
     const tag = `chest ${c.id}`;
     if (cids.has(c.id)) E(`${tag}: duplicate id`); cids.add(c.id);
-    if (!LOOT_IDS.includes(c.loot)) E(`${tag}: loot '${c.loot}' not in STORY.md loot tables`);
+    if (!LOOT_IDS.includes(c.loot) && !(d.loot && d.loot[c.loot])) E(`${tag}: unknown loot table '${c.loot}'`);
     else if (!d.loot || !d.loot[c.loot]) E(`${tag}: loot table '${c.loot}' missing from data.loot`);
     const m = markers[c.at];
     if (!m) { E(`${tag}: marker '${c.at}' missing`); continue; }

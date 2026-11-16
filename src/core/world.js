@@ -349,6 +349,15 @@ export default {
       if (!pt) return null;
       const opts = Object.assign({}, s.opts || null);
       if (s.level) opts.level = s.level;
+      // round 3: biome zones scale their enemies to the player (any biome order stays fair): level =
+      // clamp(player level + levelOffset, levelRange); bosses (spawn.boss) take the top of that clamp + 1.
+      if (z.def.scaleToPlayer && z.def.levelRange) {
+        const pr = game.sys.progression, pl = (pr && pr.level) || 1;
+        const [lo, hi] = z.def.levelRange;
+        let L = Math.max(lo, Math.min(hi, pl + (s.levelOffset || 0)));
+        if (s.boss) L = Math.min((game.config.levelCap || 20) + 1, L + 1);
+        opts.level = L;
+      }
       if (s.tag) opts.tag = s.tag;
       const e = game.ents.spawn(s.kind, pt.x, pt.y, opts);
       e.data.spawner = sp;

@@ -6,7 +6,7 @@ import baseData from '../../src/data/index.js';
 import { createQuestions } from '../../src/questions/index.js';
 
 const flush = () => new Promise((r) => setImmediate(r));
-const SCENARIOS = ['intro_start', 'ambush', 'rescued', 'town', 'academy_pick', 'forest', 'forest_boss', 'gallery', 'stress', 'class_demo'];
+const SCENARIOS = ['intro_start', 'ambush', 'rescued', 'town', 'academy_pick', 'forest', 'forest_boss', 'biome', 'biome_boss', 'gallery', 'stress', 'class_demo'];
 
 function make(mode = 'auto', data = baseData) {
   return createGame({ data, name: 'Dbg', seed: 2, zone: 'test', test: true, questions: createQuestions({ mode }) });

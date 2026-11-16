@@ -87,4 +87,7 @@ export const PALETTES = {
 };
 
 /** Resolve a palette id to a palette object (default when missing). */
+// round 3: biome palette stubs (lead prep); package B (art) replaces them with real palettes.
+for (const id of ['dunes', 'cove', 'peaks', 'aether']) if (!PALETTES[id]) PALETTES[id] = Object.assign({}, PALETTES.default, { id });
+
 export function resolvePalette(id) { return PALETTES[id] || PALETTES.default; }

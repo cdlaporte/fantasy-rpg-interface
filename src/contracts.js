@@ -68,7 +68,9 @@ export const TILE_PATTERNS = Object.freeze(['grass', 'flowers', 'tallgrass', 'di
 export const PROP_MODELS = Object.freeze(['tree', 'pine', 'bush', 'rock', 'stump', 'log', 'flowerbed', 'mushroom_big',
   'crystal', 'fence', 'hedge_arch', 'lamp', 'sign', 'bench', 'well', 'fountain', 'statue', 'barrel', 'crate', 'stall',
   'cart', 'campfire', 'tent', 'house', 'shop', 'tower', 'academy', 'gate_arch', 'rune_gate', 'bridge', 'banner',
-  'bookshelf', 'desk', 'table', 'chair', 'bed', 'cauldron', 'chalkboard', 'rug', 'chest']);
+  'bookshelf', 'desk', 'table', 'chair', 'bed', 'cauldron', 'chalkboard', 'rug', 'chest',
+  // round 3: biome props (docs/BIOMES.md)
+  'palm', 'cactus', 'ruin_pillar', 'obelisk', 'pottery', 'dune', 'shell', 'coral', 'boat', 'tidepool', 'lighthouse', 'snowman', 'igloo', 'snow_pine', 'ice_spire', 'cloud_puff', 'floating_rock', 'star_lamp', 'orrery', 'moon_flower']);
 export const BUILDING_MODELS = Object.freeze(['house', 'shop', 'tower', 'academy']);
 export const SHOP_SIGNS = Object.freeze(['potion', 'hat', 'bag', 'bread', 'cup', 'book', 'sword', 'none']);
 
@@ -86,13 +88,14 @@ export const HELD_STYLES = Object.freeze(['stick', 'sword', 'sword_shield', 'axe
 export const AURA_STYLES = Object.freeze(['glow', 'flame', 'sparkle', 'shadow', 'frost', 'storm']);
 export const EAR_STYLES = Object.freeze(['round', 'pointed']);
 export const HUMANOID_HEROES = Object.freeze(['laporte', 'malgrim']);
-export const CREATURE_HEROES = Object.freeze(['mossback']);
+export const CREATURE_HEROES = Object.freeze(['mossback', 'sphinx', 'crab_king', 'yeti']);   // round 3: biome bosses
 export const CREATURE_FEATURES = Object.freeze({
-  quadruped: Object.freeze(['tail_thin', 'tail_bushy', 'tusks', 'ears_round', 'ears_pointy', 'spikes', 'mane']),
-  blob: Object.freeze(['crown', 'drips', 'core_glow', 'spots']),
-  flyer: Object.freeze(['wings_bat', 'wings_bird', 'wings_fairy', 'orb', 'glow']),
-  plant: Object.freeze(['cap_mushroom', 'thorns', 'leaves', 'flower', 'bark_face', 'vines']),
-  golem: Object.freeze(['mossy', 'rocky', 'wood', 'crystal', 'antlers']),
+  quadruped: Object.freeze(['tail_thin', 'tail_bushy', 'tusks', 'ears_round', 'ears_pointy', 'spikes', 'mane',
+    'claws', 'stinger', 'shell_back', 'long_ears', 'horns']),
+  blob: Object.freeze(['crown', 'drips', 'core_glow', 'spots', 'tentacles', 'bubbles']),
+  flyer: Object.freeze(['wings_bat', 'wings_bird', 'wings_fairy', 'orb', 'glow', 'wings_insect']),
+  plant: Object.freeze(['cap_mushroom', 'thorns', 'leaves', 'flower', 'bark_face', 'vines', 'cactus', 'seaweed']),
+  golem: Object.freeze(['mossy', 'rocky', 'wood', 'crystal', 'antlers', 'sandy', 'icy', 'coral', 'starry']),
 });
 export const PROJECTILE_MODELS = Object.freeze(['bolt', 'arrow', 'orb', 'fireball', 'shuriken', 'knife', 'wave', 'crescent',
   'rock', 'spore', 'spark', 'ice', 'kunai', 'axe', 'coin']);

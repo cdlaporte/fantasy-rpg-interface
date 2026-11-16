@@ -125,6 +125,30 @@ export default {
     }
 
     // ---------- scenarios ----------
+    const BIOME_FLAGS = ['spec_ready', 'spec_ceremony_done', 'gate_grove_seal', 'mossback_defeated', 'biomes_open'];
+    /** Enter a biome at its entry (boss=false) or at its boss arena with the boss intro (boss=true). The zone def's
+     * `boss: {kind, flag, intro, gate}` (docs/BIOMES.md) says which boss, defeat flag, intro cutscene and rune gate. */
+    function biomeScenario(o, m, boss) {
+      const id = o.zone || 'dunes';
+      const def = game.data.zones[id];
+      const classId = o.classId || 'warrior';
+      setFlags(STORY_FLAGS.classed.concat(BIOME_FLAGS));
+      setupPlayer({ level: o.level || (def && def.levelRange ? def.levelRange[boss ? 1 : 0] : 14), classId, specId: o.specId || DEFAULT_SPEC[classId] });
+      if (!def) { m.push('zone:' + id); return result(boss ? 'biome_boss' : 'biome', m, null); }
+      const b = def.boss || {};
+      if (boss) {
+        if (b.flag && game.flags[b.flag]) delete game.flags[b.flag];
+        if (b.gate) game.setFlag('gate_' + b.gate, true);
+      }
+      const z = load(id, boss ? 'boss_arena' : (def.entry || 'entry_town'), m);
+      companionsFor(classId);
+      if (boss && !(b.intro && play(b.intro, m, o)) && b.kind) {
+        const p = game.player;
+        const e = spawnOne(b.kind, p.x, p.y - 5, {}, m);
+        if (e && e.kind !== b.kind) e.tags.push('boss');
+      }
+      return result(boss ? 'biome_boss' : 'biome', m, z, { zone: id });
+    }
     const SCENARIOS = {
       intro_start(o, m) {
         setFlags(STORY_FLAGS.intro);
@@ -183,6 +207,9 @@ export default {
         }
         return result('forest_boss', m, z);
       },
+      // round 3: any biome zone (docs/BIOMES.md). opts {zone: 'dunes'|'cove'|'peaks'|'aether', level, classId, specId}
+      biome(o, m) { return biomeScenario(o, m, false); },
+      biome_boss(o, m) { return biomeScenario(o, m, true); },
       gallery(o, m) {
         setupPlayer({ level: o.level || 1 });
         const z = load('test', 'start', m);
@@ -428,6 +455,11 @@ export default {
       { id: 'academy', name: 'The Academy' },
       { id: 'forest', name: 'Whisperwood forest' },
       { id: 'forest_boss', name: 'Forest boss (Old Mossback)' },
+      // round 3: biomes (names from the zone defs at runtime)
+      ...['dunes', 'cove', 'peaks', 'aether'].flatMap((id) => [
+        { id, name: (game.data.zones[id] && game.data.zones[id].name) || id },
+        { id: id + '_boss', name: ((game.data.zones[id] && game.data.zones[id].name) || id) + ' boss' },
+      ]),
     ];
     function resetStory(list) {
       for (const k of Object.keys(game.flags)) if (!KEEP_FLAGS.includes(k)) delete game.flags[k];
@@ -493,8 +525,27 @@ export default {
             }
             break;
           }
-          default:
-            return { ok: false, id: place, missing: ['place:' + place] };
+          default: {
+            // round 3: biome places '<zone>' and '<zone>_boss' (docs/BIOMES.md)
+            const bz = place.replace(/_boss$/, '');
+            const bdef = game.data.zones[bz];
+            if (!bdef || !bdef.scaleToPlayer) return { ok: false, id: place, missing: ['place:' + place] };
+            if (!pr.classId && pr.setClass) pr.setClass('warrior', { quiet: true });
+            addFlags(STORY_FLAGS.classed.concat(['gate_grove_seal', 'mossback_defeated', 'biomes_open']));
+            classFlags();
+            const bb = bdef.boss || {};
+            if (place.endsWith('_boss')) {
+              if (bb.flag && game.flags[bb.flag]) delete game.flags[bb.flag];
+              if (bb.gate) addFlags(['gate_' + bb.gate]);
+              z = load(bz, 'boss_arena', m);
+              companionsFor(pr.classId);
+              if (!(bb.intro && play(bb.intro, m)) && bb.kind) { const p = game.player; spawnOne(bb.kind, p.x, p.y - 5, {}, m); }
+            } else {
+              z = load(bz, bdef.entry || 'entry_town', m);
+              companionsFor(pr.classId);
+            }
+            break;
+          }
         }
         settle();
         return { ok: m.length === 0, id: place, zone: z, missing: m };

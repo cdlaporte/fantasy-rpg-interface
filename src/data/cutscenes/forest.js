@@ -36,7 +36,7 @@ export default {
 
   forest_boss_outro: {
     id: 'forest_boss_outro', skippable: true,
-    onSkip: [['flag.set', 'mossback_defeated', true], ['chest', 'boss_mossback', { id: 'mossback' }], ['save']],
+    onSkip: [['flag.set', 'mossback_defeated', true], ['flag.set', 'biomes_open', true], ['chest', 'boss_mossback', { id: 'mossback' }], ['save']],
     steps: [
       ['lockInput'],
       ['letterbox', true],
@@ -57,7 +57,9 @@ export default {
       ['sfx', 'laporte'],
       ['face', 'laporte', DOWN],
       ['say', 'laporte', 'Nicely done. I was watching. Supervising. Same thing.', { mood: 'proud' }],
-      ['say', 'laporte', 'The other gates stay sealed until next term. Go get some rest.', { mood: 'calm' }],
+      ['say', 'laporte', 'Funny thing. The moment he fell asleep, the other four town gates unsealed.', { mood: 'calm' }],
+      ['flag.set', 'biomes_open', true],
+      ['say', 'laporte', 'Dunes, Cove, Peaks, and the Aether portal. Any order you like. Pack snacks.', { mood: 'proud' }],
       ['say', 'laporte', 'And tell Ranger Tam. She worries.', { mood: 'calm' }],
       ['fx', { type: 'poof', at: 'laporte', color: '#9fe6ff' }],
       ['despawn', 'laporte'],

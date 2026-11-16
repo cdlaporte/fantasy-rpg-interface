@@ -175,10 +175,10 @@ function page3() {
 }
 
 function page4() {
-  const W = 40;
+  const W = 64;
   const items = [];
   // tile patches: 3x3 each, 4 tiles apart
-  const cols = 9;
+  const cols = 14;
   const tileRows = Math.ceil(tileList.length / cols);
   const propStartY = 2 + tileRows * 5;
   // props: row-packed

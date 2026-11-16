@@ -303,13 +303,14 @@ export function coral(k, L, w, d, rnd) {
     // brain coral: a round mound with wavy grooves
     k.color(body).add(T.sphere(10, 6), [0, 0.3, 0], [0.36, 0.28, 0.33]);
     k.lineless = true;
-    for (let i = 0; i < 4; i++) k.color(mul(body, 0.8)).add(T.torus(0.08, 3, 14), [0, 0.32 + i * 0.05, 0], [0.34 - i * 0.07, 0.34 - i * 0.07, 0.28 - i * 0.06], [Math.PI / 2, 0, i * 0.4]);
+    for (let i = 0; i < 4; i++) k.color(mul(body, 0.68)).add(T.torus(0.12, 3, 14), [0, 0.36 + i * 0.06, 0.02], [0.32 - i * 0.075, 0.3 - i * 0.07, 0.3 - i * 0.07], [Math.PI / 2 - 0.3, 0, i * 0.5]);
+    for (let i = 0; i < 3; i++) k.color(mul(body, 0.68)).add(T.box(), [-0.12 + i * 0.12, 0.5, 0.18], [0.02, 0.15, 0.02], [0.6, 0, 0.6 * (i - 1)]);
     k.lineless = false;
     k.color(tips).add(T.sphere(5, 3), [0.1, 0.58, 0.08], 0.05);
   } else if (v === 3) {
     // sea fans: two lacy fans standing up, turned toward the camera
     for (const [x, ry, sc] of [[-0.08, -0.35, 1], [0.16, 0.5, 0.75]]) {
-      k.push().tf(x, 0.1, 0, 0.25, ry, 0, sc, sc, sc);
+      k.push().tf(x, 0.1, 0, -0.5, ry, 0, sc, sc, sc);
       k.color(body).add(T.sphere(10, 6), [0, 0.42, 0], [0.34, 0.36, 0.035]);
       k.color(mul(body, 0.8)).add(T.cyl(1, 1, 5), [0, 0.12, 0], [0.035, 0.24, 0.035]);
       k.lineless = true;
@@ -484,7 +485,7 @@ export function snowman(k, L, w, d, rnd) {
 
 export function igloo(k, L, w, d, rnd, dx = 0) {
   const ice = c(L, 'ice', '#e8f6ff'), shade = c(L, 'shade', '#b8d8f0');
-  const R = Math.min(w * 0.42, d * 0.62), Rz = R * 0.9, H = R * 0.95;
+  const R = Math.min(w * 0.4, d * 0.5), Rz = R * 0.9, H = R * 0.95;
   k.color(mix(ice, '#ffffff', 0.4)).add(T.cyl(1, 1, 16), [0, 0.02, -0.05], [R + 0.12, 0.05, Rz + 0.12]);
   k.color(ice).add(domeT(), [0, 0.02, -0.05], [R, H, Rz]);
   // ice block courses and joints (lineless, cheap)
@@ -502,11 +503,11 @@ export function igloo(k, L, w, d, rnd, dx = 0) {
   k.lineless = false;
   // entrance tunnel toward the south (at the door column) with a dark round opening
   const tx = dx * 0.5;
-  k.color(mix(ice, shade, 0.25)).add(T.cyl(1, 1, 12, false), [tx, 0.02, Rz * 0.85], [0.36, 0.6, 0.4], [Math.PI / 2, 0, 0]);
-  k.color(mix(ice, '#ffffff', 0.5)).add(T.box(), [tx, 0.05, Rz * 0.85], [0.68, 0.1, 0.6]);
+  k.color(mix(ice, shade, 0.25)).add(T.cyl(1, 1, 12, false), [tx, 0.02, (Rz + 0.12)], [0.36, 0.6, 0.4], [Math.PI / 2, 0, 0]);
+  k.color(mix(ice, '#ffffff', 0.5)).add(T.box(), [tx, 0.05, (Rz + 0.12)], [0.68, 0.1, 0.6]);
   k.lineless = true;
-  k.color('#34558e').add(T.sphere(12, 6), [tx, 0.02, Rz * 0.85 + 0.302], [0.25, 0.3, 0.02]);
-  k.color(mul(shade, 0.9)).add(T.torus(0.14, 3, 12, Math.PI), [tx, 0.02, Rz * 0.85 + 0.3], [0.31, 0.34, 0.5]);
+  k.color('#34558e').add(T.sphere(12, 6), [tx, 0.02, (Rz + 0.12) + 0.302], [0.25, 0.32, 0.03]);
+  k.color(mul(shade, 0.9)).add(T.torus(0.14, 3, 12, Math.PI), [tx, 0.02, (Rz + 0.12) + 0.3], [0.31, 0.34, 0.5]);
   k.lineless = false;
   // a lantern on a post beside the door
   k.color('#7a4e2c').add(T.box(), [tx + 0.55, 0.35, Rz + 0.15], [0.05, 0.7, 0.05]);

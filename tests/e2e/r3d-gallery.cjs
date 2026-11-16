@@ -25,7 +25,7 @@ const BIOME_PAGES = [5, 6, 7, 8];
 for (const n of BIOME_PAGES) {
   for (const y of [8.5, 14]) for (const x of [6, 17, 28]) ZOOMS.push([n, x, y, 1, `b${n}-${x}-${y}`]);
   for (const y of [20, 25]) for (const x of [5, 15]) ZOOMS.push([n, x, y, 1.1, `b${n}-ent-${x}-${y}`]);
-  ZOOMS.push([n, 3, 2, 0.8, `b${n}-edge-nw`], [n, 22, 28, 0.8, `b${n}-edge-s`]);
+  ZOOMS.push([n, 3, 2, 0.8, `b${n}-edge-nw`], [n, 22, { 5: 31, 6: 29, 7: 27, 8: 28 }[n], 0.8, `b${n}-edge-s`]);
 }
 ZOOMS.push([5, 7.5, 27, 2.2, 'hero-sphinx'], [6, 12.5, 25, 2.2, 'hero-crab_king'], [7, 5, 23.5, 1.6, 'hero-yeti'], [8, 5, 24, 1.2, 'hero-malgrim']);
 

@@ -48,13 +48,24 @@ export default {
     // DPS inside the CLASSES band (docs/notes/kit-mage.md). Specs may override with their own `balance.dmgMul`.
     balance: { dmgMul: [[1, 0.5], [3, 0.5], [5, 0.46], [8, 0.55], [12, 0.55]] },
 
-    // Classmate Elowen (Sim companions schema, docs/notes/sim.md section 10). 70% of the numbers.
+    // Classmate Elowen (Sim companions schema, docs/notes/sim.md section 10). Round 2: 100% of the numbers (was 70%),
+    // Arcane Nova from player level 5, a splitting bolt and a new outfit when the player specializes.
     companion: {
-      npc: 'elowen', name: 'Elowen', mult: 0.7, brain: 'ally_ranged', keepRange: 3.8,
+      npc: 'elowen', name: 'Elowen', mult: 1, brain: 'ally_ranged', keepRange: 3.8,
       stats: { hp: 28, hpPerLevel: 5, power: 6, powerPerLevel: 2.0, speed: 3.3 },
       basic: { use: 'projectile', name: 'Arcane Bolt', model: 'bolt', speed: 11, range: 7, dmg: 1.0, cd: 0.65, windup: 0.12,
         type: 'magic', color: VIOLET, glow: CYAN, size: 1 },
       ability: { use: 'blink', name: 'Blink', away: true, dist: 3.5, cd: 4, range: 1.6, windup: 0.05, color: VIOLET },
+      ability2: { unlock: 5, use: 'aoe_ring', name: 'Arcane Nova', r: 3.2, dmg: 1.2, knockback: 9, cd: 9, range: 2.4, windup: 0.15,
+        fx: 'ring', color: VIOLET, shake: 0.12 },
+      upgrade: {
+        dmgMul: 1.3, toast: 'Elowen grows stronger!',
+        // the bolt splits into two smaller bolts on impact
+        basic: { name: 'Splitting Bolt', size: 1.2, split: { n: 2, arc: 70, dmgMul: 0.45, range: 3, look: { rig: 'projectile', model: 'bolt',
+          color: CYAN, glow: VIOLET, size: 0.6, trail: true } } },
+        look: { outfit: { style: 'robe', primary: '#5b35b0', secondary: CYAN, accent: '#ffd24a' }, hat: { style: 'wizard', color: '#3a2470' },
+          held: { style: 'staff', color: '#8b5a2b', glow: '#ffffff' }, cape: { color: '#3fd0e0' } },
+      },
       barks: {
         levelup: ['Adequate progress.', 'Statistically impressive.', 'I wrote that level down. For science.'],
         shield: ['The shield has a weakness. Probably.', 'Hit the glowy part. That is my whole theory.'],

@@ -587,7 +587,7 @@ test('data: picker payloads, icons from the closed list, boons per pool, compani
   for (const b of boons) { assert.ok(ICONS.has(b.icon), b.id); assert.ok(b.desc && b.desc.length < 100, b.id); }
   const cc = data.classes.rogue.companion;
   assert.equal(cc.npc, 'pip');
-  assert.equal(cc.mult, 0.7);
+  assert.equal(cc.mult, 1);   // round 2: companions at 100% of the class numbers
   // Pip fights with it.
   env.game.companions.set(['rogue']);
   const pip = env.game.companions.active[0];

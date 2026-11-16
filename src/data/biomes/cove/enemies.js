@@ -125,7 +125,7 @@ export default {
   // Boss. A crab captain the size of a rowboat, with a hat. Three phases, shields at 66% and 33% (the Unit 4 questions).
   captain_clawsworth: {
     id: 'captain_clawsworth', name: 'Captain Clawsworth', level: 17, tags: ['boss', 'beast', 'crab'],
-    stats: { hp: 7000, power: 25, defense: 4, speed: 2.0, radius: 1.4, xp: 600 },
+    stats: { hp: 6500, power: 23, defense: 4, speed: 2.0, radius: 1.4, xp: 600 },
     flying: false,
     ai: { brain: 'boss', aggro: 14, leash: 24, keepRange: 2.6, summon: { kind: 'pirate_imp', n: 2, max: 4, cd: 14 } },
     attacks: [

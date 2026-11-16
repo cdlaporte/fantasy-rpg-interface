@@ -124,7 +124,7 @@ export default {
       { kind: 'stall_green', x: 30, y: 31 },
       { kind: 'table_umbrella', x: 35, y: 33 }, { kind: 'table_umbrella_teal', x: 37, y: 34 }, { kind: 'table_umbrella', x: 35, y: 36 },
       { kind: 'chair', x: 34, y: 33 }, { kind: 'chair', x: 36, y: 34 },
-      { kind: 'bench_seat', x: 37, y: 31 },
+      { kind: 'bench_seat', x: 36, y: 31 },
       { kind: 'barrel', x: 40, y: 31 }, { kind: 'crate', x: 41, y: 31 }, { kind: 'crate', x: 41, y: 30 },
       // beached boats and nets south of the village
       { kind: 'boat', x: 11, y: 40 }, { kind: 'boat', x: 21, y: 41 }, { kind: 'barrel', x: 16, y: 41 }, { kind: 'crate', x: 17, y: 41 },

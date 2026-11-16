@@ -5,7 +5,7 @@
 import * as THREE from 'three';
 import { VIEW } from '../../contracts.js';
 import { createMaterials, disposeMaterials, U } from './toon.js';
-import { prepareZone, buildChunk, CHUNK } from './terrain.js';
+import { prepareZone, buildChunk, buildBorder, CHUNK } from './terrain.js';
 import { createModels, lookKey } from './models.js';
 import { createFx } from './fx.js';
 import { makePose, pose } from './rigs/pose.js';
@@ -69,6 +69,7 @@ export function create() {
 
   // ---------------- zone ----------------
   function freeZone() {
+    freeBorder();
     for (const c of chunks) freeChunk(c);
     chunks = [];
     emitters = [];
@@ -118,6 +119,12 @@ export function create() {
     return c;
   }
   function buildZoneMeshes() {
+    freeBorder();
+    for (const bg of buildBorder(zd)) {
+      const m = new THREE.Mesh(bg, mats.chunk);
+      if (borderMeshes.length === 0) m.frustumCulled = false;   // the first is the ground plane
+      scene.add(m); borderMeshes.push(m);
+    }
     chunkCols = Math.ceil(zd.zv.w / CHUNK);
     chunkRows = Math.ceil(zd.zv.h / CHUNK);
     chunks = new Array(chunkCols * chunkRows);
@@ -393,6 +400,8 @@ export function create() {
 
   const rectTmp = { x0: 0, y0: 0, x1: 0, y1: 0 };
   const sp = new THREE.Vector3();
+  let borderMeshes = [];
+  function freeBorder() { for (const m of borderMeshes) { scene.remove(m); m.geometry.dispose(); } borderMeshes = []; }
 
   const r = {
     id: '3d',

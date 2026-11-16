@@ -578,14 +578,16 @@ export function createFx(scene, mats, camera, unknown) {
         }
         ground('glow', x, y, 0.04, 0, 0.6, 0.6, c, 0.35);
         break;
-      case 'shadow':
-        ground('glowN', x, y, 0.035, 0, 0.75, 0.75, C1.copy(c).multiplyScalar(0.5), 0.55);
-        for (let i = 0; i < lim(6); i++) {
-          const u = (t * 0.6 + i / 6 + seed) % 1;
-          const a = i * 1.05 + t * 0.5;
-          ball('puff', x + Math.cos(a) * 0.32, y + Math.sin(a) * 0.25, u * H * 0.9, 0.13 * (1 - u * 0.5), c, 0.75 * (1 - u));
+      case 'shadow': {
+        // a soft colored wisp, not a dark ball: the character must stay readable
+        ground('glow', x, y, 0.035, 0, 0.7, 0.7, c, 0.28);
+        for (let i = 0; i < lim(4); i++) {
+          const u = (t * 0.6 + i / 4 + seed) % 1;
+          const a = i * 1.57 + t * 0.5;
+          ball('puff', x + Math.cos(a) * 0.4, y + Math.sin(a) * 0.3, u * H * 0.9, 0.09 * (1 - u * 0.5), C1.copy(c).lerp(WHITE, 0.25), 0.5 * (1 - u));
         }
         break;
+      }
       case 'frost':
         ground('glow', x, y, 0.04, 0, 0.7, 0.7, c, 0.45);
         for (let i = 0; i < lim(5); i++) {

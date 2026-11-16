@@ -6,7 +6,7 @@
 import { VIEW } from '../../contracts.js';
 import { makeCanvas } from './pix.js';
 import { col, rgba, light } from './color.js';
-import { CH, TP, CPX, prepareTiles, buildChunk, chunkAnimated, blockRegion } from './tiles.js';
+import { CH, TP, CPX, prepareTiles, buildChunk, chunkAnimated, blockRegion, buildBorderPattern } from './tiles.js';
 import { buildProp, propKey, propUnknown, FLAT_MODELS } from './props.js';
 import { createSpriteFactory } from './spriteFactory.js';
 import { createFx, FX_KNOWN } from './fx.js';
@@ -84,6 +84,7 @@ export function create() {
   }
 
   // ------------------------------------------------------------------ zone
+  let borderCanvas = null, borderPat = null;
   function loadZone(zoneView) {
     unloadZone();
     if (!zoneView) return;
@@ -92,6 +93,8 @@ export function create() {
     info = prepareTiles(zv, unk);
     for (const u of unk) unknownSet.add(u);
     bg = col(zv.palette && zv.palette.bg, '#2a3a4a');
+    borderCanvas = buildBorderPattern(zv, info, bg);
+    borderPat = null;
     chW = Math.ceil(zv.w / CH); chH = Math.ceil(zv.h / CH);
     chunks = new Array(chW * chH).fill(null);
     chunkExtras = new Array(chW * chH);
@@ -137,6 +140,7 @@ export function create() {
   }
 
   function unloadZone() {
+    borderCanvas = null; borderPat = null;
     zv = null; info = null; chunks = []; chunkExtras = []; props = []; marks = null; zoneEmitters.length = 0;
     fx.clear();
   }
@@ -183,6 +187,10 @@ export function create() {
     const ox = cam.Li, oy = cam.Ti;
     g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
     g.fillStyle = bg; g.fillRect(0, 0, aw, ah);
+    if (borderCanvas) {   // beyond the map: canopy / brick pattern aligned to world pixels
+      if (!borderPat) borderPat = g.createPattern(borderCanvas, 'repeat');
+      g.save(); g.translate(-ox, -oy); g.fillStyle = borderPat; g.fillRect(ox, oy, aw, ah); g.restore();
+    }
 
     // age existing fx first, so events spawned this frame start at age 0
     fx.update(dt);

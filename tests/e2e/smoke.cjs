@@ -9,6 +9,7 @@
 //  4. no console errors / pageerrors and an empty __game.errors(); a screenshot per milestone in tests/e2e/out/.
 // Run: node tests/e2e/smoke.cjs [2d|3d]
 const path = require('node:path');
+const fs = require('node:fs');
 const assert = require('node:assert');
 const H = require('./helpers.cjs');
 
@@ -72,13 +73,13 @@ async function play(page, body, { timeout = 90, policy, until, log = [], onModal
 (async () => {
   const server = await H.startServer();
   const browser = await H.launch({ webgl: true });
-  // never leave a browser or server behind (shared machine): hard stop after 9 minutes
+  // never leave a browser or server behind (shared machine): hard stop after 20 minutes
   const watchdog = setTimeout(async () => {
     console.log('WATCHDOG: smoke test took too long');
     try { await browser.close(); } catch { /* ignore */ }
     server.stop();
     process.exit(2);
-  }, 9 * 60 * 1000);
+  }, 20 * 60 * 1000);
   let failed = 0;
   const check = async (name, fn) => {
     const t0 = Date.now();
@@ -87,7 +88,13 @@ async function play(page, body, { timeout = 90, policy, until, log = [], onModal
   try {
     for (const renderer of ['2d', '3d']) {
       if (only && only !== renderer) continue;
-      const shot = (page, name) => H.shot(page, path.join(OUT, `smoke-${renderer}-${name}.png`));
+      // the machine is shared and 3D is slow: give screenshots a long timeout and one retry
+      const shot = async (page, name) => {
+        const file = path.join(OUT, `smoke-${renderer}-${name}.png`);
+        for (let i = 0; ; i++) {
+          try { fs.mkdirSync(OUT, { recursive: true }); await page.screenshot({ path: file, timeout: 90000 }); return file; } catch (e) { if (i >= 1) throw e; }
+        }
+      };
 
       await check(`debug scenarios (${renderer})`, async () => {
         const page = await H.newPage(browser);
@@ -120,6 +127,7 @@ async function play(page, body, { timeout = 90, policy, until, log = [], onModal
         assert.ok(await page.$eval('#bossbar', (n) => getComputedStyle(n).display !== 'none' && n.textContent.includes('Mossback')), '#bossbar shows Mossback');
         await shot(page, 'boss-bar');
         assert.deepStrictEqual(errors, [], 'console errors');
+        assert.deepStrictEqual(await page.evaluate(() => window.__game.renderStats().unknown), [], 'renderStats().unknown after the scenarios');
         await page.close();
       });
 
@@ -131,9 +139,19 @@ async function play(page, body, { timeout = 90, policy, until, log = [], onModal
         const log = [];
         const S = (k) => shot(page, k);
 
+        // the right renderer is really running (3D: a real WebGL context, not a software canvas fallback)
+        assert.strictEqual(await page.$eval('#view canvas', (c) => c.className), 'r' + renderer, 'canvas of the ' + renderer + ' renderer');
+        if (renderer === '3d') {
+          const gl = await H.webglInfo(page);
+          assert.ok(gl && /ANGLE|SwiftShader|WebGL|GPU|Mesa|NVIDIA|Intel|AMD/i.test(gl), 'WebGL in use: ' + gl);
+          assert.strictEqual(await page.evaluate(() => !!(window.__game.renderStats().programs)), true, 'three.js programs compiled');
+          console.log('      webgl:', gl);
+        }
+        const xp0 = await page.evaluate(() => { const s = window.__game.state(); return s.level * 1e6 + s.xp; });
         // intro: control, tutorial key caps, the stick
         await play(page, `return game.inputLock === 0 && !!game.cutscene.tutorial;`, { log });
         await H.frames(page);
+        await page.waitForSelector('#tutorial .keycap', { timeout: 4000 }).catch(() => {});
         const caps = await page.$$eval('#tutorial kbd, #tutorial .key, #tutorial .keycap', (n) => n.map((x) => x.textContent));
         assert.ok(caps.join('').includes('W'), 'tutorial key caps: ' + caps);
         await S('01-intro-tutorial');
@@ -147,6 +165,10 @@ async function play(page, body, { timeout = 90, policy, until, log = [], onModal
         // rats and the giant rat
         await play(page, `await bot.walkTo('rats_1', {r: 3}); await bot.fight({kind: 'rat', until: () => game.quests.step('main_enroll') >= 3}); return true;`, { log, timeout: 120 });
         await S('03-rats');
+        const ratsDone = await page.evaluate(() => window.__game.game.quests.step('main_enroll'));
+        assert.ok(ratsDone >= 3, 'a rat was defeated (quest step ' + ratsDone + ')');
+        const xp1 = await page.evaluate(() => { const s = window.__game.state(); return s.level * 1e6 + s.xp; });
+        assert.ok(xp1 > xp0, `XP rose (${xp0} -> ${xp1})`);
         await play(page, `await bot.walkTo('rats_2', {r: 3}); await bot.fight({kind: 'rat', until: () => game.quests.step('main_enroll') >= 4});
           await bot.walkTo('big_rat', {r: 3}); await bot.fight({kind: 'giant_rat', kite: true, until: () => game.quests.step('main_enroll') >= 5}); return true;`, { log, timeout: 180 });
         // ambush: dialogue by keyboard, fight to 1 HP
@@ -248,11 +270,14 @@ async function play(page, body, { timeout = 90, policy, until, log = [], onModal
 
         // boon picker by Tab at level 4 (keyboard through the game input in test mode = the bot's `boon` key)
         await page.evaluate(() => window.__game.setLevel(4));
-        await play(page, `await bot.press('boon'); return false;`, { log, timeout: 5, policy: (i) => (i.type === 'boonPicker' ? 'Digit1' : null), until: async () => true });
+        // Tab asks the boon-trial question first (key 1 = correct), then the picker opens (1 selects, Enter confirms)
+        await play(page, `if (game.progression.boons.length >= 1) return true; await bot.press('boon'); return false;`, { log, timeout: 30, policy: (i) => (i.type === 'boonPicker' ? 'Digit1' : null) });
         const boons = await page.evaluate(() => window.__game.game.progression.boons.length);
         assert.strictEqual(boons, 1, 'boon picked by keyboard');
         await S('16-after-boon');
 
+        const unk = await page.evaluate(() => window.__game.renderStats().unknown);
+        assert.deepStrictEqual(unk, [], 'renderStats().unknown');
         const gErr = await page.evaluate(() => window.__game.errors());
         assert.deepStrictEqual(gErr, [], '__game.errors()');
         assert.deepStrictEqual(errors, [], 'console errors');

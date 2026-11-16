@@ -395,3 +395,64 @@ function accents(k, t, tx, ty, v, defAt, decor) {
   }
 }
 function i2(c0) { return lighten(c0, 0.04); }
+
+/**
+ * Everything beyond the map bounds: one big ground plane plus a border ring that reads as intentional.
+ * Outdoor zones: a dense canopy of round tree blobs in the zone's tree/hedge colors; the academy (interior):
+ * a dark wall block ring. Returns geometries (one per 16x16 cell of the ring, so the camera culls the far ones).
+ */
+export function buildBorder(zd) {
+  const zv = zd.zv, W = zv.w, H = zv.h;
+  const pal = zv.palette || {};
+  const interior = zv.id === 'academy' || pal.id === 'academy';
+  const bg = C(pal.bg || '#2a3a4a');
+  const EXT = 60, RING = interior ? 10 : 8;
+  const kits = new Map();
+  const kitFor = (x, y) => {
+    const key = Math.floor(x / CHUNK) + ',' + Math.floor(y / CHUNK);
+    let k = kits.get(key);
+    if (!k) { k = new Kit({ skin: false, line: false }); kits.set(key, k); }
+    return k;
+  };
+  const ground = new Kit({ skin: false, line: false });
+  const gc = interior ? mul(bg, 0.8) : mul(mix(bg, '#1f3a28', 0.5), 0.9);
+  topQuad(ground, -EXT, -EXT, W + EXT, H + EXT, -0.02, gc, gc, gc, gc);
+  if (interior) {
+    const wall = mix(bg, '#4a4a6e', 0.35), cap = mix(bg, '#6a6a90', 0.5), sk = mul(wall, 0.65);
+    const hgt = 3.2;
+    // wall slabs in 16-tile pieces (culling), plus a skirting stripe on the inner faces
+    const slab = (x0, y0, x1, y1) => {
+      for (let x = x0; x < x1; x += CHUNK) for (let y = y0; y < y1; y += CHUNK) {
+        const xe = Math.min(x1, x + CHUNK), ye = Math.min(y1, y + CHUNK), k = kitFor(x, y);
+        k.color(wall).add(T.box(), [(x + xe) / 2, hgt / 2, (y + ye) / 2], [xe - x, hgt, ye - y]);
+        k.color(cap).add(T.box(), [(x + xe) / 2, hgt + 0.05, (y + ye) / 2], [xe - x - 0.01, 0.1, ye - y - 0.01]);
+      }
+    };
+    slab(-RING, -RING, W + RING, 0); slab(-RING, H, W + RING, H + RING); slab(-RING, 0, 0, H); slab(W, 0, W + RING, H);
+    for (let x = 0; x < W; x += CHUNK) { const xe = Math.min(W, x + CHUNK); kitFor(x, -1).color(sk).add(T.box(), [(x + xe) / 2, 0.3, -0.04], [xe - x, 0.6, 0.08]); kitFor(x, H + 1).color(sk).add(T.box(), [(x + xe) / 2, 0.3, H + 0.04], [xe - x, 0.6, 0.08]); }
+    for (let y = 0; y < H; y += CHUNK) { const ye = Math.min(H, y + CHUNK); kitFor(-1, y).color(sk).add(T.box(), [-0.04, 0.3, (y + ye) / 2], [0.08, 0.6, ye - y]); kitFor(W + 1, y).color(sk).add(T.box(), [W + 0.04, 0.3, (y + ye) / 2], [0.08, 0.6, ye - y]); }
+  } else {
+    const find = (p) => zd.defs.find((d) => d.pattern === p);
+    const src = find('trees') || find('hedge');
+    const ca = src ? src.a : mix(bg, '#3f9a4a', 0.6), cb = src ? src.b : mix(bg, '#2f7a3a', 0.5);
+    const h = (x, y, s) => hash2(Math.floor(x * 7), Math.floor(y * 7), s);
+    const blob = (x, y) => {
+      const r1 = h(x, y, 1), r2 = h(x, y, 2), r3 = h(x, y, 3);
+      const R = 0.9 + r1 * 0.55;
+      kitFor(x, y).color(mix(ca, cb, r2)).add(T.ico(0), [x, 0.9 + r3 * 0.5, y], [R, R * 0.8, R], [r2 * 3, r1 * 3, 0]);
+    };
+    const STEP = 1.6;
+    for (let y = -RING; y < H + RING; y += STEP) {
+      for (let x = -RING; x < W + RING; x += STEP) {
+        const jx = x + (hash2(Math.round(x * 3), Math.round(y * 3), 11) - 0.5) * 0.7, jy = y + (hash2(Math.round(x * 3), Math.round(y * 3), 12) - 0.5) * 0.7;
+        if (jx > -0.3 && jx < W + 0.3 && jy > -0.3 && jy < H + 0.3) continue;
+        blob(jx, jy);
+      }
+    }
+    for (let x = -0.5; x < W + 1; x += STEP) { blob(x, -0.5); blob(x, H + 0.6); }
+    for (let y = -0.5; y < H + 1; y += STEP) { blob(-0.5, y); blob(W + 0.6, y); }
+  }
+  const out = [ground.build()];
+  for (const k of kits.values()) if (k.vertexCount) out.push(k.build());
+  return out;
+}

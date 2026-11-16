@@ -58,7 +58,7 @@ export function buildChunk(zv, info, cx, cy, frame, extras) {
   // 1. ground for every visible tile (blocks get the ground of the pattern beneath: a darker base)
   for (let ty = y0; ty < y0 + CH; ty++) for (let tx = x0; tx < x0 + CH; tx++) {
     const ox = (tx - x0) * TP, oy = (ty - y0) * TP;
-    if (tx >= W || ty >= Hh) { p.rect(ox, oy, TP, TP, '#2a3a4a'); continue; }
+    if (tx >= W || ty >= Hh) continue;   // beyond the map: transparent, the renderer's border pattern shows
     const t = info[zv.tiles[ty * W + tx]];
     const v = zv.variant[ty * W + tx];
     if (t.block) { p.rect(ox, oy, TP, TP, dark(t.pattern === 'trees' || t.pattern === 'hedge' ? t.b : t.side, 0.4)); continue; }
@@ -612,3 +612,29 @@ function canopy(p, ox, topY, tx, ty, t, openN, openW, openE, exposed, per, rr, o
 }
 
 export { u32 };
+
+/**
+ * Seamless 8x8-tile pattern drawn beyond the map bounds: a dense canopy in the zone's tree/hedge colors outdoors,
+ * dark brickwork for the academy interior. Returns a canvas (use with createPattern, aligned to world pixels).
+ */
+export function buildBorderPattern(zv, info, bgColor) {
+  const N = 8, S = N * TP;
+  const p = new Pix(S, S);
+  const pal = zv.palette || {};
+  if (zv.id === 'academy' || pal.id === 'academy') {
+    const base = dark(bgColor, 0.0), mortar = dark(bgColor, 0.35), hi = light(bgColor, 0.12);
+    p.rect(0, 0, S, S, light(base, 0.06));
+    for (let y = 0; y < S; y += 8) {
+      p.rect(0, y + 7, S, 1, mortar);
+      const off = (y / 8) % 2 ? 8 : 0;
+      for (let x = off; x < S + 16; x += 16) { if (x < S) p.rect(x, y, 1, 7, mortar); }
+      for (let x = 0; x < S; x += 16) p.rect(x + off % S, y, 15, 1, hi);
+    }
+    return p.toCanvas();
+  }
+  const src = info.find((t) => t.pattern === 'trees') || info.find((t) => t.pattern === 'hedge') || { a: '#2f7a3a', b: '#256a30', side: '#1f3a28' };
+  const t = { a: dark(src.a, 0.12), b: dark(src.b, 0.2), side: src.side };
+  p.rect(0, 0, S, S, dark(src.b, 0.5));
+  for (let ty = 0; ty < N; ty++) for (let tx = 0; tx < N; tx++) canopy(p, tx * TP, ty * TP, tx, ty, t, false, false, false, false, 3, 5, 3);
+  return p.toCanvas();
+}

@@ -99,6 +99,7 @@ export function createUI(rootEl, opts = {}) {
     minimap.update(hud, game);
     feedback.update(hud, game);
     feedback.skippable(canSkip());
+    feedback.reconcileLetterbox(game);
     modals.poll(game);
     if (params.perf) perfUi = performance.now() - t0;
   }
@@ -162,6 +163,10 @@ export function createUI(rootEl, opts = {}) {
       on('tile:changed', (e) => minimap.tileChanged(game, e.tx, e.ty));
       on('fx:text', (fx) => overlay.addText(fx)); // optional: only if a system emits it on the bus
 
+      // r3d notes request: a lost WebGL context falls back to the 2D look
+      const onLost = () => { try { if (game.commands.setRenderer) game.commands.setRenderer('2d'); toasts.show('3D view lost, switched to 2D', 'info'); } catch { /* ignore */ } };
+      viewEl.addEventListener('r3d:contextlost', onLost);
+      offs.push(() => viewEl.removeEventListener('r3d:contextlost', onLost));
       window.addEventListener('keydown', onKey, true);
       if (params.perf) {
         perfEl = el('div', 'ui-perf pxfont');

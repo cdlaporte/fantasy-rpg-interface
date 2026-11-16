@@ -182,6 +182,14 @@ function waterTile(wk, t, tx, ty, defAt) {
   const y = t.surf;
   const N = 2;
   const isWater = (x, yy) => { const d = defAt(x, yy); return !d || d.shape === 'water'; };
+  // vertical faces: where the water leaves the map (down to the bed) and between deep water and the higher shallows
+  const faceC = _cd.copy(ca).multiplyScalar(0.78);
+  const faceB = _cc.copy(ca).multiplyScalar(0.55);
+  for (let d = 0; d < 4; d++) {
+    const n = defAt(tx + NB[d][0], ty + NB[d][1]);
+    if (!n) sideQuad(wk, tx, ty, d, y, t.bed, faceC, faceB);
+    else if (n.shape === 'water' && n.surf < y - 1e-4) sideQuad(wk, tx, ty, d, y, n.surf, faceC, faceC);
+  }
   // foam at sub-vertex level: a sub-corner is foamy if a non-water tile touches it
   const foamAt = (sx, sy) => {
     // sx, sy in half-tile units relative to the tile origin (0..2)
@@ -416,7 +424,13 @@ export function buildBorder(zd) {
   };
   const ground = new Kit({ skin: false, line: false });
   const gc = interior ? mul(bg, 0.8) : mul(mix(bg, '#1f3a28', 0.5), 0.9);
-  topQuad(ground, -EXT, -EXT, W + EXT, H + EXT, -0.02, gc, gc, gc, gc);
+  // A frame OUTSIDE the map only (never under it: it used to hide water, shallows and pits), a little below the
+  // deepest water bed so the map edge reads as a tabletop slab and the cross-section of a stream shows.
+  const FY = -0.5;
+  topQuad(ground, -EXT, -EXT, W + EXT, 0, FY, gc, gc, gc, gc);
+  topQuad(ground, -EXT, H, W + EXT, H + EXT, FY, gc, gc, gc, gc);
+  topQuad(ground, -EXT, 0, 0, H, FY, gc, gc, gc, gc);
+  topQuad(ground, W, 0, W + EXT, H, FY, gc, gc, gc, gc);
   if (interior) {
     const wall = mix(bg, '#4a4a6e', 0.35), cap = mix(bg, '#6a6a90', 0.5), sk = mul(wall, 0.65);
     const hgt = 3.2;

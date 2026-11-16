@@ -368,8 +368,9 @@ Storm** (returning shuriken orbit you for 2 s before being caught) ·
 The two classes the player did not choose become classmates: **Bram** (warrior,
 build a, cheerful and loud), **Elowen** (mage, build b, bookish and dry),
 **Pip** (rogue, small, mischievous). They use the base class basic attack and
-the Space ability on a timer, at the player's level with 70% of the numbers
-(`data.classes[id].companion`). They show their class outfit and react with
+the Space ability on a timer, at the player's level with 100% of the numbers
+(`data.classes[id].companion`; round 2). They gain their second ability at the player's level 5, and when the
+player specializes they get an upgraded attack and outfit (see docs/notes/r2c.md). They show their class outfit and react with
 speech bubbles to the player's big moments (ultimates, level-ups, boss shields).
 
 ## Implementation checklist per kit

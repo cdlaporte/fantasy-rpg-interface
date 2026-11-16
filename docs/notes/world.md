@@ -112,7 +112,12 @@ road north of the clearing · hedged lane with lamps and a welcome sign, `exit_t
 exit `exit_north [13,0]` (7x1) → town `gate_south`, `if intro_done` (locked text otherwise).
 All rat spawns: `respawn: 0`, `if: not tutorial_done`.
 
-### town: Flinkerton (84 x 68), palette `town`, entry `gate_south`
+### town: Flinkerton — REPLACED in round 2
+
+The town was redesigned at 60 x 48 in round 2: see `docs/notes/r2d-town.md` for the current layout and markers.
+The description below is the original 84 x 68 map, kept for history.
+
+#### (old) town: Flinkerton (84 x 68), palette `town`, entry `gate_south`
 
 - North center: the **Academy** (`academy` prop 18x9 at [33,4]) on a stone terrace bounded by a cliff edge (y 16-17)
   with gardens, founder statues, lamps; broad cobble stair x 38..46 down to the square. Door step/exit

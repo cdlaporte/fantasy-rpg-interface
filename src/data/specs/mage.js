@@ -2,6 +2,8 @@
 // Shapes read by Meta (docs/notes/meta.md): id, from, name, blurb, color, mods, basic, abilities, look.
 // `kit`, `ranks`, `balance` (and Monk's `resource`) are read by src/core/kits/{conjurer,sorcerer,monk}.js.
 const TEAL = '#3fe0c5', EMBER = '#ff5a36', STORM = '#b48cff', GOLD = '#ffd23f', JADE = '#3fbf7f';
+// round 4 (docs/MASTERY.md): tier-3 mastery colors
+const EMERALD = '#3ddc84', ROSE = '#ff6ad5', VOLT = '#5cc8ff', FLAME = '#ff7b22', LOTUS = '#8ff0c8', SPIRIT = '#a77bff';
 
 export default {
   // ------------------------------------------------------------------------------------------------ CONJURER
@@ -155,5 +157,169 @@ export default {
       jade_lotus: { r: 3, dur: 5, healPct: 0.02, slow: 0.4, tick: 0.5 },
     },
     balance: { dmgMul: [[8, 0.33], [10, 0.37], [12, 0.33], [14, 0.33], [16, 0.277], [18, 0.306], [20, 0.317]] },
+  },
+
+  // ================================================================================================ round 4: masteries
+  // Tier-3 masteries (docs/MASTERY.md), unlocked at level 15, layered over their subclass kit (src/core/kits/<id>.js).
+  // `look` is a patch over the subclass look (the kit also applies it as a kit look patch); `mods` repeat the subclass
+  // mods (a mastery keeps its subclass's body). `kit` holds the numbers; `balance.dmgMul` is a multiplier ON TOP of the
+  // subclass's own `balance.dmgMul` (both apply), linear between levels.
+
+  // ------------------------------------------------------------------------------------------------ SUMMONER (conjurer)
+  summoner: {
+    id: 'summoner', from: 'conjurer', tier: 3, name: 'Summoner', color: EMERALD,
+    blurb: 'Why fight alone? Command five familiars, a reborn Phoenix and a Guardian Dragon.',
+    mods: { hp: 1.1, power: 0.9, speed: 1 },
+    look: {
+      outfit: { style: 'robe', primary: '#1d7a4b', secondary: '#ffd36b', accent: EMERALD },
+      hat: { style: 'crown', color: '#ffd36b' },
+      cape: { color: '#2fbf71' },
+      held: { style: 'orb', color: EMERALD, glow: '#ffd36b' },
+      aura: { style: 'sparkle', color: EMERALD },
+    },
+    aura: { style: 'sparkle', color: EMERALD },
+    passive: { name: 'Legion', desc: 'Up to five familiars, called two at a time, led by a Phoenix that is reborn from its ashes.' },
+    ultimate: { name: 'Guardian Dragon', icon: 'summon', desc: 'A giant dragon swoops in, breathes fire on the biggest crowds, then dives.' },
+    kit: {
+      color: EMERALD, gold: '#ffd36b', fire: '#ff7a1a',
+      max: 5, perCast: 2,                                   // familiars: max, summoned per F press
+      order: ['fox', 'owl', 'stoneling'],                  // the Phoenix comes first whenever you have none
+      phoenix: { name: 'Phoenix', powerMul: 0.6, hpMul: 0.35, speedMul: 1.3, radius: 0.3, flying: true, keepRange: 3,
+        rebirth: 5, burstR: 1.8, burstDmg: 1.0,
+        look: { rig: 'flyer', size: 0.75, colors: { body: '#ff7a1a', belly: '#ffd84a', accent: '#ff3d1f', eye: '#fff6c0' },
+          features: ['wings_bird', 'glow'], hero: null },
+        attack: { use: 'projectile', name: 'Phoenix Flame', model: 'fireball', speed: 10, range: 6, dmg: 0.7, radius: 0.18, cd: 0.9,
+          windup: 0.1, type: 'magic', element: 'fire', color: '#ff7a1a', glow: '#ffd84a', size: 0.8 } },
+      dragon: { cd: 38, cost: 60, dur: 10, hpMul: 3, speed: 7, hover: -1.2, dropFrom: 6, dropT: 0.6, range: 9,
+        landR: 3.6, landDmg: 1.8, breathEvery: 1.0, crowd: 6, crowdEvery: 0.6, breathR: 4.4, breathArc: 75, breathDmg: 1.1, burn: 0.15, burnT: 3,
+        fireR: 1.4, fireDur: 3, fireDmg: 0.15, diveR: 3.4, diveDmg: 1.6, petScale: 1.35, petHaste: 0.4,
+        look: { rig: 'flyer', size: 2.4, colors: { body: '#2fbf71', belly: '#ffd36b', accent: '#ffe9a8', eye: '#ffffff' },
+          features: ['wings_bat', 'glow'], hero: null } },
+    },
+    balance: { dmgMul: [[15, 0.923], [16, 0.831], [18, 0.867], [20, 0.813]] },
+  },
+
+  // ------------------------------------------------------------------------------------------------ ILLUSIONIST (conjurer)
+  illusionist: {
+    id: 'illusionist', from: 'conjurer', tier: 3, name: 'Illusionist', color: ROSE,
+    blurb: 'Which one is the real you? Every spell leaves a mirror image that fights, fools and pops.',
+    mods: { hp: 1.1, power: 0.9, speed: 1 },
+    look: {
+      outfit: { style: 'robe', primary: '#7a2a8c', secondary: '#d8b4ff', accent: ROSE },
+      hat: { style: 'feather', color: ROSE },
+      cape: { color: '#d8b4ff' },
+      held: { style: 'wand', color: '#ffffff', glow: ROSE },
+      aura: { style: 'glow', color: ROSE },
+    },
+    aura: { style: 'glow', color: ROSE },
+    passive: { name: 'Mirror Images', desc: 'Every spell leaves a mirror copy of you that taunts, copies your bolts and bursts.' },
+    ultimate: { name: 'Hall of Mirrors', icon: 'star', desc: 'Six mirror copies surround you and all cast at once, then shatter.' },
+    kit: {
+      color: ROSE, light: '#ffd6f4', lavender: '#d8b4ff',
+      image: { max: 3, ttl: 3.5, hpMul: 0.25, every: 6, boltDmg: 0.2, boltSpeed: 10, boltRange: 6.5, burstR: 1.6, burstDmg: 0.7,
+        alpha: 0.7 },
+      hall: { cd: 35, cost: 60, n: 6, r: 2.8, dur: 7, hpMul: 0.45, every: 0.6, boltDmg: 0.32, pierce: 1, crowd: 6, range: 8, beamEvery: 1.2,
+        shatterR: 2.2, shatterDmg: 1.2 },
+    },
+    balance: { dmgMul: [[15, 0.9], [16, 0.89], [18, 0.9], [20, 0.86]] },
+  },
+
+  // ------------------------------------------------------------------------------------------------ STORMCALLER (sorcerer)
+  stormcaller: {
+    id: 'stormcaller', from: 'sorcerer', tier: 3, name: 'Stormcaller', color: VOLT,
+    blurb: 'Lightning that jumps from enemy to enemy, and a storm that follows you around.',
+    mods: { hp: 0.95, power: 1.15, speed: 1 },
+    look: {
+      outfit: { style: 'robe', primary: '#1c2a5a', secondary: '#eaf6ff', accent: VOLT },
+      hat: { style: 'wizard', color: '#13204a' },
+      cape: { color: '#2d5fc4' },
+      held: { style: 'staff', color: '#2a3550', glow: VOLT },
+      aura: { style: 'storm', color: VOLT },
+    },
+    aura: { style: 'storm', color: VOLT },
+    passive: { name: 'Static', desc: 'Charged shots chain lightning between enemies. Five Static calls down a sky bolt volley.' },
+    ultimate: { name: 'Thunderstorm', icon: 'storm', desc: 'A storm cloud follows you: lightning strikes every enemy around, over and over.' },
+    kit: {
+      color: VOLT, white: '#eaf6ff', navy: '#1c2a5a',
+      chain: { jumps: 2, range: 4, dmg: 0.7, falloff: 0.85, fromLance: 3 },
+      static: { max: 5, discharge: 5, range: 7, dmg: 1.3, r: 1.2, stun: 0.4 },
+      storm: { cd: 40, cost: 80, dur: 6, every: 0.24, range: 7.5, r: 1.4, dmg: 0.85, strikes: 4, crowd: 3, stun: 0.15, chainDmg: 0.6, flashEvery: 4 },
+    },
+    balance: { dmgMul: [[15, 0.93], [16, 0.9], [18, 0.935], [20, 0.925]] },
+  },
+
+  // ------------------------------------------------------------------------------------------------ PYROMANCER (sorcerer)
+  pyromancer: {
+    id: 'pyromancer', from: 'sorcerer', tier: 3, name: 'Pyromancer', color: FLAME,
+    blurb: 'Set one enemy on fire and watch it spread. Then make it rain fireballs.',
+    mods: { hp: 0.95, power: 1.15, speed: 1 },
+    look: {
+      outfit: { style: 'robe', primary: '#8c0f12', secondary: '#ffd84a', accent: FLAME },
+      hat: { style: 'horned', color: '#3a1010' },
+      cape: { color: '#ff5a1f' },
+      held: { style: 'staff', color: '#3a1d10', glow: FLAME },
+      aura: { style: 'flame', color: FLAME },
+    },
+    aura: { style: 'flame', color: FLAME },
+    passive: { name: 'Spreading Flames', desc: 'Every fire hit sets enemies burning, and burning spreads to the enemies next to them.' },
+    ultimate: { name: 'Inferno', icon: 'fire', desc: 'A ring of fire springs up around you while fireballs rain down on everything inside.' },
+    kit: {
+      color: FLAME, yellow: '#ffd84a', crimson: '#c4161c',
+      ignite: { burn: 0.35, t: 3 },                                     // burn dps = burn x power
+      spread: { every: 0.45, range: 2.6, max: 3, scan: 10 },
+      inferno: { cd: 40, cost: 80, ringR: 3.6, ringN: 14, ringZoneR: 0.95, ringDur: 6, ringDmg: 0.35, ringPush: 1.5,
+        n: 16, every: 0.22, delay: 0.55, range: 6.5, r: 1.4, dmg: 1.7, fireR: 1.0, fireDur: 2.5, fireDmg: 0.25, shake: 0.25,
+        blastR: 3.8, blastDmg: 2.2 },
+    },
+    balance: { dmgMul: [[15, 1.045], [16, 1.01], [18, 1.03], [20, 1.025]] },
+  },
+
+  // ------------------------------------------------------------------------------------------------ SAGE (monk)
+  sage: {
+    id: 'sage', from: 'monk', tier: 3, name: 'Sage', color: LOTUS,
+    blurb: 'Calm as a lake. Stand your ground, heal your friends, and slow time itself.',
+    mods: { hp: 1.3, power: 1, speed: 1.15 },
+    look: {
+      outfit: { style: 'gi', primary: '#f4f1e6', secondary: LOTUS, accent: '#ffe9a0' },
+      hat: { style: 'circlet', color: '#ffe9a0' },
+      cape: { color: '#bff7e2' },
+      held: { style: 'fists', color: '#ffe9a0', glow: LOTUS },
+      aura: { style: 'glow', color: LOTUS },
+    },
+    aura: { style: 'glow', color: LOTUS },
+    passive: { name: 'Still Mind', desc: 'Ki fills fast while you stand still, and every Palm Strike heals your classmates.' },
+    ultimate: { name: 'Enlightenment', icon: 'heart', desc: 'Float in a golden bubble of slow time. You and your friends heal a lot.' },
+    kit: {
+      color: LOTUS, gold: '#ffe9a0', white: '#ffffff',
+      still: { ki: 16, hp: 0.006, after: 0.25 },                   // per second while not moving
+      palmHeal: { r: 4.5, ally: 0.07, self: 0.02 },               // fractions of hpMax
+      enlighten: { cd: 32, cost: 60, dur: 6, r: 5, heal: 0.35, tick: 0.25, slow: 0.75, projSlow: 0.3, regen: 0.012,
+        pulseEvery: 1.0, pulseDmg: 0.9, attackSpeed: 0.4, ki: 50, lift: 0.45 },
+    },
+    balance: { dmgMul: [[15, 1.23], [16, 1.125], [18, 1.08], [20, 1.105]] },
+  },
+
+  // ------------------------------------------------------------------------------------------------ MYSTIC (monk)
+  mystic: {
+    id: 'mystic', from: 'monk', tier: 3, name: 'Mystic', color: SPIRIT,
+    blurb: 'Your punches fly. Then a giant spirit version of you punches the ground.',
+    mods: { hp: 1.3, power: 1, speed: 1.15 },
+    look: {
+      outfit: { style: 'gi', primary: '#3a2470', secondary: '#7fe7ff', accent: SPIRIT },
+      hat: { style: 'bandana', color: SPIRIT },
+      cape: { color: '#5b35b0' },
+      held: { style: 'fists', color: '#d9c8ff', glow: SPIRIT },
+      aura: { style: 'flame', color: SPIRIT },
+    },
+    aura: { style: 'flame', color: SPIRIT },
+    passive: { name: 'Spirit Fists', desc: 'Palm Strikes launch three homing spirit fists; sweeping kicks launch one.' },
+    ultimate: { name: 'Avatar', icon: 'fist', desc: 'Become a giant spirit. Its punches hit everything in front and shake the ground.' },
+    kit: {
+      color: SPIRIT, cyan: '#7fe7ff', white: '#ffffff',
+      fists: { palm: 3, kick: 1, arc: 40, dmg: 0.6, speed: 11, range: 6, homing: 5, size: 1.3, radius: 0.22 },
+      avatar: { cd: 30, cost: 60, dur: 8, scale: 2.3, alpha: 0.55, punchR: 3.2, punchArc: 90, punchDmg: 0.8, slamR: 3.8, slamDmg: 2.2,
+        slamFists: 5, idle: 0.8, autoR: 4.5, shake: 0.5, armor: 0.3 },
+    },
+    balance: { dmgMul: [[15, 0.86], [16, 0.928], [18, 0.889], [20, 0.916]] },
   },
 };

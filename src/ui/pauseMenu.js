@@ -1,10 +1,11 @@
-// Pause modal ({}): Resume, look of the game (2D / 3D), quality, sound, save, controls, quit to title.
-// Commands: closeModal(), setRenderer(id), setQuality(q), saveNow(), quitToTitle().
+// Pause modal ({}): Resume, Settings (keys, sound, graphics), Graphics and Sound (quick cycles), Save, Controls,
+// Teacher tools (teacher games only), Quit to title. Round 2: the 2D/3D look choice is gone (3D only; 2D is an automatic fallback).
+// Commands: closeModal(), setQuality(q), saveNow(), quitToTitle().
 import { el, add, setText, clear } from './dom.js';
 import { iconCanvas } from './icons.js';
 import { K, selectable, hints, controlsCard } from './modalKit.js';
-
-const QUALITY = ['Low', 'Medium', 'High'];
+import { createSettings, QUALITY_NAMES, QUALITY_KEY } from './settings.js';
+import { createTeacherTools } from './teacher.js';
 
 export function createPauseMenu(modal, ctx) {
   const game = ctx.game;
@@ -12,24 +13,26 @@ export function createPauseMenu(modal, ctx) {
   const box = el('div', 'pause-box px-box');
   const title = el('div', 'pause-title pxfont', 'PAUSED');
   const sub = el('div', 'pause-sub');
-  sub.textContent = `${game.name || ''}${ctx.zoneName ? '  ·  ' + ctx.zoneName() : ''}`;
+  sub.textContent = `${(game.player && game.player.name) || game.name || ''}${ctx.zoneName ? '  ·  ' + ctx.zoneName() : ''}`;
   const menu = el('div', 'pause-menu');
   const side = el('div', 'pause-side');
   const confirmQuit = { armed: false };
+  const muted = () => !!(ctx.audio && ctx.audio.isMuted && ctx.audio.isMuted());
 
   const items = [
     { id: 'resume', icon: 'up', label: () => 'Resume' },
-    { id: 'look', icon: 'star', label: () => `Look: ${rendererId() === '3d' ? '3D Toy Box' : '2D Pixel'}`, cycle: true },
-    { id: 'quality', icon: 'rune', label: () => `Quality: ${QUALITY[ctx.quality()] || 'Medium'}`, cycle: true },
-    { id: 'sound', icon: 'bolt', label: () => `Sound: ${ctx.audio && ctx.audio.isMuted && ctx.audio.isMuted() ? 'Off' : 'On'}`, cycle: true },
+    { id: 'settings', icon: 'key', label: () => 'Settings (keys, sound, graphics)' },
+    { id: 'quality', icon: 'orb', label: () => `Graphics: ${QUALITY_NAMES[ctx.quality()] || 'Medium'}`, cycle: true },
+    { id: 'sound', icon: 'bolt', label: () => `Sound: ${muted() ? 'Off' : 'On'}`, cycle: true },
     { id: 'save', icon: 'book', label: () => 'Save game' },
-    { id: 'controls', icon: 'key', label: () => 'Controls' },
+    { id: 'controls', icon: 'rune', label: () => 'Controls' },
+    game.teacher === true ? { id: 'teacher', icon: 'star', label: () => 'Teacher tools' } : null,
     { id: 'quit', icon: 'cloak', label: () => (confirmQuit.armed ? 'Really quit? Enter again' : 'Quit to title') },
-  ];
-  function rendererId() { const r = ctx.renderer && ctx.renderer(); return r ? r.id : '2d'; }
+  ].filter(Boolean);
 
   const rows = items.map((it) => {
     const r = el('div', 'pause-row');
+    r.dataset.id = it.id;
     const lab = el('span', 'pause-label');
     add(r, iconCanvas(it.icon, 'icon-md'), lab);
     if (it.cycle) r.appendChild(el('span', 'pause-cycle pxfont', '◀ ▶'));
@@ -43,22 +46,49 @@ export function createPauseMenu(modal, ctx) {
   const note = el('div', 'pause-note');
   function flash(text) { setText(note, text); note.classList.remove('pop'); void note.offsetWidth; note.classList.add('pop'); }
 
+  // ---- sub-screens (settings, teacher tools) replace the pause box until closed
+  let subScreen = null;
+  function openSub(make) {
+    closeSub();
+    showControls(false);
+    box.hidden = true;
+    subScreen = make();
+    root.appendChild(subScreen.el);
+    root.classList.add('with-sub');
+  }
+  function closeSub() {
+    if (!subScreen) return;
+    try { subScreen.destroy(); } catch { /* ignore */ }
+    subScreen = null;
+    box.hidden = false;
+    root.classList.remove('with-sub');
+    renderLabels();
+  }
+
   function act(i, dir = 1) {
     const it = items[i];
     if (it.id !== 'quit') confirmQuit.armed = false;
     switch (it.id) {
       case 'resume': game.commands.closeModal(); return;
-      case 'look': {
-        const next = rendererId() === '3d' ? '2d' : '3d';
-        const p = game.commands.setRenderer(next);
-        flash(next === '3d' ? 'Switching to the 3D Toy Box…' : 'Switching to 2D Pixel…');
-        if (p && p.then) p.then(() => { renderLabels(); flash('Look changed!'); }).catch(() => flash('That look is not available here.'));
-        break;
-      }
+      case 'settings':
+        openSub(() => createSettings({
+          storage: game.storage, sfx: ctx.sfx,
+          quality: () => ctx.quality(),
+          setQuality: (q) => { game.commands.setQuality(q); ctx.setQualityLocal(q); },
+          muted,
+          setMuted: (b) => { if (ctx.audio && ctx.audio.setMuted) ctx.audio.setMuted(b); },
+          onClose: () => closeSub(),
+        }));
+        return;
+      case 'teacher':
+        if (game.teacher !== true) return;
+        openSub(() => createTeacherTools(game, { sfx: ctx.sfx, onClose: () => closeSub() }));
+        return;
       case 'quality': {
         const q = (ctx.quality() + (dir > 0 ? 1 : 2)) % 3;
         game.commands.setQuality(q);
         ctx.setQualityLocal(q);
+        try { if (game.storage) game.storage.set(QUALITY_KEY, String(q)); } catch { /* ignore */ }
         break;
       }
       case 'sound':
@@ -93,11 +123,12 @@ export function createPauseMenu(modal, ctx) {
   add(box, left);
   add(root, box, side);
 
-  const sel = selectable(rows, { layout: 'vertical', sfx: ctx.sfx, digits: false, onPick: (i) => act(i, 1) });
+  const sel = selectable(rows, { layout: 'vertical', sfx: ctx.sfx, digits: false, onPick: (i) => act(i) });
 
   return {
     el: root, layer: 'center', dim: true,
     key(e) {
+      if (subScreen) { subScreen.key(e); return true; }
       const c = e.code;
       if (c === 'Escape' || c === 'KeyP') {
         if (e.repeat) return true;
@@ -110,7 +141,7 @@ export function createPauseMenu(modal, ctx) {
       if (K.up(c) || K.down(c)) { confirmQuit.armed = false; renderLabels(); }
       return sel.key(e);
     },
-    destroy() { root.remove(); },
+    destroy() { closeSub(); root.remove(); },
   };
 }
 

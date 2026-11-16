@@ -1,4 +1,7 @@
-// Frozen. Boot (CONTRACTS section 2): title -> createGame -> renderer -> UI -> loop.
+// Boot (CONTRACTS section 2): title -> createGame -> renderer -> UI -> loop.
+// Round 2 (package A): key bindings load from storage before anything reads them; 3D is the default look
+// (config.defaultRenderer; `?renderer=2d` is a hidden developer override and the automatic fallback); saved graphics
+// quality; the teacher's question settings; teacher games (game.teacher, Questions.teacher, the TEACHER badge).
 import { DT } from './contracts.js';
 import { config } from './config.js';
 import data from './data/index.js';
@@ -12,6 +15,9 @@ import { createUI } from './ui/index.js';
 import Questions from './questions/index.js';
 import stubProvider from './questions/stubProvider.js';
 import customProvider from './questions/custom.js';
+import { loadBindings } from './platform/bindings.js';
+import { savedQuality } from './ui/settings.js';
+import { applyQuestionSettings, displayName, teacherBadge, TEACHER_TAG } from './ui/teacher.js';
 
 function parseParams(search) {
   const q = new URLSearchParams(search);
@@ -42,17 +48,27 @@ async function boot() {
   window.addEventListener('unhandledrejection', (e) => logError('unhandledrejection: ' + String(e.reason && (e.reason.stack || e.reason))));
 
   const storage = createStorage();
+  loadBindings(storage);
   Questions.mode = params.questions || (params.test ? 'auto' : 'stub');
   Questions.setProvider(customProvider || stubProvider);
+  const baseMode = Questions.mode;
 
   const ui = createUI(appEl, { params, storage, config });
   const choice = await ui.title();
-  const rendererId = params.renderer || choice.renderer || '2d';
-  let quality = params.quality ?? config.defaultQuality;
+  const rendererId = params.renderer || config.defaultRenderer || '3d';
+  let quality = params.quality ?? savedQuality(storage) ?? config.defaultQuality;
+  // the title's teacher options may have changed these
+  applyQuestionSettings(Questions, storage, params, baseMode);
+  const teacher = choice.teacher === true;
+  Questions.teacher = teacher;
+  // a teacher game saves under "<name> (teacher)"; only the part before the tag is limited to the name length
+  const rawName = choice.name || 'Hero';
+  const shown = displayName(rawName).slice(0, config.nameMaxLength) || 'Hero';
+  const gameName = teacher ? shown + TEACHER_TAG : shown;
 
   game = createGame({
     data,
-    name: (choice.name || 'Hero').slice(0, config.nameMaxLength),
+    name: gameName,
     seed: params.seed ?? (params.test ? config.testSeed : (Math.random() * 4294967296) >>> 0),
     storage,
     questions: Questions,
@@ -62,6 +78,12 @@ async function boot() {
     test: params.test,
   });
   for (const m of errors) if (game.debug && game.debug.logError) game.debug.logError(m);
+  // teacher mode: set only here (after the PIN on the title screen); a normal game never becomes a teacher game
+  game.teacher = teacher;
+  if (teacher) game.setFlag('teacher_game', true);
+  else if (game.flags.teacher_game) delete game.flags.teacher_game;
+  const showName = () => { const p = game.player; if (p) { p.name = shown; if (p.data) p.data.name = shown; } };
+  if (teacher) { showName(); game.bus.on('zone:load', showName); }
 
   let renderer = await createRenderer(rendererId, viewEl, { quality });
   renderer.resize(viewEl.clientWidth, viewEl.clientHeight);
@@ -74,6 +96,7 @@ async function boot() {
   const audio = createAudio();
   audio.attach(game);
   ui.mount(game, renderer);
+  if (teacher) viewEl.appendChild(teacherBadge());
 
   const rect = { x0: 0, y0: 0, x1: 0, y1: 0 };
   let perfEl = null, perfT = 0;

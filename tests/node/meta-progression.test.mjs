@@ -22,12 +22,16 @@ function make(opts = {}) {
   return { game, log, of: (e) => log.filter((x) => x[0] === e).map((x) => x[1]) };
 }
 const NS = config.numberScale;   // health and power are base numbers x the number scale
+const SPD = config.playerSpeedMul || 1;   // round 2: the player walks faster than the class numbers
+const r2 = (v) => Math.round(v * 100) / 100;
 const quietWarn = () => { const w = console.warn; console.warn = () => {}; return () => { console.warn = w; }; };
 
 test('xp curve and rank thresholds', () => {
-  assert.equal(xpNext(1), 20);
-  assert.equal(xpNext(2), Math.round(20 * 2 ** 1.6));
-  assert.equal(xpNext(11), Math.round(20 * 11 ** 1.6));
+  // round 2: the curve comes from config.xpCurve
+  const { base, exp } = config.xpCurve;
+  assert.equal(xpNext(1), Math.round(base));
+  assert.equal(xpNext(2), Math.round(base * 2 ** exp));
+  assert.equal(xpNext(11), Math.round(base * 11 ** exp));
   assert.deepEqual([1, 3, 4, 7, 8, 11, 12, 16].map(rankAt), [1, 1, 2, 2, 3, 3, 4, 5]);
 });
 
@@ -38,7 +42,7 @@ test('level up: full heal, fx, knockback ring, toast, events, boons, cap', () =>
   game.combat.aoe = (src, o) => { aoe.push(o); return []; };
   game.player.hp = 3;
   assert.equal(pr.level, 1);
-  assert.equal(pr.addXp(19), 0);
+  assert.equal(pr.addXp(xpNext(1) - 1), 0);
   assert.equal(pr.level, 1);
   pr.addXp(1);
   assert.equal(pr.level, 2);
@@ -74,16 +78,16 @@ test('level up: full heal, fx, knockback ring, toast, events, boons, cap', () =>
 test('stats from the balance sheet, spec mods, data overrides', () => {
   let { game } = make();
   const p = game.player, pr = game.progression;
-  assert.equal(p.hpMax, 25 * NS); assert.equal(p.stats.power, 2 * NS); assert.equal(p.stats.speed, 3.2);   // number scale: hp and power x NS, speed untouched
+  assert.equal(p.hpMax, 25 * NS); assert.equal(p.stats.power, 2 * NS); assert.equal(p.stats.speed, r2(3.2 * SPD));   // number scale: hp and power x NS; speed x playerSpeedMul
   pr.setLevel(3, { quiet: true });
   pr.setClass('warrior', { quiet: true });
   assert.equal(p.hpMax, (44 + 9 * 3) * NS);
   assert.equal(p.stats.power, Math.round(8.9 * NS * 100) / 100);
-  assert.equal(p.stats.speed, 3.4);
+  assert.equal(p.stats.speed, r2(3.4 * SPD));
   pr.setLevel(8, { quiet: true });
   pr.setSpec('knight', { quiet: true });
   assert.equal(p.hpMax, Math.round((44 + 72) * 1.25 * NS));
-  assert.equal(p.stats.speed, Math.round(3.4 * 0.95 * 100) / 100);
+  assert.equal(p.stats.speed, r2(3.4 * 0.95 * SPD));
   const hud = game.hudState();
   assert.equal(hud.player.className, 'Warrior');
   assert.equal(hud.player.specName, 'Knight');
@@ -103,7 +107,7 @@ test('stats from the balance sheet, spec mods, data overrides', () => {
   assert.equal(game.progression.className(), 'Brawler');
   game.progression.setSpec('knight', { quiet: true });
   assert.equal(game.player.hpMax, 200 * NS);
-  assert.equal(game.player.stats.speed, 4.75, 'mods not given in data keep the CLASSES default (knight speed x0.95)');
+  assert.equal(game.player.stats.speed, r2(5 * 0.95 * SPD), 'mods not given in data keep the CLASSES default (knight speed x0.95)');
 });
 
 test('ability unlocks and spec readiness', () => {

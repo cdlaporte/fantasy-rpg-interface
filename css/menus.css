@@ -1,1 +1,131 @@
-/* Round 2, package A: settings, options, PIN pad, teacher panels. */
+/* Round 2, package A: settings, options, PIN pad, teacher panels. Matches css/ui.css (parchment, notched boxes,
+   Press Start 2P headings, Pixelify Sans body); text is large on purpose (body >= 16px, pixel font >= 10px). */
+
+/* ---- shared buttons */
+.tch-btn, .set-key, .set-btn, .opt-item { font: 600 17px/1.15 var(--body); color: var(--ink); background: var(--parch-2); border: 0; cursor: pointer;
+  box-shadow: var(--notch), inset 0 3px 0 rgba(255, 255, 255, 0.55), inset 0 -3px 0 rgba(120, 70, 20, 0.2); margin: 3px; padding: 7px 12px 6px; }
+.tch-btn:hover, .set-key:hover, .set-btn:hover, .opt-item:hover { background: #fff3c4; }
+.tch-btn.sel, .set-key.sel, .set-btn.sel, .opt-item.sel { background: #fff6df; box-shadow: var(--notch), 0 0 0 6px var(--gold), inset 0 3px 0 #fff; position: relative; z-index: 1; }
+.tch-btn:disabled { color: #9a8a7a; background: #e2cfa6; cursor: not-allowed; }
+.tch-note, .set-msg { min-height: 22px; font-size: 17px; font-weight: 600; text-align: center; color: var(--ink-2); }
+.tch-note.good, .set-msg.good { color: #2f8a4e; }
+.tch-note.bad, .set-msg.bad { color: #c0392b; }
+.tch-note.info, .set-msg.info { color: #3b5fb8; }
+.tch-note.pop, .set-msg.pop { animation: pop-in 0.25s steps(3); }
+.settings .hints, .tch-opts .hints, .tch-tools .hints, .pin .hints, .opt-menu .hints { font-size: 16px; }
+.settings .keycap, .tch-opts .keycap, .tch-tools .keycap, .pin .keycap, .opt-menu .keycap,
+.title-screen .keycap, .pause .keycap { font-size: 10px; min-width: 24px; height: 24px; }
+.settings .keycap.big, .controls-card .keycap { font-size: 11px; min-width: 30px; height: 28px; }
+
+/* ---- title screen: three buttons, options sub-screens */
+.row-btns .tbtn { font-size: 12px; padding: 13px 4px 11px; }
+.tbtn-opt { background: #9b6bff; }
+.title-label { font-size: 10px; }
+.name-count { font-size: 10px; }
+.cont-name { font-size: 12px; }
+.cont-meta { font-size: 16px; }
+.title-hint { font-size: 16px; }
+.title-main .controls-grid { font-size: 17px; font-weight: 600; }
+.title-subwrap { position: relative; margin-top: 2vh; display: flex; justify-content: center; z-index: 2; max-height: calc(100vh - 150px); }
+.opt-menu { width: 420px; padding: 16px 20px 14px; display: flex; flex-direction: column; gap: 6px; }
+.opt-title, .set-title, .tch-title, .pin-title { font-size: 18px; color: #7a3a10; text-align: center; text-shadow: 3px 3px 0 rgba(150, 100, 50, 0.35); margin-bottom: 6px; }
+.opt-item { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px 14px 9px; text-align: left; }
+.opt-label { font-size: 13px; }
+.opt-sub { font-size: 16px; color: var(--ink-2); }
+
+/* ---- settings */
+.settings { width: 900px; max-width: calc(100vw - 40px); padding: 12px 18px 10px; display: flex; flex-direction: column; gap: 6px; box-sizing: border-box; }
+.set-head { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.set-title { margin-bottom: 0; }
+.set-sub { font-size: 17px; color: var(--ink-2); }
+.set-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 22px; }
+.set-col { display: grid; grid-template-columns: 1fr 104px 132px; align-items: center; gap: 0 4px; }
+.set-colhead { font-size: 10px; color: var(--ink-2); text-align: center; padding: 2px 0; }
+.set-name { font-size: 17px; font-weight: 600; padding-left: 4px; white-space: nowrap; }
+.set-name.unbound { color: #c0392b; }
+.set-name.unbound::after { content: ' (no key!)'; font-size: 15px; }
+.set-key { height: 34px; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 2px 6px; margin: 2px 3px; }
+.set-key.changed { background: #e9f7d9; }
+.set-key .keycap.big { font-size: 11px; }
+.set-none { font-size: 15px; color: #c0392b; }
+.set-plus { font-size: 18px; color: #b8a890; }
+.set-wait { font-size: 15px; color: #3b5fb8; animation: blink-soft 0.8s steps(2) infinite; }
+.settings.capturing .set-key:not(.sel) { opacity: 0.65; }
+.set-fixed { font-size: 16px; color: var(--ink-2); text-align: center; }
+.set-foot { display: flex; justify-content: center; flex-wrap: wrap; gap: 4px 6px; }
+.set-btn { font-size: 11px; padding: 11px 12px 9px; }
+
+/* ---- PIN pad */
+.pin { width: 330px; padding: 16px 20px 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.pin-sub { font-size: 17px; color: var(--ink-2); }
+.pin-dots { display: flex; gap: 14px; padding: 6px 0; }
+.pin-dot { width: 20px; height: 20px; background: #fffaf0; box-shadow: var(--notch), inset 0 3px 0 rgba(0, 0, 0, 0.1); margin: 3px; }
+.pin-dot.on { background: #6a4bc4; box-shadow: var(--notch), inset 0 3px 0 rgba(255, 255, 255, 0.35); }
+.pin.ok .pin-dot.on { background: var(--green); }
+.pin-pad { display: grid; grid-template-columns: repeat(3, 76px); gap: 4px; }
+.pin-key { height: 52px; font-size: 18px; padding: 0; }
+.pin-word { font-size: 16px; }
+.pin-note { min-height: 22px; font-size: 17px; font-weight: 600; color: #c0392b; }
+.pin.ok .pin-note { color: #2f8a4e; }
+
+/* ---- teacher options (title) */
+.tch-opts { width: 640px; max-width: calc(100vw - 40px); padding: 14px 20px 10px; display: flex; flex-direction: column; gap: 6px; box-sizing: border-box; overflow: auto; }
+.tch-body { display: flex; flex-direction: column; gap: 8px; }
+.tch-sec { display: flex; flex-direction: column; gap: 4px; }
+.tch-label { font-size: 11px; color: var(--ink-2); margin: 2px 0 0 4px; }
+.tch-row { display: flex; gap: 6px; }
+.tch-row > .tch-btn { flex: 1; }
+.tch-row-end { justify-content: center; }
+.tch-play { font-size: 18px; padding: 11px 12px 10px; background: #cfe9ff; }
+.tch-hint { font-size: 16px; color: var(--ink-2); padding: 0 4px; }
+.tch-toggle { display: flex; align-items: center; gap: 10px; text-align: left; }
+.tch-check { flex: none; width: 18px; height: 18px; background: #fffaf0; box-shadow: 0 0 0 3px var(--outline); }
+.tch-toggle.on .tch-check { background: var(--green); box-shadow: 0 0 0 3px var(--outline), inset 0 3px 0 rgba(255, 255, 255, 0.5); }
+.tch-toggle.dim { opacity: 0.55; }
+.tch-topics { display: grid; grid-template-columns: 1fr 1fr; }
+.tch-topic { font-size: 16px; padding: 6px 10px 5px; }
+.tch-day { flex: none; font-size: 10px; color: #6a4bc4; }
+.tch-tname { flex: 1; }
+.tch-back { font-size: 12px; padding: 11px 26px 9px; }
+.tch-saves { display: flex; flex-direction: column; gap: 2px; max-height: 300px; overflow: auto; }
+.tch-save { display: flex; justify-content: space-between; align-items: center; gap: 12px; text-align: left; }
+.tch-sname { font-size: 12px; }
+.tch-smeta { font-size: 16px; color: var(--ink-2); }
+
+/* ---- teacher tools (pause) */
+.pause.with-sub { gap: 0; }
+.tch-tools { width: 860px; max-width: calc(100vw - 30px); max-height: calc(100vh - 24px); overflow: auto; padding: 10px 16px 8px; box-sizing: border-box;
+  display: flex; flex-direction: column; gap: 4px; }
+.tch-tools .tch-title { margin-bottom: 0; }
+.tch-status { font-size: 17px; font-weight: 600; text-align: center; color: #3b2a1e; background: #fff3c4; padding: 4px 8px; box-shadow: inset 0 0 0 3px var(--parch-3); }
+.tch-grid { display: flex; flex-direction: column; gap: 0; }
+.tch-line { display: flex; align-items: center; gap: 8px; }
+.tch-llabel { flex: 0 0 190px; font-size: 10px; color: var(--ink-2); text-align: right; }
+.tch-lbtns { flex: 1; display: flex; flex-wrap: wrap; }
+.tch-lbtns > .tch-btn { flex: 1; padding: 6px 8px 5px; font-size: 16px; }
+.tch-levels .tch-lbtns > .tch-btn { flex: 1 0 0; min-width: 0; padding: 7px 0 6px; font-size: 11px; }
+.tch-btn.on { background: #c9f2d3; }
+.tch-class { border-left: 6px solid var(--cc, #9a8a7a) !important; }
+.tch-class.on { background: color-mix(in srgb, var(--cc, #9a8a7a) 30%, #fff6df); }
+.tch-go { background: #d9e9ff; }
+.tch-god.on { background: #ffd8a8; }
+.tch-tools .tch-back { flex: 0 0 auto !important; margin-left: auto; margin-right: auto; }
+
+/* ---- the badge during a teacher game */
+.teacher-badge { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 4; pointer-events: none; font-size: 11px; color: #fff;
+  background: #6a4bc4; padding: 6px 10px 5px; box-shadow: var(--notch); text-shadow: 1px 1px 0 #000; letter-spacing: 1px; opacity: 0.92; }
+
+@media (max-height: 640px) {
+  .settings { padding: 8px 14px 6px; gap: 3px; }
+  .set-key { height: 32px; }
+  .tch-tools .hints { display: none; }
+}
+
+/* big sub-screens (settings, teacher options) take the logo's place */
+.title-screen.sub-big .title-logo { display: none; }
+.title-screen.sub-big .title-subwrap { margin-top: 10px; max-height: calc(100vh - 64px); }
+.title-screen.sub-big .tch-opts { width: 820px; }
+.set-btn, .tch-back { font-family: var(--body); font-size: 18px; font-weight: 600; }
+.title-screen.sub-big .title-foot { display: none; }
+.title-main .controls-card { width: 340px; }
+.pause .settings { max-height: calc(100vh - 20px); overflow: auto; }

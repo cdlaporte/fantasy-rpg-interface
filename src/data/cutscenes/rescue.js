@@ -3,6 +3,7 @@
 // Chained from `ambush`; chains into `town_arrival` after the travel.
 // Assumes: entities named by move/face/anim are `data.scripted` until the cutscene ends (so the ambushers stop
 // attacking), and player.data.minHp = 1 set by the ambush `control` stays until this cutscene's heal.
+import { tutorialStep as tut } from '../../platform/bindings.js';  // round 2: key names follow the bindings
 const DOWN = 2;
 
 export default {
@@ -79,7 +80,7 @@ export default {
       ['give', 'potion_small', 1, { slot: 0 }],   // slot 0 = key 1, even if rat cheese is already there
       ['sfx', 'pickup'],
       ['letterbox', false],
-      ['tutorial', 'Press 1 to drink the potion.', ['1']],
+      tut('Press [item1] to drink the potion.', 'item1'),
       // integration: "drank it" = HP rose above the ambush floor (the giant rat may have dropped a second potion,
       // so "no potion left" could never become true)
       ['control', { until: ['hp', 'player', '>', 1] }],
@@ -107,7 +108,7 @@ export default {
       ['letterbox', false],
 
       // The escort.
-      ['tutorial', 'Follow Mr. Laporte.', ['W', 'A', 'S', 'D']],
+      tut('Follow Mr. Laporte.', 'move'),
       ['escort', 'laporte', { to: 'exit_town' }],
       ['tutorial', null],
       ['flag.set', 'intro_done', true],

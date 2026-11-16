@@ -4,6 +4,7 @@ import { stepIndex, firstIndex } from './format.js';
 import { buildPortrait, portraitKey } from './portraits.js';
 import { buildLaporteFace } from './laportePortrait.js';
 import { blitGrid } from './pixelart.js';
+import { keyLabel, altLabels, getBindings, onBindingsChange, MOVE_ACTIONS, ATTACK_ACTIONS } from '../platform/bindings.js';
 
 export const K = {
   up: (c) => c === 'ArrowUp' || c === 'KeyW',
@@ -104,32 +105,58 @@ export function hints(list) {
   return f;
 }
 
-export const CONTROLS = [
-  [['W', 'A', 'S', 'D'], 'Move'],
-  [['←', '↑', '↓', '→'], 'Attack (or IJKL)'],
-  [['E'], 'Talk / use'],
-  [['Space', 'Q', 'F', 'Shift'], 'Abilities'],
-  [['1', '-', '6'], 'Items'],
-  [['Tab'], 'Choose a boon'],
-  [['M'], 'Map'],
-  [['B'], 'Bag'],
-  [['Esc'], 'Pause'],
-];
+// Controls card (round 2, package A): every key name comes from the bindings (platform/bindings.js) and the card
+// re-renders itself when they change.
+const SEQ_ITEMS = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6'];
 
-/** The controls card (title screen and pause menu). */
+/** Rows of the controls card for the current bindings: [[labels...], text]. '-' draws a dash between caps. */
+export function controlRows() {
+  const L = keyLabel;
+  const b = getBindings();
+  const attackAlt = ATTACK_ACTIONS.map((a) => altLabels(a)[0]).filter(Boolean);
+  const items = ['item1', 'item2', 'item3', 'item4', 'item5', 'item6'];
+  const seq = items.every((a, i) => b[a] && b[a][0] === SEQ_ITEMS[i]);
+  return [
+    [MOVE_ACTIONS.map(L), 'Move'],
+    [ATTACK_ACTIONS.map(L), attackAlt.length === 4 ? 'Attack (or ' + attackAlt.join(' ') + ')' : 'Attack'],
+    [[L('attack_up'), '+', L('attack_right')], 'Two at once: diagonal'],
+    [[L('interact')], 'Talk / use'],
+    [['space', 'q', 'f', 'shift'].map(L), 'Abilities'],
+    [seq ? [L('item1'), '-', L('item6')] : items.map(L), 'Items'],
+    [[L('boon')], 'Choose a boon'],
+    [[L('map')], 'Map'],
+    [[L('inventory')], 'Bag'],
+    [[L('pause')], 'Pause'],
+  ];
+}
+
+/** Kept for older callers: the rows for the bindings at load time (use controlRows() for live ones). */
+export const CONTROLS = controlRows();
+
+function fillControls(grid) {
+  while (grid.firstChild) grid.removeChild(grid.firstChild);
+  for (const [keys, label] of controlRows()) {
+    const kk = el('div', 'ctl-keys');
+    for (const k of keys) {
+      if (k === '-') kk.appendChild(el('span', 'ctl-dash', '\u2013'));
+      else if (k === '+') kk.appendChild(el('span', 'ctl-dash', '+'));
+      else kk.appendChild(keycap(k || '?'));
+    }
+    add(grid, kk, el('div', 'ctl-label', label));
+  }
+}
+
+/** The controls card (title screen and pause menu); follows binding changes while it is in the page. */
 export function controlsCard(title = 'CONTROLS') {
   const c = el('div', 'controls-card px-box');
   c.appendChild(el('div', 'card-title pxfont', title));
   const grid = el('div', 'controls-grid');
-  for (const [keys, label] of CONTROLS) {
-    const kk = el('div', 'ctl-keys');
-    for (const k of keys) {
-      if (k === '-') kk.appendChild(el('span', 'ctl-dash', '–'));
-      else kk.appendChild(keycap(k));
-    }
-    add(grid, kk, el('div', 'ctl-label', label));
-  }
+  fillControls(grid);
   c.appendChild(grid);
+  let seen = false;
+  const off = onBindingsChange(() => {
+    if (c.isConnected) { seen = true; fillControls(grid); } else if (seen) off();
+  });
   return c;
 }
 

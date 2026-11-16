@@ -1,2 +1,73 @@
-// Frostwhistle Peaks: cutscenes (each with zone: 'peaks'). Stub by the lead's prep (round 3); owned by this biome's package.
-export default {};
+// Frostwhistle Peaks cutscenes. peaks_boss_intro: played by the arena trigger (and the debug scenario);
+// peaks_boss_outro: run by grumbleflake.onDeath.do. Both carry zone: 'peaks' (marker checks in the data tests).
+const DOWN = 2;
+
+export default {
+  peaks_boss_intro: {
+    id: 'peaks_boss_intro', zone: 'peaks', skippable: true,
+    // Grumbleflake is also a zone spawn (present whenever undefeated), so this scene only spawns him when missing.
+    onSkip: [['spawn', 'grumbleflake', 'boss_spawn', { tag: 'boss', unique: true }], ['sfx', 'boss']],
+    steps: [
+      ['lockInput'],
+      ['letterbox', true],
+      ['camera', { to: 'boss_arena', zoom: 0.9, t: 1.6 }],
+      ['wait', 0.4],
+      ['camera', { shake: 0.4 }],
+      ['fx', { type: 'smoke', at: 'boss_arena', r: 2.5, dur: 1.5, color: '#ffffff' }],
+      ['wait', 0.6],
+      ['camera', { shake: 0.7 }],
+      ['fx', { type: 'shockwave', at: 'boss_arena', r: 4, color: '#bfeaff' }],
+      ['spawn', 'grumbleflake', 'boss_spawn', { tag: 'boss', unique: true }],
+      ['anim', 'grumbleflake', 'charge', 1.2],
+      ['fx', { type: 'burst', at: 'boss_arena', n: 30, r: 3, color: '#ffffff' }],
+      ['sfx', 'boss'],
+      ['say', 'grumbleflake', 'WHO IS STOMPING ON MY... FRESHLY FLUFFED SNOW?!', { mood: 'annoyed' }],
+      ['bubble', 'player', 'Sorry?', 1.4],
+      ['say', 'grumbleflake', 'I HAVE BEEN COLD... SINCE TUESDAY. NOBODY KNITS... FOR YETIS.', { mood: 'annoyed' }],
+      ['say', 'grumbleflake', 'SO NOW I SHALL ROAR AT YOU. THEN... SOUP.', { mood: 'annoyed' }],
+      ['cameraReset'],
+      ['letterbox', false],
+      ['toast', 'When Grumbleflake shields up, answer the question to break the shield!', 'info'],
+      ['unlockInput'],
+    ],
+  },
+
+  peaks_boss_outro: {
+    id: 'peaks_boss_outro', zone: 'peaks', skippable: true,
+    onSkip: [['flag.set', 'grumbleflake_defeated', true], ['chest', 'boss_grumbleflake', { id: 'grumbleflake' }], ['save']],
+    steps: [
+      ['lockInput'],
+      ['letterbox', true],
+      ['camera', { to: 'boss_arena', zoom: 1.2, t: 1.0 }],
+      ['fx', { type: 'sparkle', at: 'boss_arena', n: 50, r: 3, color: '#ffffff' }],
+      ['fx', { type: 'poof', at: 'boss_arena', color: '#ffffff' }],
+      ['spawn', 'grumbleflake_cub', 'boss_arena', { tag: 'cub' }],
+      ['wait', 0.8],
+      ['say', 'grumbleflake_cub', '...hrrm. Fine. FINE. You win. It is not about the roaring.', { mood: 'annoyed' }],
+      ['say', 'grumbleflake_cub', 'It is my paws. Eleven winters. Cold. Every. Single. Day.', { mood: 'worried' }],
+      ['bubble', 'player', 'Have you tried mittens?', 2.2],
+      ['wait', 1.2],
+      ['bubble', 'grumbleflake_cub', 'Nobody makes them. In my size.', 2.4],
+      ['wait', 1.2],
+      ['say', 'grumbleflake_cub', 'Take my shiny things. I do not need them. I need a... nap. And a blanket.', { mood: 'calm' }],
+      ['flag.set', 'grumbleflake_defeated', true],
+      ['chest', 'boss_grumbleflake', { id: 'grumbleflake' }],
+      ['anim', 'grumbleflake_cub', 'sit', 2],
+      ['wait', 0.6],
+      ['fx', { type: 'pillar', at: 'player', r: 1.0, color: '#9fe6ff', dur: 1.0 }],
+      ['fx', { type: 'poof', at: 'player', color: '#9fe6ff' }],
+      ['spawn', 'laporte', 'boss_arena', { tag: 'laporte', offset: [0, 3] }],
+      ['sfx', 'laporte'],
+      ['face', 'laporte', DOWN],
+      ['say', 'laporte', 'Well done. I would have helped. The snow is bad for my shoes.', { mood: 'calm' }],
+      ['say', 'laporte', 'For the record: a very large animal with cold paws is not a villain. It is a customer.', { mood: 'proud' }],
+      ['say', 'laporte', 'Nana Frost sells cocoa. Tell her I sent you. She will not give a discount.', { mood: 'calm' }],
+      ['fx', { type: 'poof', at: 'laporte', color: '#9fe6ff' }],
+      ['despawn', 'laporte'],
+      ['cameraReset'],
+      ['letterbox', false],
+      ['unlockInput'],
+      ['save'],
+    ],
+  },
+};

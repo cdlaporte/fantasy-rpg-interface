@@ -497,9 +497,12 @@ function buildCreature(look, o) {
   const body = col.body, sh = shade(body, 0.22), hi = shade(body, -0.25);
   const feats = new Set(look.features || []);
   const mood = o.mood || 'calm';
-  const rig = look.hero === 'mossback' ? 'golem' : look.rig;
+  const rig = look.hero === 'mossback' ? 'golem' : BOSS_PORTRAITS[look.hero] ? look.hero : look.rig;
   if (look.hero === 'mossback') { feats.add('mossy'); feats.add('antlers'); }
   switch (rig) {
+    case 'sphinx': case 'crab_king': case 'yeti':
+      BOSS_PORTRAITS[rig](P, col, mood, o.t, sh, hi);
+      break;
     case 'blob': {
       ell(16, 21, 12.5, 10.5, (x, y, e) => set(x, y, e > 0.75 ? sh : y < 15 ? hi : body));
       ell(16, 25, 7, 4, (x, y) => set(x, y, col.belly));
@@ -507,18 +510,21 @@ function buildCreature(look, o) {
       if (feats.has('core_glow')) ell(16, 22, 2.5, 2.5, (x, y) => set(x, y, col.accent));
       if (feats.has('drips')) for (const x of [7, 12, 21, 25]) { set(x, 29, sh); set(x, 30, sh); }
       if (feats.has('crown')) { row(11, 20, 11, '#f2c94c'); for (const x of [11, 14, 17, 20]) { set(x, 10, '#f2c94c'); set(x, 9, '#f2c94c'); } }
+      if (feats.has('tentacles')) for (const x of [6, 11, 16, 21, 26]) for (let y = 29; y < 32; y++) set(x + ((y + x) % 2), y, x % 2 ? sh : shade(col.accent, 0.1));
+      if (feats.has('bubbles')) for (const [x, y, r] of [[5, 9, 1.8], [26, 7, 2.2], [24, 13, 1.4]]) { ell(x, y, r, r, (xx, yy) => set(xx, yy, mixHex(col.accent, '#ffffff', 0.6))); set(x - 1, y - 1, '#ffffff'); }
       eyesPair(P, 16, 17, 5, mood, col.eye, o.t, true);
       row(14, 17, 22, OUTLINE); set(13, 21, OUTLINE); set(18, 21, OUTLINE);
       break;
     }
     case 'flyer': {
-      const wing = feats.has('wings_fairy') ? '#d8f0ff' : feats.has('wings_bird') ? shade(body, 0.1) : shade(body, 0.35);
+      const wing = feats.has('wings_fairy') ? '#d8f0ff' : feats.has('wings_bird') ? shade(body, 0.1) : feats.has('wings_insect') ? mixHex(col.accent, '#ffffff', 0.45) : shade(body, 0.35);
       for (const s of [-1, 1]) {
         for (let k = 0; k < 9; k++) {
           const x0 = 16 + s * (7 + k);
           for (let y = 10 + k / 2; y <= 22 - (feats.has('wings_bat') ? (k % 3) : k / 3); y++) set(x0, y, (k + Math.floor(y)) % 4 === 0 ? shade(wing, 0.15) : wing);
         }
       }
+      if (feats.has('wings_insect')) for (const s of [-1, 1]) { ell(16 + s * 10, 12, 2, 2, (x, y) => set(x, y, col.accent)); set(16 + s * 10, 12, '#ffffff'); }
       ell(16, 17, 8, 8.5, (x, y, e) => set(x, y, e > 0.75 ? sh : y < 12 ? hi : body));
       ell(16, 21, 4.5, 3.5, (x, y) => set(x, y, col.belly));
       if (feats.has('glow') || feats.has('orb')) ell(16, 4, 2.5, 2.5, (x, y) => set(x, y, col.accent));
@@ -527,6 +533,18 @@ function buildCreature(look, o) {
       break;
     }
     case 'plant': {
+      if (feats.has('cactus')) {
+        for (let y = 6; y < 32; y++) row(9, 22, y, y < 8 ? hi : body);
+        ell(15.5, 7, 6.5, 3, (x, y) => set(x, y, hi));
+        for (const x of [12, 16, 20]) for (let y = 8; y < 32; y++) if (y % 3) set(x, y, sh);
+        for (let y = 14; y < 22; y++) { set(4, y, body); set(5, y, body); set(26, y - 3, body); set(27, y - 3, body); }
+        row(4, 9, 22, body); row(22, 27, 19, body);
+        for (const [x, y] of [[10, 12], [21, 15], [11, 26], [20, 27], [4, 15], [27, 12]]) set(x, y, '#fffbe6');
+        ell(15.5, 4, 3.5, 2.2, (x, y) => set(x, y, col.accent)); set(15, 4, '#ffe066'); set(4, 13, col.accent); set(27, 10, col.accent);
+        eyesPair(P, 16, 14, 4, mood, col.eye, o.t, false);
+        row(14, 17, 19, OUTLINE);
+        break;
+      }
       for (let y = 18; y < 32; y++) row(11 - (y > 26 ? 1 : 0), 20 + (y > 26 ? 1 : 0), y, (y + 1) % 5 === 0 ? sh : body);
       ell(16, 19, 6.5, 6, (x, y, e) => set(x, y, e > 0.7 ? sh : body));
       if (feats.has('cap_mushroom') || !feats.size) {
@@ -538,6 +556,7 @@ function buildCreature(look, o) {
       if (feats.has('flower')) { ell(16, 6, 4, 4, (x, y) => set(x, y, col.accent)); ell(16, 6, 1.6, 1.6, (x, y) => set(x, y, '#ffe066')); }
       if (feats.has('thorns')) for (const [x, y] of [[9, 20], [23, 22], [10, 27], [22, 28]]) { set(x, y, '#f4ead2'); }
       if (feats.has('vines')) for (let y = 14; y < 30; y += 2) set(y % 4 ? 12 : 19, y, '#3f9e4a');
+      if (feats.has('seaweed')) for (const [x0, h] of [[11, 10], [16, 13], [21, 9]]) for (let k = 0; k < h; k++) { const x = x0 + Math.round(Math.sin(k * 0.7 + x0) * 1.2); set(x, 13 - k, '#3fae7a'); set(x + 1, 13 - k, k % 3 ? '#58c08a' : col.accent); }
       eyesPair(P, 16, 17, 4, mood, col.eye, o.t, false);
       row(14, 17, 22, OUTLINE);
       break;
@@ -555,6 +574,10 @@ function buildCreature(look, o) {
       row(12, 19, 18, sh);
       if (feats.has('mossy') || feats.has('wood')) for (let x = 7; x <= 24; x++) if (hash(x, 3) > 0.35) { set(x, 5, '#58b84a'); if (hash(x, 4) > 0.55) set(x, 6, '#3f9e4a'); }
       if (feats.has('crystal')) for (const [x, y] of [[9, 3], [10, 2], [22, 3], [23, 1], [23, 2]]) set(x, y, '#9fe6ff');
+      if (feats.has('sandy')) { for (const y of [9, 16, 21]) row(8, 23, y, shade(body, 0.18)); ell(16, 21, 1.6, 1.6, (x, y) => set(x, y, col.accent)); }
+      if (feats.has('icy')) { row(7, 24, 5, '#ffffff'); row(8, 23, 6, '#ffffff'); for (const [x, y] of [[9, 3], [10, 2], [10, 1], [22, 3], [23, 2], [16, 2], [16, 1]]) set(x, y, '#bfeeff'); }
+      if (feats.has('coral')) for (const [x, y] of [[9, 4], [8, 3], [9, 2], [22, 4], [23, 3], [24, 2], [22, 2]]) set(x, y, col.accent);
+      if (feats.has('starry')) for (const [x, y] of [[10, 8], [21, 10], [14, 20], [19, 22], [9, 17], [23, 15]]) set(x, y, (x + y) % 2 ? '#fff6c0' : '#ffffff');
       if (feats.has('antlers')) {
         for (const [x, y] of [[8, 4], [7, 3], [6, 2], [5, 1], [8, 2], [9, 1]]) set(x, y, '#9a6a3a');
         for (const [x, y] of [[23, 4], [24, 3], [25, 2], [26, 1], [23, 2], [22, 1]]) set(x, y, '#9a6a3a');
@@ -566,18 +589,26 @@ function buildCreature(look, o) {
       for (let y = 22; y < 32; y++) row(6 - (y - 22) / 3, 25 + (y - 22) / 3, y, y < 24 ? sh : body);
       if (feats.has('mane')) ell(16, 15, 12, 11, (x, y, e) => set(x, y, e > 0.8 ? shade(col.accent, 0.25) : col.accent));
       const earC = shade(body, 0.1), earIn = col.belly;
-      if (feats.has('ears_pointy')) {
+      if (feats.has('shell_back')) ell(16, 24, 13, 6, (x, y, e) => set(x, y, e > 0.7 ? shade(body, 0.1) : shade(body, -0.12)));
+      if (feats.has('long_ears')) {
+        for (const ex of [11, 20]) for (let y = 0; y < 9; y++) { row(ex - 1, ex + 1, y, earC); set(ex, y + 1, mixHex(col.accent, '#ffffff', 0.3)); }
+      } else if (feats.has('ears_pointy')) {
         for (let k = 0; k < 6; k++) { row(8 - (k >> 1), 9 + (k >> 1), 3 + k, earC); row(22 - (k >> 1), 23 + (k >> 1), 3 + k, earC); }
         set(8, 6, earIn); set(23, 6, earIn); set(8, 7, earIn); set(23, 7, earIn);
-      } else {
+      } else if (!feats.has('shell_back') && !feats.has('claws') && !feats.has('stinger')) {
         ell(8.5, 7, 3.2, 3.2, (x, y, e) => set(x, y, e < 0.4 ? earIn : earC));
         ell(23.5, 7, 3.2, 3.2, (x, y, e) => set(x, y, e < 0.4 ? earIn : earC));
+      } else if (feats.has('shell_back')) {
+        for (const s of [-1, 1]) for (let k = 0; k < 5; k++) set(16 + s * (3 + k), 7 - k, shade(body, 0.3));
       }
       ell(16, 15, 9, 8.5, (x, y, e) => set(x, y, e > 0.75 ? sh : y < 10 ? hi : body));
       ell(16, 19.5, 5.2, 3.6, (x, y) => set(x, y, col.belly));
       row(15, 16, 18, OUTLINE); set(14, 18, OUTLINE); set(17, 18, OUTLINE);
       row(15, 16, 21, shade(col.belly, 0.5));
       if (feats.has('tusks')) { set(12, 21, '#fffbea'); set(12, 22, '#fffbea'); set(19, 21, '#fffbea'); set(19, 22, '#fffbea'); }
+      if (feats.has('horns')) for (const s of [-1, 1]) for (let k = 0; k < 5; k++) { set(16 + s * (5 + (k >> 1)), 7 - k, '#f6ead0'); set(16 + s * (6 + (k >> 1)), 7 - k, k === 4 ? '#c8a070' : '#f6ead0'); }
+      if (feats.has('claws')) for (const s of [-1, 1]) { ell(16 + s * 11, 26, 3.2, 2.8, (x, y) => set(x, y, shade(body, -0.08))); set(16 + s * 11, 23, OUTLINE); set(16 + s * 11, 24, OUTLINE); }
+      if (feats.has('stinger')) { for (let k = 0; k < 6; k++) set(27 - (k >> 1), 14 - k * 2, col.accent); ell(24, 3, 1.6, 1.6, (x, y) => set(x, y, col.accent)); }
       if (feats.has('spikes')) for (const x of [11, 16, 21]) { set(x, 6, col.accent); set(x, 5, col.accent); }
       eyesPair(P, 16, 12, 5, mood, col.eye, o.t, false);
       break;
@@ -585,6 +616,61 @@ function buildCreature(look, o) {
   }
   return outlineGrid(P.g, fig, OUTLINE);
 }
+
+// ---------------------------------------------------------------- round 3 boss portraits
+
+const GOLD = '#f2c94c';
+const BOSS_PORTRAITS = {
+  /** Sultana Sandsnout: cat face under a blue-and-gold striped nemes, gold collar. */
+  sphinx(P, col, mood, t, sh, hi) {
+    const { set, row, ell } = P;
+    const stripe = col.accent;
+    for (let y = 22; y < 32; y++) row(4 - ((y - 22) >> 1), 27 + ((y - 22) >> 1), y, y < 25 ? sh : col.body);
+    ell(16, 25, 11, 3, (x, y) => set(x, y, GOLD));
+    for (const x of [8, 12, 16, 20, 24]) set(x, 26, x % 8 ? '#3fc8d8' : '#ff5a7a');
+    // nemes: hood flaring down to the shoulders with gold stripes
+    for (let y = 4; y < 24; y++) { const w = 8 + Math.min(6, (y - 4) * 0.45); row(Math.round(16 - w), Math.round(15 + w), y, (y % 3 === 0) ? GOLD : stripe); }
+    ell(16, 14, 8, 8.5, (x, y, e) => set(x, y, e > 0.78 ? sh : y < 9 ? hi : col.body));
+    ell(16, 19, 4.5, 3, (x, y) => set(x, y, col.belly));
+    row(8, 23, 7, GOLD); row(9, 22, 8, shade(GOLD, 0.15)); set(15, 7, '#3fc8d8'); set(16, 7, '#3fc8d8'); set(15, 6, '#3fc8d8'); set(16, 6, '#3fc8d8');
+    set(15, 2, GOLD); set(16, 2, GOLD); set(15, 3, GOLD); set(16, 3, GOLD); set(16, 1, GOLD);
+    eyesPair(P, 16, 12, 5, mood, col.eye, t, false);
+    for (const x of [9, 22]) set(x, 11, '#2a2030');
+    row(15, 16, 17, '#a8604a'); row(14, 17, 20, OUTLINE);
+  },
+  /** Captain Clawsworth: red crab face, eye stalks, white mustache, navy captain's hat, claws. */
+  crab_king(P, col, mood, t, sh, hi) {
+    const { set, row, ell } = P;
+    for (const s of [-1, 1]) ell(16 + s * 12, 25, 4.5, 4.5, (x, y, e) => set(x, y, e > 0.7 ? sh : col.body));
+    for (const s of [-1, 1]) { set(16 + s * 12, 21, OUTLINE); set(16 + s * 12, 22, OUTLINE); set(16 + s * 13, 21, OUTLINE); }
+    ell(16, 22, 11, 9, (x, y, e) => set(x, y, e > 0.78 ? sh : y < 17 ? hi : col.body));
+    ell(16, 27, 7, 3, (x, y) => set(x, y, col.belly));
+    // eye stalks + big eyes
+    for (const ex of [11, 21]) { for (let y = 9; y < 14; y++) set(ex, y, sh); ell(ex, 8, 3, 3.2, (x, y) => set(x, y, '#ffffff')); set(ex, 8, col.eye || '#1b1b1b'); set(ex, 9, col.eye || '#1b1b1b'); }
+    // bicorne hat
+    ell(16, 14, 9, 3.4, (x, y) => set(x, y, col.accent));
+    row(7, 25, 16, GOLD); set(16, 13, '#ffffff'); set(15, 13, '#ffffff'); set(16, 14, GOLD);
+    // mustache and grin
+    for (const s of [-1, 1]) { row(16 + (s > 0 ? 1 : -5), 16 + (s > 0 ? 5 : -1), 21, '#f6f0e6'); set(16 + s * 6, 20, '#f6f0e6'); }
+    row(13, 18, 24, OUTLINE);
+    if (mood === 'shocked') row(14, 17, 25, OUTLINE);
+  },
+  /** Grumbleflake: white-blue fluffy yeti, blue-grey face patch, grumpy brows, little ice horns. */
+  yeti(P, col, mood, t, sh, hi) {
+    const { set, row, ell } = P;
+    const skin = col.accent;
+    for (let y = 20; y < 32; y++) row(2, 29, y, (x => x)(y % 4 === 0 ? shade(col.body, 0.06) : col.body));
+    for (let x = 2; x < 30; x += 3) set(x, 20, sh);
+    ell(16, 14, 11, 10, (x, y, e) => set(x, y, e > 0.82 ? sh : col.body));
+    for (const [x, y] of [[6, 7], [26, 8], [10, 4], [22, 4], [16, 3]]) ell(x, y, 2.2, 2, (xx, yy) => set(xx, yy, col.body));
+    for (const s of [-1, 1]) for (let k = 0; k < 4; k++) set(16 + s * (7 + (k >> 1)), 5 - k, '#bfeeff');
+    ell(16, 16, 7, 6, (x, y, e) => set(x, y, e > 0.8 ? shade(skin, 0.15) : skin));
+    eyesPair(P, 16, 14, 4, mood, col.eye, t, false);
+    row(10, 13, 12, shade(skin, 0.55)); row(19, 22, 12, shade(skin, 0.55)); set(13, 13, shade(skin, 0.55)); set(18, 13, shade(skin, 0.55));
+    row(14, 17, 20, '#3a3a5a'); set(13, 21, '#3a3a5a'); set(18, 21, '#3a3a5a');
+    if (mood === 'happy' || mood === 'proud') { row(14, 17, 21, '#3a3a5a'); set(13, 20, '#3a3a5a'); set(18, 20, '#3a3a5a'); }
+  },
+};
 
 // ---------------------------------------------------------------- public API
 

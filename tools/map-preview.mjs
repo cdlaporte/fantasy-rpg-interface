@@ -80,13 +80,20 @@ const GLYPH = {
   hedge_arch: 'n', lamp: 'l', sign: '?', bench: 'b', well: 'w', fountain: 'f', statue: 's', barrel: 'o', crate: 'x', stall: 's', cart: 'c',
   campfire: '!', tent: 't', house: 'h', shop: '$', tower: 't', academy: 'a', gate_arch: 'g', rune_gate: 'r', bridge: '=', banner: '!',
   bookshelf: 'k', desk: 'd', table: 't', chair: 'c', bed: 'b', cauldron: 'u', chalkboard: 'c', rug: 'r', chest: 'c',
+  // round 3 biome models
+  palm: 'p', cactus: 'y', ruin_pillar: 'i', obelisk: 'i', pottery: 'u', dune: '-', shell: 'e', coral: 'y', boat: 'b', tidepool: 'o',
+  lighthouse: 'h', snowman: 's', igloo: 'n', snow_pine: 'a', ice_spire: 'v', cloud_puff: 'o', floating_rock: 'f', star_lamp: 'l',
+  orrery: 'o', moon_flower: '+',
 };
 function propColor(p) {
   const l = p.def ? p.def.look : {};
   const key = { tree: 'leaves', pine: 'leaves', bush: 'leaves', rock: 'body', stump: 'top', log: 'bark', flowerbed: 'petals', mushroom_big: 'cap',
     crystal: 'body', house: 'roof', shop: 'roof', tower: 'roof', academy: 'roof', stall: 'awning', tent: 'cloth', banner: 'cloth', rug: 'main',
     fountain: 'water', well: 'roof', lamp: 'light', gate_arch: 'trim', rune_gate: 'rune', bed: 'sheet', chalkboard: 'board', bookshelf: 'books',
-    cauldron: 'brew', campfire: 'flame' }[p.model];
+    cauldron: 'brew', campfire: 'flame',
+    palm: 'leaves', cactus: 'body', ruin_pillar: 'stone', obelisk: 'stone', pottery: 'clay', dune: 'sand', shell: 'shell', coral: 'body',
+    boat: 'hull', tidepool: 'water', lighthouse: 'stripe', snowman: 'snow', igloo: 'ice', snow_pine: 'leaves', ice_spire: 'ice',
+    cloud_puff: 'cloud', floating_rock: 'grass', star_lamp: 'star', orrery: 'metal', moon_flower: 'petal' }[p.model];
   const v = Object.assign({}, l, p.src && p.src.look);
   const c = (key && v[key]) || Object.values(v).find((x) => typeof x === 'string' && x[0] === '#') || '#ff00ff';
   return hex(c);
@@ -115,6 +122,7 @@ export function renderZone(id, { scale = 8, labels = true, deco = true, crop = n
     R.fill(M + x * S, M + y * S, S, S, c);
     if (td.shape === 'block' && S >= 6) { R.fill(M + x * S, M + y * S + S - 2, S, 2, mixc(hex(col.side || col.b), [0, 0, 0], 0.25)); }
     if (td.shape === 'water' && S >= 6 && (v & 3) === 0) R.fill(M + x * S + 1, M + y * S + (S >> 1), S - 3, 1, hex(col.b));
+    if (td.pattern === 'sky' && S >= 4 && ((x + y) & 3) === 0) R.fill(M + x * S + 1, M + y * S + (S >> 1), S - 2, 1, hex(col.b));   // sky void: cloud streaks
   }
   // grid + coordinates
   for (let x = 0; x <= w; x += 10) { for (let y = 0; y < h * S; y += 2) R.px(M + x * S, M + y, [255, 255, 255], 0.25); R.text(String(x), M + x * S + 1, 4, [200, 200, 210], 1, null); R.text(String(x), M + x * S + 1, M + h * S + 6, [200, 200, 210], 1, null); }
@@ -136,7 +144,8 @@ export function renderZone(id, { scale = 8, labels = true, deco = true, crop = n
       R.fill(px, py, p.w * S, Math.max(2, S >> 2), c);
       continue;
     }
-    const round = ['tree', 'pine', 'bush', 'rock', 'mushroom_big', 'stump', 'crystal'].includes(p.model);
+    const round = ['tree', 'pine', 'bush', 'rock', 'mushroom_big', 'stump', 'crystal', 'palm', 'cactus', 'coral', 'snow_pine', 'ice_spire',
+      'snowman', 'pottery', 'star_lamp'].includes(p.model);
     if (round && p.w === 1 && p.h === 1) {
       R.disc(px + (S >> 1), py + (S >> 1), Math.max(2, (S / 2 - 0.5) | 0), mixc(c, [0, 0, 0], 0.15));
       R.disc(px + (S >> 1) - 1, py + (S >> 1) - 1, Math.max(1, (S / 3) | 0), c);
@@ -144,11 +153,11 @@ export function renderZone(id, { scale = 8, labels = true, deco = true, crop = n
     }
     R.fill(px, py, p.w * S, p.h * S, c);
     R.rect(px, py, p.w * S, p.h * S, mixc(c, [0, 0, 0], 0.5));
-    if (['house', 'shop', 'tower', 'academy'].includes(p.model)) {
-      const wall = hex(p.def.look.wall);
+    if (['house', 'shop', 'tower', 'academy', 'lighthouse', 'igloo'].includes(p.model)) {
+      const wall = hex(p.def.look.wall || p.def.look.ice || '#ffffff');
       R.fill(px + 1, py + (p.h - 1) * S, p.w * S - 2, S - 1, wall);
       const dx = p.def.door !== undefined ? p.def.door : (p.w >> 1);
-      R.fill(px + dx * S + 1, py + (p.h - 1) * S + 1, S - 2, S - 1, hex(p.def.look.door));
+      R.fill(px + dx * S + 1, py + (p.h - 1) * S + 1, S - 2, S - 1, hex(p.def.look.door || '#34558e'));
     }
     if (S >= 6 && p.w * S >= 8) R.text(GLYPH[p.model] || '?', px + 2, py + 2, [255, 255, 255], 1);
   }

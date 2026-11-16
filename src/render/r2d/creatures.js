@@ -3,19 +3,24 @@
 // auto-outlined. View: 0 up, 1 right (left is mirrored), 2 down.
 import { Pix } from './pix.js';
 import { dark, light, mix, col, OUTLINE } from './color.js';
+import { qShell, qStinger, qClaw, qLongEars, qHorns, qAntennae, bTentacles, bBubbles, fInsectWings, pCactus, pSeaweed, gBiome,
+  sphinx, crabKing, yeti } from './biomeCreatures.js';
 
 export const CREATURE_FEATURES = {
-  quadruped: ['tail_thin', 'tail_bushy', 'tusks', 'ears_round', 'ears_pointy', 'spikes', 'mane'],
-  blob: ['crown', 'drips', 'core_glow', 'spots'],
-  flyer: ['wings_bat', 'wings_bird', 'wings_fairy', 'orb', 'glow'],
-  plant: ['cap_mushroom', 'thorns', 'leaves', 'flower', 'bark_face', 'vines'],
-  golem: ['mossy', 'rocky', 'wood', 'crystal', 'antlers'],
+  quadruped: ['tail_thin', 'tail_bushy', 'tusks', 'ears_round', 'ears_pointy', 'spikes', 'mane',
+    'claws', 'stinger', 'shell_back', 'long_ears', 'horns'],
+  blob: ['crown', 'drips', 'core_glow', 'spots', 'tentacles', 'bubbles'],
+  flyer: ['wings_bat', 'wings_bird', 'wings_fairy', 'orb', 'glow', 'wings_insect'],
+  plant: ['cap_mushroom', 'thorns', 'leaves', 'flower', 'bark_face', 'vines', 'cactus', 'seaweed'],
+  golem: ['mossy', 'rocky', 'wood', 'crystal', 'antlers', 'sandy', 'icy', 'coral', 'starry'],
 };
+const HEROES = { mossback: 1, sphinx: 1, crab_king: 1, yeti: 1 };
+const HERO_PAINT = { sphinx, crab_king: crabKing, yeti };
 
 export function creatureUnknown(look, out) {
   const known = CREATURE_FEATURES[look.rig] || [];
   for (const f of look.features || []) if (!known.includes(f)) out.push(look.rig + '.feature:' + f);
-  if (look.hero && look.hero !== 'mossback') out.push(look.rig + '.hero:' + look.hero);
+  if (look.hero && !HEROES[look.hero]) out.push(look.rig + '.hero:' + look.hero);
 }
 
 export function creatureFrames(rig, anim) {
@@ -59,11 +64,13 @@ export function paintCreature(look, view, anim, frame) {
   const glow = [];
   let rig = look.rig;
   const hero = look.hero === 'mossback';
-  const W = Math.ceil((hero ? 30 : 26) * k) + 12, Hh = Math.ceil((hero ? 36 : 28) * k) + 14;
+  const boss = HERO_PAINT[look.hero] || null;
+  const W = Math.ceil((hero || boss ? 32 : 26) * k) + 12, Hh = Math.ceil((hero ? 36 : boss ? 32 : 28) * k) + 14;
   const p = new Pix(W, Hh);
   const AX = W >> 1, AY = Hh - 3;
   const st = { k, f, C, p, AX, AY, view, anim, frame, glow };
   if (hero) mossback(st);
+  else if (boss) boss(st);
   else if (rig === 'quadruped') quadruped(st);
   else if (rig === 'blob') blob(st);
   else if (rig === 'flyer') flyer(st);
@@ -116,6 +123,8 @@ function quadruped(st) {
     p.ellipse(cx + 0.5 * k, by + bodyRy * 0.45, bodyRx * 0.7, bodyRy * 0.45, C.belly);
     if (f.has('spikes')) for (let i = -2; i <= 2; i++) { const sx = cx + i * 2.6 * k; p.poly([sx - 1.3 * k, by - bodyRy + 1.5, sx + 1.3 * k, by - bodyRy + 1.5, sx, by - bodyRy - 2.5 * k], C.acc); }
     if (f.has('mane')) { sh(p, cx + bodyRx * 0.55, by - bodyRy * 0.25, 3.6 * k, 4.6 * k, C.acc, C.aLo, C.aHi); }
+    if (f.has('shell_back')) qShell(st, cx, by, bodyRx, bodyRy);
+    if (f.has('stinger')) qStinger(st, cx - bodyRx * 0.85, by - bodyRy * 0.3, 1);
     // near legs
     if (!flat) for (let i = 0; i < 2; i++) {
       const lx = cx + (legPos[i][0] + 1) * k + (walk === 1 ? (i ? 1 : -1) : walk === 3 ? (i ? -1 : 1) : 0) * k;
@@ -124,6 +133,9 @@ function quadruped(st) {
     }
     // head
     const hx = cx + bodyRx * 0.85 + 2.4 * k + lunge, hy = by - bodyRy * 0.5 + (anim === 'attack' ? 1 : 0);
+    if (f.has('long_ears')) qLongEars(st, hx, hy, true);
+    if (f.has('horns')) qHorns(st, hx, hy, true);
+    if (f.has('shell_back') && !f.has('ears_pointy') && !f.has('ears_round') && !f.has('long_ears')) qAntennae(st, hx, hy);
     if (f.has('ears_pointy')) { p.poly([hx - 2.5 * k, hy - 2 * k, hx - 0.5 * k, hy - 2.5 * k, hx - 2 * k, hy - 6.5 * k], C.body); p.set(Math.round(hx - 1.8 * k), Math.round(hy - 3.5 * k), C.acc); }
     if (f.has('ears_round')) { sh(p, hx - 1.5 * k, hy - 3.6 * k, 2 * k, 2 * k, C.body, C.bLo, C.bHi); p.ellipse(hx - 1.5 * k, hy - 3.4 * k, Math.max(0.8, 1.1 * k), Math.max(0.8, 1.1 * k), C.acc); }
     sh(p, hx, hy, 4 * k, 3.5 * k, C.body, C.bLo, C.bHi);
@@ -134,6 +146,7 @@ function quadruped(st) {
     if (f.has('tusks')) { p.set(Math.round(hx + 3.5 * k), Math.round(hy + 2.6 * k), '#fffbe8'); p.set(Math.round(hx + 3.5 * k), Math.round(hy + 1.6 * k), '#fffbe8'); p.set(Math.round(hx + 4.2 * k), Math.round(hy + 0.8 * k), '#fffbe8'); if (k > 0.9) p.set(Math.round(hx + 2.8 * k), Math.round(hy + 2.6 * k), '#e8dcc0'); }
     eyes(st, Math.round(hx + 1 * k), Math.round(hy - 1 * k), k >= 0.9 ? 2 : 1);
     if (anim === 'charge' || anim === 'attack') { p.set(Math.round(hx), Math.round(hy - 2.4 * k), C.bDk); p.set(Math.round(hx + 1.5 * k), Math.round(hy - 2.6 * k), C.bDk); }
+    if (f.has('claws')) qClaw(st, hx + 4 * k, hy + 3 * k, 1, 1);
     return;
   }
   // front / back view
@@ -149,8 +162,11 @@ function quadruped(st) {
     const s = i ? 1 : -1;
     R(p, cx + s * 3.5 * k - k + 0.5, AY - legH - 1, Math.max(2, 2 * k), legH + 1 - lift(i), C.bLo);
   }
+  if (f.has('stinger') && front) qStinger(st, cx, by - bodyRy * 0.6, 0);
   sh(p, cx, by, bodyRx * 0.78, bodyRy * 1.05, C.body, C.bLo, C.bHi);
   if (front) { p.ellipse(cx, by + bodyRy * 0.5, bodyRx * 0.45, bodyRy * 0.45, C.belly); }
+  if (f.has('shell_back')) qShell(st, cx, by + (front ? 0 : 1 * k), bodyRx * 0.78, bodyRy * 1.05);
+  if (f.has('stinger') && !front) qStinger(st, cx, by - bodyRy * 0.3, 0);
   if (f.has('spikes')) for (let i = -1; i <= 1; i++) p.poly([cx + i * 3 * k - 1.3 * k, by - bodyRy + 2, cx + i * 3 * k + 1.3 * k, by - bodyRy + 2, cx + i * 3 * k, by - bodyRy - 2.5 * k], C.acc);
   if (!front) {
     if (f.has('tail_thin')) { for (let i = 0; i < 6 * k; i++) p.set(Math.round(cx + Math.sin(i / 2) * k), Math.round(by + bodyRy - 2 + i * 0.6), C.acc); }
@@ -161,6 +177,9 @@ function quadruped(st) {
   // head in front
   const hy = by + bodyRy * 0.25 + (anim === 'attack' ? 1.5 * k : 0);
   if (f.has('mane')) sh(p, cx, hy - 1 * k, 5.5 * k, 5 * k, C.acc, C.aLo, C.aHi);
+  if (f.has('long_ears')) qLongEars(st, cx, hy, false);
+  if (f.has('horns')) qHorns(st, cx, hy, false);
+  if (f.has('shell_back') && !f.has('ears_pointy') && !f.has('ears_round') && !f.has('long_ears')) qAntennae(st, cx, hy);
   if (f.has('ears_pointy')) for (const s of [-1, 1]) { p.poly([cx + s * 2 * k, hy - 2.5 * k, cx + s * 4.5 * k, hy - 2 * k, cx + s * 4.2 * k, hy - 6.5 * k], C.body); p.set(Math.round(cx + s * 3.6 * k), Math.round(hy - 3.6 * k), C.acc); }
   if (f.has('ears_round')) for (const s of [-1, 1]) { sh(p, cx + s * 3.4 * k, hy - 3.2 * k, 2 * k, 2 * k, C.body, C.bLo, C.bHi); p.ellipse(cx + s * 3.4 * k, hy - 3 * k, Math.max(0.8, 1.1 * k), Math.max(0.8, 1.1 * k), C.acc); }
   sh(p, cx, hy, 4.2 * k, 3.6 * k, C.body, C.bLo, C.bHi);
@@ -174,6 +193,7 @@ function quadruped(st) {
   if (f.has('tusks')) for (const s of [-1, 1]) { p.set(Math.round(cx + s * 2.4 * k), Math.round(hy + 2.4 * k), '#fffbe8'); p.set(Math.round(cx + s * 2.8 * k), Math.round(hy + 1.5 * k), '#fffbe8'); }
   eyes(st, Math.round(cx - 1.8 * k), Math.round(hy - 0.8 * k), k >= 0.9 ? 2 : 1);
   eyes(st, Math.round(cx + 1.8 * k) + 1, Math.round(hy - 0.8 * k), k >= 0.9 ? 2 : 1);
+  if (f.has('claws')) for (const s of [-1, 1]) qClaw(st, cx + s * 5 * k, hy + 2.5 * k, 0, s);
 }
 
 // ------------------------------------------------------------------ blob
@@ -187,7 +207,9 @@ function blob(st) {
   if (anim === 'hurt') sq = 2;
   if (anim === 'ko' || anim === 'sleep') sq = 3;
   const rx = 7 * k + sq * 0.6 * k, ry = 6 * k - sq * 0.7 * k;
-  const cx = AX - 0.5 + (anim === 'charge' ? (frame ? 1 : -1) : 0), cy = AY - ry - (anim === 'walk' && frame === 3 ? 1.5 * k : 0);
+  const floaty = f.has('tentacles');
+  const cx = AX - 0.5 + (anim === 'charge' ? (frame ? 1 : -1) : 0), cy = AY - ry - (anim === 'walk' && frame === 3 ? 1.5 * k : 0) - (floaty ? 5 * k : 0);
+  if (floaty) bTentacles(st, cx, cy + ry - 1, rx);
   // body: dome (flattened bottom)
   sh(p, cx, cy, rx, ry, C.body, C.bLo, C.bHi);
   p.rect(Math.round(cx - rx * 0.9), Math.round(cy + ry * 0.55), Math.round(rx * 1.8), Math.round(ry * 0.45), C.body);
@@ -222,6 +244,7 @@ function blob(st) {
     for (const s of [-1, 0, 1]) p.poly([cx + s * 2.5 * k - 1.2 * k, top, cx + s * 2.5 * k + 1.2 * k, top, cx + s * 2.5 * k, top - 3.2 * k], g);
     p.set(Math.round(cx), top, '#e83a5a');
   }
+  if (f.has('bubbles')) bBubbles(st, cx, cy, rx, ry);
 }
 
 // ------------------------------------------------------------------ flyer
@@ -230,7 +253,8 @@ function flyer(st) {
   const flap = anim === 'ko' || anim === 'sleep' ? 1 : frame % 3; // 0 up, 1 mid, 2 down
   const cx = AX - 0.5, cy = AY - 9 * k;
   const isOrb = f.has('orb');
-  const wingKind = f.has('wings_bat') ? 'bat' : f.has('wings_bird') ? 'bird' : f.has('wings_fairy') ? 'fairy' : (isOrb ? null : 'bat');
+  const insect = f.has('wings_insect') && !f.has('wings_bat') && !f.has('wings_bird') && !f.has('wings_fairy');
+  const wingKind = f.has('wings_bat') ? 'bat' : f.has('wings_bird') ? 'bird' : f.has('wings_fairy') ? 'fairy' : (isOrb || insect ? null : 'bat');
   const ww = 7 * k, wh = 4.5 * k;
   const wingY = [-wh, -wh * 0.2, wh * 0.5][flap];
   const drawWing = (s, back) => {
@@ -256,6 +280,7 @@ function flyer(st) {
       p.set(Math.round(x0 + s * ww * 0.3), Math.round(y0 + wingY * 0.5 - 2 * k), '#ffffff');
     }
   };
+  if (insect) fInsectWings(st, cx, cy, flap);
   if (view !== 1) { drawWing(-1, true); drawWing(1, true); }
   else drawWing(-1, false);
   if (isOrb) {
@@ -293,6 +318,12 @@ function plant(st) {
   // roots / base
   p.ellipse(cx, base - 0.5, 5 * k, 1.6 * k, bLo);
   for (const s of [-1, 1]) p.line(Math.round(cx + s * 2 * k), Math.round(base - 1), Math.round(cx + s * 5.5 * k), base, bLo);
+  if (f.has('cactus')) {
+    const ey = pCactus(st, cx + sway * 0.5, base);
+    if (view === 2) { eyes(st, Math.round(cx - 1.6 * k), ey, k >= 0.9 ? 2 : 1); eyes(st, Math.round(cx + 1.6 * k) + 1, ey, k >= 0.9 ? 2 : 1); p.hline(Math.round(cx - 0.5), Math.round(cx + 0.5), ey + Math.round(2 * k), C.bDk || '#1e1a22'); }
+    else if (view === 1) eyes(st, Math.round(cx + 2 * k), ey, k >= 0.9 ? 2 : 1);
+    return;
+  }
   // stem/body
   const top = base - (bark ? 13 : 9) * k;
   if (bark) {
@@ -345,7 +376,8 @@ function plant(st) {
     sh(p, fx, fy, 1.8 * k, 1.8 * k, '#ffe066', '#e0a020', '#fff8c0');
     if (anim === 'cast' || anim === 'attack') glow.push([fx, fy, C.acc, 0.9 * k]);
   }
-  if (bark && !f.has('cap_mushroom') && !f.has('flower')) {
+  if (f.has('seaweed') && !f.has('cap_mushroom') && !f.has('flower')) pSeaweed(st, fx, (bark ? top : base - 8.5 * k));
+  if (bark && !f.has('cap_mushroom') && !f.has('flower') && !f.has('seaweed')) {
     // leafy crown
     for (const [dx, dy, r] of [[-3, -1, 3.2], [3, -1.5, 3], [0, -3.5, 3.5]]) sh(p, fx + dx * k, top + dy * k, r * k, r * 0.8 * k, C.belly === '#c8e6a0' ? '#5fb548' : light(C.body, 0.1), '#3a8a3a', '#9ee07a');
   }
@@ -417,6 +449,7 @@ function golem(st) {
     }
     glow.push([cx - 2 * k, ty - 8 * k, '#9fe6ff', 0.9 * k]);
   }
+  gBiome(st, cx, ty, tw, hy, body);
   if (f.has('antlers')) antlers(p, cx, hy - 2 * k, k, wood ? '#d9b07a' : '#c8a070');
 }
 

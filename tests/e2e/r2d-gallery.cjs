@@ -18,7 +18,7 @@ const DRAW_BUDGET = 300;
     try { await fn(); console.log('ok   ', name); } catch (e) { failed++; console.log('FAIL ', name, '\n     ', e.message); }
   };
   try {
-    const pages = ONLY ? ONLY.split(',').map(Number) : [0, 1, 2, 3, 4];
+    const pages = ONLY ? ONLY.split(',').map(Number) : [0, 1, 2, 3, 4, 5, 6, 7, 8];   // 5-8: round 3 biome pages
     for (const n of pages) {
       await check(`gallery page ${n}`, async () => {
         const page = await H.newPage(browser);

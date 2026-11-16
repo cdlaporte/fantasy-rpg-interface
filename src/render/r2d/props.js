@@ -4,12 +4,16 @@
 // Flat models (rug, flowerbed, bridge) are baked into tile chunks; the rest are y-sorted with entities.
 import { Pix } from './pix.js';
 import { dark, light, mix, col, OUTLINE } from './color.js';
+import { BIOME_PAINTERS, BIOME_UP, BIOME_SIDE, BIOME_FLAT } from './biomeProps.js';
 
 export const PROP_MODELS = ['tree', 'pine', 'bush', 'rock', 'stump', 'log', 'flowerbed', 'mushroom_big', 'crystal', 'fence',
   'hedge_arch', 'lamp', 'sign', 'bench', 'well', 'fountain', 'statue', 'barrel', 'crate', 'stall', 'cart', 'campfire', 'tent',
   'house', 'shop', 'tower', 'academy', 'gate_arch', 'rune_gate', 'bridge', 'banner', 'bookshelf', 'desk', 'table', 'chair', 'bed',
-  'cauldron', 'chalkboard', 'rug', 'chest'];
-export const FLAT_MODELS = { rug: 1, flowerbed: 1, bridge: 1 };
+  'cauldron', 'chalkboard', 'rug', 'chest',
+  // round 3 biome models (biomeProps.js)
+  ...Object.keys(BIOME_PAINTERS)];
+export const FLAT_MODELS = { rug: 1, flowerbed: 1, bridge: 1, ...BIOME_FLAT };
+const NO_OUTLINE = { dune: 1 };   // soft sand drifts melt into the ground
 const SIGNS = ['potion', 'hat', 'bag', 'bread', 'cup', 'book', 'sword', 'none'];
 
 /** model id for a zone prop (def.model, else kind) */
@@ -40,7 +44,7 @@ export function buildProp(pr) {
   const ctx = { p, w, h, W: w * 16, H: h * 16, ox: side, oy: up, L, v, emit: [], shadow: null,
     door: pr.def && pr.def.door !== undefined ? pr.def.door : null };
   fn(ctx);
-  p.outline(OUTLINE);
+  if (!NO_OUTLINE[model]) p.outline(OUTLINE);
   return { pix: p, dx: -side, dy: -up, w: p.w, h: p.h, flat: !!FLAT_MODELS[model], shadow: ctx.shadow, emit: ctx.emit, model };
 }
 
@@ -48,8 +52,8 @@ export function buildProp(pr) {
 const UP = { tree: 30, pine: 34, bush: 6, rock: 4, stump: 4, log: 4, flowerbed: 2, mushroom_big: 20, crystal: 18, fence: 8,
   hedge_arch: 26, lamp: 34, sign: 12, bench: 8, well: 26, fountain: 18, statue: 30, barrel: 8, crate: 6, stall: 24, cart: 8,
   campfire: 4, tent: 18, house: 34, shop: 34, tower: 76, academy: 88, gate_arch: 30, rune_gate: 28, bridge: 4, banner: 34,
-  bookshelf: 22, desk: 6, table: 4, chair: 10, bed: 6, cauldron: 6, chalkboard: 18, rug: 2, chest: 4 };
-const SIDE = { tree: 10, pine: 6, house: 6, shop: 6, tower: 6, academy: 12, stall: 4, fountain: 4, tent: 4, well: 4 };
+  bookshelf: 22, desk: 6, table: 4, chair: 10, bed: 6, cauldron: 6, chalkboard: 18, rug: 2, chest: 4, ...BIOME_UP };
+const SIDE = { tree: 10, pine: 6, house: 6, shop: 6, tower: 6, academy: 12, stall: 4, fountain: 4, tent: 4, well: 4, ...BIOME_SIDE };
 
 // ------------------------------------------------------------------ helpers
 function tools(ctx) {
@@ -472,6 +476,8 @@ const PAINTERS = {
 };
 
 // ------------------------------------------------------------------ buildings
+
+Object.assign(PAINTERS, BIOME_PAINTERS);
 
 const SIGN_ICONS = {
   potion: ['..##..', '..##..', '.#..#.', '#.##.#', '#.##.#', '.####.'],

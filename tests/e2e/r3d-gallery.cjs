@@ -20,6 +20,14 @@ for (const n of [1, 2, 3]) for (const y of [1.9, 4.9, 7.9, 10.9, 13.9]) for (con
 ZOOMS.push([1, 20.5, 13.4, 2.6, 'mossback']);
 // page 4: tiles and props
 for (const y of [4, 9, 14, 20, 26, 32, 37]) for (const x of [9, 22, 33]) ZOOMS.push([4, x, y, 1.25, `p4-${x}-${y}`]);
+// pages 5-8 (round 3 biomes): props, creatures and heroes at play zoom, plus the map edge (north-west corner, south rim)
+const BIOME_PAGES = [5, 6, 7, 8];
+for (const n of BIOME_PAGES) {
+  for (const y of [8.5, 14]) for (const x of [6, 17, 28]) ZOOMS.push([n, x, y, 1, `b${n}-${x}-${y}`]);
+  for (const y of [20, 25]) for (const x of [5, 15]) ZOOMS.push([n, x, y, 1.1, `b${n}-ent-${x}-${y}`]);
+  ZOOMS.push([n, 3, 2, 0.8, `b${n}-edge-nw`], [n, 22, 28, 0.8, `b${n}-edge-s`]);
+}
+ZOOMS.push([5, 7.5, 27, 2.2, 'hero-sphinx'], [6, 12.5, 25, 2.2, 'hero-crab_king'], [7, 5, 23.5, 1.6, 'hero-yeti'], [8, 5, 24, 1.2, 'hero-malgrim']);
 
 
 (async () => {
@@ -39,7 +47,7 @@ for (const y of [4, 9, 14, 20, 26, 32, 37]) for (const x of [9, 22, 33]) ZOOMS.p
     assert.ok(gl, 'WebGL must be available');
 
     if (!ONLY || ONLY === 'gallery') {
-      for (let n = 0; n < 5; n++) {
+      for (let n = 0; n < 9; n++) {
         await check(`gallery page ${n}`, async () => {
           await H.openGallery(page, { base: server.url, renderer: '3d', page: n });
           await page.evaluate(() => window.__gallery.setTime(1.1));
@@ -134,6 +142,26 @@ for (const y of [4, 9, 14, 20, 26, 32, 37]) for (const x of [9, 22, 33]) ZOOMS.p
         await page.evaluate(() => window.__game.step(5, { moveX: 0, moveY: 0 }));
         await H.shot(page, path.join(OUT, 'r3d-game-test-swapped.png'));
       });
+    }
+    if (!ONLY || ONLY === 'game' || ONLY === 'biomes') {
+      // round 3: the four biome zones in the real game at the Chromebook play size (budgets, no unknown art values)
+      const big = await H.newPage(browser, { viewport: { width: 1086, height: 657 } });
+      const bigErrors = H.collectErrors(big);
+      await H.openGame(big, { base: server.url, renderer: '3d' });
+      for (const zone of ['dunes', 'cove', 'peaks', 'aether']) {
+        await check(`biome ${zone} in the game (3d)`, async () => {
+          await big.evaluate((z) => window.__game.scenario('biome', { zone: z, level: 15 }), zone);
+          await big.evaluate(() => window.__game.step(40, { moveX: 0.4, moveY: -0.3 }));
+          await big.evaluate(() => window.__game.step(2, { moveX: 0, moveY: 0 }));
+          const s = await big.evaluate(() => window.__game.renderStats());
+          await H.shot(big, path.join(OUT, `r3d-biome-${zone}.png`));
+          rows.push({ what: 'biome ' + zone, draws: s.draws, tris: s.tris, programs: s.programs });
+          assert.deepStrictEqual(s.unknown, [], 'no unknown look values');
+          assert.ok(s.draws <= BUDGET.draws && s.tris <= BUDGET.tris, `budgets in ${zone}: ${s.draws} draws, ${s.tris} tris`);
+        });
+      }
+      for (const e of bigErrors) errors.push(e);
+      await big.close();
     }
     await check('no console errors', async () => { assert.deepStrictEqual(errors, []); });
   } finally {

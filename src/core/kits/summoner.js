@@ -76,13 +76,9 @@ function summonOne(game, p, kind, x, y) {
   const s = K(game), cj = CJ(game), f = famData(game, kind);
   const color = kind === 'phoenix' ? s.fire : cj.color;
   const o = {
-    def: famDef(game, kind), key: FAMILIAR_KEY, max: maxFamiliars(game), brain: BRAINS[kind] || 'ally_melee',
+    def: famDef(game, kind), key: FAMILIAR_KEY, brain: BRAINS[kind] || 'ally_melee',
     powerMul: f.powerMul, hpMul: f.hpMul, speed: (p.stats.speed || 3.3) * f.speedMul, defense: f.defense || 0,
     ai: f.keepRange ? { keepRange: f.keepRange } : null, color, tags: ['familiar', kind], dist: 1.3,
-    onReplace(g, old) {
-      g.abilities.use('heal', p, { pct: cj.summon.replaceHeal });
-      g.fx({ type: 'ring', x: old.x, y: old.y, r: 1.2, color: '#7cf07c', dur: 0.4 });
-    },
     onExpire(g, ent) { familiarGone(g, p, ent, false); },
     onDeath(g, ent) { familiarGone(g, p, ent, true); },
   };
@@ -103,13 +99,32 @@ function summonOne(game, p, kind, x, y) {
   growFamiliar(game, p, e);
   return e;
 }
+/** At the cap, the oldest familiar that is not the Phoenix makes room (with the Conjurer's small heal). */
+function makeRoom(game, p) {
+  const list = familiars(game, p);
+  if (list.length < maxFamiliars(game)) return;
+  let old = null;
+  for (let i = 0; i < list.length; i++) {
+    const f = list[i];
+    if (f.data.cjKind === 'phoenix') continue;
+    if (!old || f.data.summonedAt < old.data.summonedAt) old = f;
+  }
+  if (!old) return;
+  const cj = CJ(game);
+  game.abilities.use('heal', p, { pct: cj.summon.replaceHeal });
+  game.fx({ type: 'ring', x: old.x, y: old.y, r: 1.2, color: '#7cf07c', dur: 0.4 });
+  game.combat.expireSummon(old, 'replace');
+}
+/** Legion Call: the Phoenix first when you have none (and none is being reborn), then the next of Fox / Owl / Stoneling. */
 function castLegion(game, p) {
   const s = K(game), k = p.data.kit, order = s.order;
   let n = 0;
   for (let i = 0; i < s.perCast; i++) {
-    const kind = order[k.sm_next % order.length];
+    const hasPhoenix = familiars(game, p).some((f) => f.data.cjKind === 'phoenix') || (k.sm_rebirth && k.sm_rebirth.length > 0);
+    const kind = hasPhoenix ? order[k.sm_next % order.length] : 'phoenix';
+    makeRoom(game, p);
     if (!summonOne(game, p, kind)) break;
-    k.sm_next++;
+    if (kind !== 'phoenix') k.sm_next++;
     n++;
   }
   if (!n) return false;
@@ -128,6 +143,7 @@ function updateRebirth(game, p) {
     q.splice(i, 1);
     let x = r.x, y = r.y;
     if (game.world.solidAt(x, y, true) || Math.hypot(x - p.x, y - p.y) > 12) { x = p.x; y = p.y; }
+    makeRoom(game, p);
     const e = summonOne(game, p, 'phoenix', x, y);
     if (e) {
       game.fx({ type: 'text', x: e.x, y: e.y, z: 1.4, text: 'Reborn!', style: 'info' });
@@ -277,7 +293,8 @@ function updateDragon(game, p, dt) {
   if (pt) e.angle = Math.atan2(pt.y - e.y, pt.x - e.x);
   k.sm_breathT -= dt;
   if (k.sm_breathT <= 0 && pt && Math.hypot(pt.x - e.x, pt.y - e.y) <= d.breathR + 0.5) {
-    k.sm_breathT = d.breathEvery;
+    // a big crowd (`crowd` enemies around) makes it breathe faster
+    k.sm_breathT = k.sm_cand.length >= d.crowd ? d.crowdEvery : d.breathEvery;
     breathe(game, p, e, pt.x, pt.y);
   }
 }

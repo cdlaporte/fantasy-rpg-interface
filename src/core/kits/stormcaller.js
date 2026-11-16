@@ -126,6 +126,20 @@ function castStorm(game, p) {
   k.sc_storms = (k.sc_storms || 0) + 1;
   return undefined;
 }
+/** One lightning strike of the Thunderstorm at (x, y) on enemy `tid` (0: a miss, no damage); `chain` arcs on to one more. */
+function strike(game, p, x, y, tid, n, chain) {
+  const s = K(game), sm = s.storm;
+  game.fx({ type: 'bolt', x, y, color: n % 3 ? s.white : s.color });
+  game.combat.aoe(p, { x, y, r: sm.r, dmg: tid ? sm.dmg : 0, knockback: 2, type: 'magic', element: 'storm', status: tid ? { stun: sm.stun } : null,
+    fx: 'ring', color: s.color, tags: ['thunderstorm'] });
+  game.fx({ type: 'sparkle', x, y, n: 6, color: s.white, r: 0.6 });
+  if (tid && chain) {
+    const k = p.data.kit;
+    k.m_chaining = true;
+    game.abilities.use('chain', p, { x, y, jumps: 1, range: 3.5, dmg: sm.chainDmg, color: s.color, element: 'storm', exclude: [tid], tags: ['thunderstorm'] });
+    k.m_chaining = false;
+  }
+}
 function updateStorm(game, p, dt) {
   const k = p.data.kit, run = k.sc_storm;
   if (!run) return;
@@ -142,27 +156,21 @@ function updateStorm(game, p, dt) {
   if (run.next > 0) return;
   run.next += sm.every;
   const list = enemiesNear(game, p, p.x, p.y, sm.range, k.sc_near || (k.sc_near = []));
-  let x, y, tid = 0;
-  if (list.length) {
-    // the least recently struck enemy (spreads the strikes over the whole crowd)
-    let best = list[0];
-    for (let i = 1; i < list.length; i++) if ((list[i].data.scStruck || 0) < (best.data.scStruck || 0)) best = list[i];
-    best.data.scStruck = game.t;
-    x = best.x + (game.rng.next() - 0.5) * 0.3; y = best.y + (game.rng.next() - 0.5) * 0.3; tid = best.id;
-  } else {
-    const a = game.rng.next() * Math.PI * 2, d = 1.5 + game.rng.next() * (sm.range - 2);
-    x = p.x + Math.cos(a) * d; y = p.y + Math.sin(a) * d;
-  }
   run.n++;
-  game.fx({ type: 'bolt', x, y, color: run.n % 3 ? s.white : s.color });
-  game.combat.aoe(p, { x, y, r: sm.r, dmg: tid ? sm.dmg : 0, knockback: 2, type: 'magic', element: 'storm', status: tid ? { stun: sm.stun } : null,
-    fx: 'ring', color: s.color, tags: ['thunderstorm'] });
-  game.fx({ type: 'sparkle', x, y, n: 6, color: s.white, r: 0.6 });
-  if (tid && run.n % 2 === 0) {
-    const kk = p.data.kit;
-    kk.m_chaining = true;
-    game.abilities.use('chain', p, { x, y, jumps: 1, range: 3.5, dmg: sm.chainDmg, color: s.color, element: 'storm', exclude: [tid], tags: ['thunderstorm'] });
-    kk.m_chaining = false;
+  if (!list.length) {
+    // nothing around: a harmless strike somewhere in the storm
+    const a = game.rng.next() * Math.PI * 2, d = 1.5 + game.rng.next() * (sm.range - 2);
+    strike(game, p, p.x + Math.cos(a) * d, p.y + Math.sin(a) * d, 0, run.n);
+  } else {
+    // the bigger the crowd, the more bolts per beat (one per `crowd` enemies, up to `strikes`), each on the least
+    // recently struck enemy, so the strikes spread over the whole crowd
+    const n = Math.min(sm.strikes, Math.ceil(list.length / sm.crowd));
+    for (let j = 0; j < n; j++) {
+      let best = list[0];
+      for (let i = 1; i < list.length; i++) if ((list[i].data.scStruck || 0) < (best.data.scStruck || 0)) best = list[i];
+      best.data.scStruck = game.t + j * 1e-3;
+      strike(game, p, best.x + (game.rng.next() - 0.5) * 0.3, best.y + (game.rng.next() - 0.5) * 0.3, best.id, run.n + j, j === 0);
+    }
   }
   if (run.n % sm.flashEvery === 0) {
     game.fx({ type: 'screenFlash', color: '#cfe8ff', dur: 0.06 });

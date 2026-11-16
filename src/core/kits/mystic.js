@@ -78,7 +78,6 @@ function castAvatar(game, p) {
   game.fx({ type: 'sparkle', x: p.x, y: p.y, n: 36, color: s.cyan, r: 2.5 });
   game.fx({ type: 'screenFlash', color: s.color, dur: 0.35 });
   game.camera.shake = Math.max(game.camera.shake, 0.6);
-  game.combat.aoe(p, { r: 3, dmg: 0, knockback: 7, fx: false, type: 'magic' });
   game.ents.setAnim(p, 'cast', 0.4);
   setPatch(game, p, 'my_avatar', { held: { glow: '#ffffff' } });
   game.bus.emit('sfx', { id: 'spell' });

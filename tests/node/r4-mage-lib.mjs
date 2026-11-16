@@ -62,9 +62,17 @@ export function mixedFightM(mastery, level, boons = [], cap = 45, seed = 21) {
   const secs = steps * DT;
   return { dps: (total - left) / secs, secs, cleared: left === 0, total, healed };
 }
-export function meanDpsM(mastery, level, seeds = [21, 22, 23, 24, 25, 26, 27, 28]) {
+export const SEEDS = Array.from({ length: 12 }, (_, i) => 21 + i);
+/**
+ * Mean mixed-fight DPS over `seeds` (12 by default). The masteries use the MEAN, not the median of kit-mage-lib:
+ * ultimates that taunt or follow crowds make the per-seed results bimodal, and a median then flips between the modes.
+ */
+export function meanDpsM(mastery, level, seeds = SEEDS) {
   const rs = seeds.map((sd) => mixedFightM(mastery, level, [], 45, sd)).sort((a, b) => a.dps - b.dps);
   const m = rs.length >> 1;
-  const dps = rs.length % 2 ? rs[m].dps : (rs[m - 1].dps + rs[m].dps) / 2;
-  return { dps, secs: rs.reduce((a, r) => a + r.secs, 0) / rs.length, cleared: rs.filter((r) => r.cleared).length / rs.length, runs: rs.map((r) => r.dps) };
+  const median = rs.length % 2 ? rs[m].dps : (rs[m - 1].dps + rs[m].dps) / 2;
+  const dps = rs.reduce((a, r) => a + r.dps, 0) / rs.length;
+  const healed = rs.reduce((a, r) => a + r.healed, 0) / rs.length;
+  return { dps, median, healed, secs: rs.reduce((a, r) => a + r.secs, 0) / rs.length, cleared: rs.filter((r) => r.cleared).length / rs.length,
+    runs: rs.map((r) => r.dps) };
 }

@@ -178,12 +178,12 @@ export default {
       aura: { style: 'sparkle', color: EMERALD },
     },
     aura: { style: 'sparkle', color: EMERALD },
-    passive: { name: 'Legion', desc: 'Up to five familiars, called two at a time, and a Phoenix that is reborn from its ashes.' },
+    passive: { name: 'Legion', desc: 'Up to five familiars, called two at a time, led by a Phoenix that is reborn from its ashes.' },
     ultimate: { name: 'Guardian Dragon', icon: 'summon', desc: 'A giant dragon swoops in, breathes fire on the biggest crowds, then dives.' },
     kit: {
       color: EMERALD, gold: '#ffd36b', fire: '#ff7a1a',
       max: 5, perCast: 2,                                   // familiars: max, summoned per F press
-      order: ['fox', 'owl', 'phoenix', 'stoneling', 'fox', 'owl'],
+      order: ['fox', 'owl', 'stoneling'],                  // the Phoenix comes first whenever you have none
       phoenix: { name: 'Phoenix', powerMul: 0.6, hpMul: 0.35, speedMul: 1.3, radius: 0.3, flying: true, keepRange: 3,
         rebirth: 5, burstR: 1.8, burstDmg: 1.0,
         look: { rig: 'flyer', size: 0.75, colors: { body: '#ff7a1a', belly: '#ffd84a', accent: '#ff3d1f', eye: '#fff6c0' },
@@ -191,12 +191,12 @@ export default {
         attack: { use: 'projectile', name: 'Phoenix Flame', model: 'fireball', speed: 10, range: 6, dmg: 0.7, radius: 0.18, cd: 0.9,
           windup: 0.1, type: 'magic', element: 'fire', color: '#ff7a1a', glow: '#ffd84a', size: 0.8 } },
       dragon: { cd: 38, cost: 60, dur: 10, hpMul: 3, speed: 7, hover: -1.2, dropFrom: 6, dropT: 0.6, range: 9,
-        landR: 3.6, landDmg: 1.2, breathEvery: 1.0, breathR: 4.4, breathArc: 60, breathDmg: 0.7, burn: 0.12, burnT: 3,
-        fireR: 1.4, fireDur: 3, fireDmg: 0.12, diveR: 3.4, diveDmg: 1.5, petScale: 1.35, petHaste: 0.4,
+        landR: 3.6, landDmg: 1.8, breathEvery: 1.0, crowd: 6, crowdEvery: 0.6, breathR: 4.4, breathArc: 75, breathDmg: 1.1, burn: 0.15, burnT: 3,
+        fireR: 1.4, fireDur: 3, fireDmg: 0.15, diveR: 3.4, diveDmg: 1.6, petScale: 1.35, petHaste: 0.4,
         look: { rig: 'flyer', size: 2.4, colors: { body: '#2fbf71', belly: '#ffd36b', accent: '#ffe9a8', eye: '#ffffff' },
           features: ['wings_bat', 'glow'], hero: null } },
     },
-    balance: { dmgMul: [[15, 1.06], [16, 0.97], [18, 0.99], [20, 0.94]] },
+    balance: { dmgMul: [[15, 0.923], [16, 0.831], [18, 0.867], [20, 0.813]] },
   },
 
   // ------------------------------------------------------------------------------------------------ ILLUSIONIST (conjurer)
@@ -216,12 +216,12 @@ export default {
     ultimate: { name: 'Hall of Mirrors', icon: 'star', desc: 'Six mirror copies surround you and all cast at once, then shatter.' },
     kit: {
       color: ROSE, light: '#ffd6f4', lavender: '#d8b4ff',
-      image: { max: 3, ttl: 3.5, hpMul: 0.25, every: 6, boltDmg: 0.25, boltSpeed: 10, boltRange: 6.5, burstR: 1.6, burstDmg: 0.7,
+      image: { max: 3, ttl: 3.5, hpMul: 0.25, every: 6, boltDmg: 0.2, boltSpeed: 10, boltRange: 6.5, burstR: 1.6, burstDmg: 0.7,
         alpha: 0.7 },
-      hall: { cd: 35, cost: 60, n: 6, r: 2.8, dur: 7, hpMul: 0.45, every: 0.6, boltDmg: 0.28, range: 8, beamEvery: 1.2,
-        shatterR: 2.0, shatterDmg: 1.0 },
+      hall: { cd: 35, cost: 60, n: 6, r: 2.8, dur: 7, hpMul: 0.45, every: 0.6, boltDmg: 0.32, pierce: 1, crowd: 6, range: 8, beamEvery: 1.2,
+        shatterR: 2.2, shatterDmg: 1.2 },
     },
-    balance: { dmgMul: [[15, 1.03], [16, 0.94], [18, 0.95], [20, 0.89]] },
+    balance: { dmgMul: [[15, 0.9], [16, 0.89], [18, 0.9], [20, 0.86]] },
   },
 
   // ------------------------------------------------------------------------------------------------ STORMCALLER (sorcerer)
@@ -243,9 +243,9 @@ export default {
       color: VOLT, white: '#eaf6ff', navy: '#1c2a5a',
       chain: { jumps: 2, range: 4, dmg: 0.7, falloff: 0.85, fromLance: 3 },
       static: { max: 5, discharge: 5, range: 7, dmg: 1.3, r: 1.2, stun: 0.4 },
-      storm: { cd: 40, cost: 80, dur: 6, every: 0.24, range: 7.5, r: 1.3, dmg: 1.4, stun: 0.15, chainDmg: 0.6, flashEvery: 4 },
+      storm: { cd: 40, cost: 80, dur: 6, every: 0.24, range: 7.5, r: 1.4, dmg: 0.85, strikes: 4, crowd: 3, stun: 0.15, chainDmg: 0.6, flashEvery: 4 },
     },
-    balance: { dmgMul: [[15, 0.95], [16, 0.92], [18, 0.94], [20, 0.95]] },
+    balance: { dmgMul: [[15, 0.93], [16, 0.9], [18, 0.935], [20, 0.925]] },
   },
 
   // ------------------------------------------------------------------------------------------------ PYROMANCER (sorcerer)
@@ -271,7 +271,7 @@ export default {
         n: 16, every: 0.22, delay: 0.55, range: 6.5, r: 1.4, dmg: 1.7, fireR: 1.0, fireDur: 2.5, fireDmg: 0.25, shake: 0.25,
         blastR: 3.8, blastDmg: 2.2 },
     },
-    balance: { dmgMul: [[15, 1.02], [16, 1.05], [18, 1.01], [20, 1.02]] },
+    balance: { dmgMul: [[15, 1.045], [16, 1.01], [18, 1.03], [20, 1.025]] },
   },
 
   // ------------------------------------------------------------------------------------------------ SAGE (monk)
@@ -296,7 +296,7 @@ export default {
       enlighten: { cd: 32, cost: 60, dur: 6, r: 5, heal: 0.35, tick: 0.25, slow: 0.75, projSlow: 0.3, regen: 0.012,
         pulseEvery: 1.0, pulseDmg: 0.9, attackSpeed: 0.4, ki: 50, lift: 0.45 },
     },
-    balance: { dmgMul: [[15, 1.19], [16, 1.17], [18, 1.12], [20, 1.155]] },
+    balance: { dmgMul: [[15, 1.23], [16, 1.125], [18, 1.08], [20, 1.105]] },
   },
 
   // ------------------------------------------------------------------------------------------------ MYSTIC (monk)
@@ -317,9 +317,9 @@ export default {
     kit: {
       color: SPIRIT, cyan: '#7fe7ff', white: '#ffffff',
       fists: { palm: 3, kick: 1, arc: 40, dmg: 0.6, speed: 11, range: 6, homing: 5, size: 1.3, radius: 0.22 },
-      avatar: { cd: 30, cost: 60, dur: 8, scale: 2.3, alpha: 0.55, punchR: 2.8, punchArc: 90, punchDmg: 0.8, slamR: 3.8, slamDmg: 2.2,
-        slamFists: 5, idle: 0.8, autoR: 3.5, shake: 0.5, armor: 0.3 },
+      avatar: { cd: 30, cost: 60, dur: 8, scale: 2.3, alpha: 0.55, punchR: 3.2, punchArc: 90, punchDmg: 0.8, slamR: 3.8, slamDmg: 2.2,
+        slamFists: 5, idle: 0.8, autoR: 4.5, shake: 0.5, armor: 0.3 },
     },
-    balance: { dmgMul: [[15, 0.9], [16, 0.92], [18, 0.94], [20, 0.93]] },
+    balance: { dmgMul: [[15, 0.86], [16, 0.928], [18, 0.889], [20, 0.916]] },
   },
 };

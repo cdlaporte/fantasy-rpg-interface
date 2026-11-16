@@ -140,6 +140,17 @@ function mirrorBeams(game, p, list) {
     game.fx({ type: 'beam', x: a.x, y: a.y, x2: b.x, y2: b.y, w: 0.12, color: i % 2 ? s.color : s.lavender });
   }
 }
+/** One Hall of Mirrors bolt from copy `c` at enemy `t` (homing, piercing, marks). */
+function hallBolt(game, p, c, t, pw, cj) {
+  const s = K(game), h = s.hall;
+  const a = Math.atan2(t.y - c.y, t.x - c.x);
+  c.angle = a;
+  game.combat.projectile(c, { angle: a, speed: cj.spiritBolt.speed + 1, range: h.range, amount: h.boltDmg * pw, radius: 0.2, type: 'magic',
+    knockback: 1, homing: 3, homingTarget: t.id, pierce: h.pierce || 0, status: { id: 'mark', t: cj.spiritBolt.markT, p: cj.spiritBolt.markPower },
+    look: projLook('orb', s.color, '#ffffff', 1.1), tags: ['hall_bolt'] });
+  game.ents.setAnim(c, 'cast', 0.2);
+  game.fx({ type: 'sparkle', x: c.x + Math.cos(a) * 0.4, y: c.y + Math.sin(a) * 0.4, n: 4, color: s.light, r: 0.3 });
+}
 function updateHall(game, p, dt) {
   const k = p.data.kit;
   if (!k.il_hallUntil) return;
@@ -160,19 +171,15 @@ function updateHall(game, p, dt) {
     if (game.t < c.data.ilNext) continue;
     c.data.ilNext = game.t + h.every;
     const near = enemiesNear(game, p, c.x, c.y, h.range, k.il_near || (k.il_near = []));
-    let best = null, bd = Infinity;
+    let best = null, bd = Infinity, next = null, nd = Infinity;
     for (let j = 0; j < near.length; j++) {
       const e = near[j], d = (e.x - c.x) * (e.x - c.x) + (e.y - c.y) * (e.y - c.y);
-      if (d < bd) { bd = d; best = e; }
+      if (d < bd) { next = best; nd = bd; bd = d; best = e; } else if (d < nd) { nd = d; next = e; }
     }
     if (!best) continue;
-    const a = Math.atan2(best.y - c.y, best.x - c.x);
-    c.angle = a;
-    game.combat.projectile(c, { angle: a, speed: cj.spiritBolt.speed + 1, range: h.range, amount: h.boltDmg * pw, radius: 0.2, type: 'magic',
-      knockback: 1, homing: 3, homingTarget: best.id, status: { id: 'mark', t: cj.spiritBolt.markT, p: cj.spiritBolt.markPower },
-      look: projLook('orb', s.color, '#ffffff', 1.1), tags: ['hall_bolt'] });
-    game.ents.setAnim(c, 'cast', 0.2);
-    game.fx({ type: 'sparkle', x: c.x + Math.cos(a) * 0.4, y: c.y + Math.sin(a) * 0.4, n: 4, color: s.light, r: 0.3 });
+    hallBolt(game, p, c, best, pw, cj);
+    // in a big crowd every copy casts twice (its two nearest enemies)
+    if (next && near.length >= h.crowd) hallBolt(game, p, c, next, pw, cj);
     k.il_hallBolts = (k.il_hallBolts || 0) + 1;
   }
 }

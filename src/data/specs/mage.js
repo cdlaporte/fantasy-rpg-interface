@@ -151,7 +151,7 @@ export default {
       splitKi: { n: 2, arc: 50, dmg: 0.45, speed: 10, range: 4 },
       surgeKi: { cost: 30, dmg: 2.6, speed: 12, range: 8, radius: 0.4, size: 2.2 },
       // round 3 spec boons
-      palm_echo: { delay: 0.35, rMul: 1.3, dmgMul: 0.6 },
+      palm_echo: { delay: 0.3, ahead: 1.4, rMul: 1.6, dmgMul: 0.6 },
       jade_lotus: { r: 3, dur: 5, healPct: 0.02, slow: 0.4, tick: 0.5 },
     },
     balance: { dmgMul: [[8, 0.33], [10, 0.37], [12, 0.33], [14, 0.33], [16, 0.277], [18, 0.306], [20, 0.317]] },

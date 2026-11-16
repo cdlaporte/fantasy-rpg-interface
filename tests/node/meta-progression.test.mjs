@@ -152,7 +152,8 @@ test('boon offers: class pool, spec pool, no repeats, deterministic', () => {
   assert.equal(oa.length, 3);
   assert.deepEqual(oa, ob, 'same seed and state -> same offer');
   assert.equal(new Set(oa.map((o) => o.id)).size, 3);
-  const warriorIds = DEFAULT_BOONS.filter((x) => x.class === 'warrior').map((x) => x.id);
+  // round 3: the merged pool (data per id over the defaults) is what offers draw from
+  const warriorIds = a.progression.boonDefs().filter((x) => x.class === 'warrior').map((x) => x.id);
   assert.ok(oa.every((o) => warriorIds.includes(o.id)));
   for (const o of oa) assert.ok(o.name && o.desc && o.icon);
   // owned boons are excluded
@@ -161,8 +162,9 @@ test('boon offers: class pool, spec pool, no repeats, deterministic', () => {
   // after specializing at least one spec boon is offered while any remain
   a.progression.setLevel(8, { quiet: true });
   a.progression.setSpec('knight', { quiet: true });
-  const knightIds = DEFAULT_BOONS.filter((x) => x.spec === 'knight').map((x) => x.id);
-  for (let i = 0; i < 4; i++) {
+  const knightIds = a.progression.boonDefs().filter((x) => x.spec === 'knight').map((x) => x.id);
+  assert.equal(knightIds.length, 6, 'round 3: six knight boons');
+  for (let i = 0; i < knightIds.length; i++) {
     const offer = a.progression.offerBoons(3);
     assert.ok(offer.some((o) => knightIds.includes(o.id)), 'spec boon offered');
     assert.ok(offer.every((o) => knightIds.includes(o.id) || warriorIds.includes(o.id)));

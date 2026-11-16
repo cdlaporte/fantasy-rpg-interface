@@ -122,7 +122,7 @@ function coinStorm(game, p, angle, n) {
   const CS = tk(game).coinStorm, th = p.data.kit.th;
   if (!th || n % CS.every !== 0) return;
   game.abilities.use('multishot', p, { angle, n: CS.n, spread: CS.spread, look: COIN_LOOK, speed: CS.speed, range: CS.range, dmg: CS.coef,
-    radius: 0.18, returns: true, maxHits: 2, knockback: 1, tags: TAG_COIN, anim: 'attack' });
+    radius: 0.18, returns: true, maxHits: 2, knockback: 0, tags: TAG_COIN, anim: 'attack' });
   game.fx({ type: 'sparkle', x: p.x + Math.cos(angle) * 0.6, y: p.y + Math.sin(angle) * 0.6, n: 10, r: 0.6, color: tk(game).colors.gold });
   game.fx({ type: 'slash', x: p.x, y: p.y, angle, arc: CS.spread, r: 1.1, color: tk(game).colors.gold, style: 'crescent' });
   th.storms = (th.storms || 0) + 1;

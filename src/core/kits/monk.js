@@ -60,9 +60,10 @@ function palm(game, p, angle, rank) {
   k.mo_palms = (k.mo_palms || 0) + 1;
   if (boon(game, 'palm_echo')) {
     // round 3 boon: a bigger, delayed second shockwave
+    // centred ahead of the palm, so it catches what the palm just knocked away
     const pe = s.palm_echo;
-    game.combat.aoe(p, { x: p.x, y: p.y, shape: 'cone', angle, arc: b.arc + 20, r: b.range * pe.rMul, dmg: b.dmg * pe.dmgMul, knockback: b.knockback * 0.6,
-      type: 'melee', delay: pe.delay, telegraph: false, fx: 'shockwave', color: s.jade, shake: 0.15, tags: ['palm_echo'] });
+    game.combat.aoe(p, { x: p.x + Math.cos(angle) * pe.ahead, y: p.y + Math.sin(angle) * pe.ahead, r: b.range * pe.rMul, dmg: b.dmg * pe.dmgMul,
+      knockback: b.knockback * 0.4, type: 'melee', delay: pe.delay, telegraph: false, fx: 'shockwave', color: s.jade, shake: 0.15, tags: ['palm_echo'] });
     k.mo_echoes = (k.mo_echoes || 0) + 1;
   }
   if (dragon) {

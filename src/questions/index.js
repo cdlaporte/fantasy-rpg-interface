@@ -52,6 +52,14 @@ export function createQuestions(opts = {}) {
       });
     },
     normalizeResult,
+    /**
+     * round 2 (debug / e2e / teacher demo): the next question the provider asks is exactly this one.
+     * Returns the problem object, or null when the active provider cannot preview.
+     */
+    preview(topicId, difficulty = 2, seed = 1) {
+      const p = q.provider;
+      return p && typeof p.preview === 'function' ? p.preview(topicId, difficulty, seed) : null;
+    },
   };
   return q;
 }

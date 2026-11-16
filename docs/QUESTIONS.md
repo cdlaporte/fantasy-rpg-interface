@@ -1,297 +1,151 @@
-# Adding your own questions to Flinkerton Academy
+# Math questions in Flinkerton Academy
 
-This guide is for the teacher who will supply the math questions (statistics and geometry). You do not
-need to know how the rest of the game works. Everything you need lives in one folder: `src/questions/`.
+This guide is for Mr. Laporte. It explains which problems the game asks, where they appear, what happens on a
+wrong answer, teacher mode, how to switch topics off, and how a future unit can be added. Everything about
+questions lives in one folder: `src/questions/`.
 
-Right now, every time the game wants to ask a question it shows a placeholder card that says
-**"Question goes here"**, with buttons for *Correct* (key `1`) and *Wrong* (key `2`). Your job, later, is
-to replace that placeholder with real questions. You can do that by writing a question bank (a list of
-questions in a simple text format) and pasting the ready-made code at the end of this guide into
-`src/questions/custom.js`.
+The game asks **Geometry C, Unit 4: Similar Figures** problems, built from the Unit 4 notes packet. Every problem is
+generated fresh (new numbers, new letters, new drawings), so students cannot memorize answers from a friend's
+screen, and problems are picked at random from the unit and scattered through the game.
+
+As you asked, the game **never** asks students to complete a similarity statement ("ΔLMN ~ ____") and has **no**
+scale-factor or perimeter-ratio problems (those were covered in an earlier unit). The words "scale factor" never
+appear. When a problem needs a similarity statement, the game *gives* it ("If ΔABC ~ ΔDEF, find the value of x").
 
 ---
 
-## 1. Turning questions on and off
+## 1. What a question looks like
 
-Add one of these to the end of the game's web address:
+The question card shows, from top to bottom:
+
+- **Where it comes from** ("Rune gate", "Boss shield", "Level-up bonus", ...) and what is at stake
+  ("Answer correctly to break the seal.").
+- **The topic** ("Day 4 · Triangle Angle Bisector Theorem").
+- **The problem**, and a **diagram** when the problem has one. Diagrams are drawn to scale from real coordinates
+  (lengths and angles really match the labels), in the packet's style: vertex letters, side lengths, angle arcs and
+  degree measures, matching arcs for congruent angles, right-angle boxes, parallel arrows, and dimension lines
+  (|--- 27 ---|) for a whole length.
+- **The answer area**:
+  - *Typed answers*: a box with "x =" in front. Press **Enter** (or click **Check**). Accepted forms: `12`, `-3`,
+    `10.5`, `21/2`, `10 1/2`, `x = 12`; spaces are ignored and the answer counts if it is within 0.01 or is the exact
+    fraction. Something that is not a number (or an empty box) is not counted as wrong: the card just says
+    "Type a number, like 12, -3, 10.5 or 21/2."
+  - *Multiple choice*: press **1**-**4** or click.
+
+Keys typed into the answer box never reach the game (typing "wasd" or "1" will not move or use an item).
+
+**Right answer:** a short "Correct!" and the game carries on.
+**Wrong answer:** "Not quite. The answer is x = 15." with the **worked solution** (the same steps as the notes:
+which sides correspond, the proportion, cross multiply, solve, check). The student reads it and presses **Enter**
+(or **Continue**). Enter is ignored for the first half second so a double-tap cannot skip the solution.
+
+## 2. The topics
+
+All answers are whole numbers or halves (typed problems) unless a decimal is part of the problem, as in the packet.
+
+| Day | Topic (id) | What the problems look like | Answer |
+| --- | --- | --- | --- |
+| 1 | Ratios in simplest form (`ratio_simplest`) | "A school district has 28 elementary schools and 16 middle schools...", treadmills to ellipticals, a team's **wins to losses** from games played and won, **vowels to total letters** in a word (FLASHLIGHT), a music store's instruments (one kind to another, or to the total). | Multiple choice like `7:4`. The wrong choices are the usual mistakes: not simplified, half simplified, reversed, wins to *total*, vowels to consonants. |
+| 1 | Extended ratios (`extended_ratio`) | Two complementary or supplementary angles in the ratio 3:7 (find the smaller / larger); the angles of a triangle in the ratio 4:7:9 (find the largest, smallest or a named angle); the sides of a triangle in the ratio 21:8:14 with a given perimeter (find a side). | Typed number (degrees or the length). |
+| 1 | Solving proportions (`proportion`) | Shown as stacked fractions. Level 1: `4/x = 2/7`, `9/16 = x/12`. Level 2: `(x − 3)/18 = 12/9`, `7/11 = 18/(x + 1)`. Level 3: `(x − 16)/(x + 6) = 3/5`, `6/(x + 16) = 7/(3x + 3)`, `(x − 9)/15 = (2x − 9)/10`. | Typed x. |
+| 2 | Missing sides of similar triangles (`similar_missing_side`) | "If ΔABC ~ ΔDEF, find the value of x." Two similar triangles drawn in different sizes and turned / flipped differently, or overlapping: a bow-tie meeting at vertical angles (parallel or crossed), or a small triangle inside a big one with parallel sides (the student adds the pieces). The unknown side is x or an expression such as `x + 9`, `3x − 9`, `14x + 14`. | Typed x. |
+| 3 | Similar by AA, SSS or SAS? (`similarity_proof`) | "Are the triangles similar? If so, by which rule?" Two angle measures in each triangle (the third may need computing), three side lengths in each, two sides with a marked congruent included angle, bow-ties at vertical angles with parallel arrows / right angles / marked angles or with four side lengths, a triangle with a segment across it (shared angle). About a quarter are near misses that are **not** similar (one angle matches, or the ratios are 1.25 vs 1.28). | Always the same four choices: Similar by AA / Similar by SSS / Similar by SAS / Not similar. |
+| 4 | Triangle Proportionality Theorem (`triangle_proportionality`) | A segment parallel to one side (parallel arrows); find x from the four pieces (numbers or `3x + 2`); at level 3 sometimes one whole side is given on a dimension line. Also the converse: "Is MN parallel to JL?" from four lengths (no arrows drawn). | Typed x, or Yes / No. |
+| 4 | Parallel lines and proportional parts (`parallel_proportional`) | Three parallel lines (arrows) cut by two transversals; find x. Level 2 has one expression (`x + 5`), level 3 one expression on each transversal (`(2x + 2)/21 = (x + 3)/12`) or a whole transversal length. | Typed x. |
+| 4 | Triangle Angle Bisector Theorem (`angle_bisector`) | "BD bisects ∠ABC" (two matching arcs); find a missing segment or side, or an expression; at level 3 the whole opposite side may be the unknown or the given (dimension line). | Typed x. |
+
+**Difficulty.** Each topic has levels 1-3. Rune gates ask level 2; boss shields level 2 or 3; haggling and the
+second-chance question level 1; boon (power-up) questions follow the student's level (1 at level 4, 2 at levels 6-8,
+3 at levels 10-12); lessons use the lesson's own level; rune chests, focus scrolls and quest bonuses use the level
+set where they are placed (usually 2).
+
+The game avoids repeating the same topic within the last three questions.
+
+## 3. Where questions appear, and what a wrong answer does
+
+Only **rune gates** and **boss shields** must be answered correctly. Everywhere else a wrong answer just gives a
+smaller reward (after the worked solution is shown).
+
+| Where | Right answer | Wrong answer |
+| --- | --- | --- |
+| **Rune gate** (glowing seals in the forest) | The seal breaks. | Worked solution, then a **new** problem after 3 seconds, until one is right. |
+| **Boss shield** (Old Mossback, twice per fight) | The shield shatters, the boss is stunned. | Worked solution, then a **new** problem after 3 seconds, until one is right. |
+| Level-up bonus (boons, levels 4-12) | Choose from 3 boons. | Choose from 2 boons. |
+| Specialization (level 8, Laporte's office) | The choice opens. | The choice opens anyway (no bonus). |
+| Rune chest | Bonus treasure. | The normal treasure. |
+| Lesson (several questions in a row) | XP and gold for each right answer. | That question pays nothing; the lesson goes on (no retry). |
+| Quest bonus (handing in a quest) | +25% reward. | The normal reward. |
+| Haggling (shop button) | 20% off this visit. | Normal prices (one try per visit). |
+| Focus scroll (item) | Full power, every ability ready, +50% damage for 6 s. | The scroll fizzles: only a little power comes back. |
+| Second chance (knocked out, at most every 5 minutes) | Back up on the spot. | Wake up in the Academy infirmary. |
+
+These rules are in `src/config.js` (`questions.contexts`): `blocking: true` means "must be right";
+`enabled: false` switches a place off (it then simply gives the reward).
+
+## 4. Teacher mode
+
+In teacher mode (PIN-protected teacher options) every question card shows a blue **TEACHER MODE** badge, the
+**answer** (highlighted choice, or the number already in the box) and the **worked solution** right away, with a
+**Next** button (Enter). Next counts as a right answer, so you can walk through the game and show problems to the
+class without being stopped.
+
+## 5. Switching topics off
+
+The teacher options screen lists the eight topics as toggles (for example, turn everything off except the Day 1
+topics before your class has reached Day 2). The game stores the choice in `Questions.topics` (a list of the topic
+ids in the table above; empty or "all on" means every topic). Turning every topic off counts as "all on", so the
+game never runs out of problems.
+
+Other switches, added to the game's address:
 
 | Address ending | What happens |
 | --- | --- |
-| *(nothing)* | Normal play: questions are asked (your questions once `custom.js` is filled in, otherwise the placeholder card). |
-| `?questions=off` | No questions at all. Everything a question would unlock is simply given. Good for a "just play" day. |
-| `?questions=auto` | No question window; every question counts as answered correctly. Used for automated testing. |
-| `?questions=stub` | Always show questions (same as normal play). |
+| *(nothing)* | Normal play with Unit 4 questions. |
+| `?questions=off` | No questions at all; everything a question would unlock is simply given. |
+| `?questions=auto` | No question window; every question counts as right (automated testing). |
+| `?questions=stub` | Always ask (same as normal play). |
 
-The game is never stuck on a question: if a question is closed or fails to load, the game moves on.
+The game is never stuck on a question: if the window is closed or something fails, the game moves on.
 
-## 2. Where questions appear in the game
+## 6. Adding a future unit
 
-Every question request says *where* it comes from (its **context**). Your questions can be different for
-each context, for example quick mental-math for haggling and a harder multi-step problem for a rune gate.
+A unit is a folder in `src/questions/` with:
 
-"Must be right" means the student gets another try (after a short 3-second pause) until they answer
-correctly. "One try" means a wrong answer has a small consequence and the game carries on.
+1. `index.js` exporting `UNIT = {id, name}` and `TOPICS = [{id, day, name}, ...]` (the ids are what
+   `Questions.topics` stores and what the teacher options list).
+2. One **generator module per topic**, each exporting `generate(rng, difficulty)` that returns a problem:
 
-| Context | Where it happens | Right answer | Wrong answer | Rule |
-| --- | --- | --- | --- | --- |
-| `boon` | The student presses **Tab** to choose a new power-up (levels 4, 6, 8, 10, 12). | Choose from 3 power-ups. | Must be right (the game is set up that way; it can be changed to "only 2 choices"). | Must be right |
-| `spec` | At level 8, in Mr. Laporte's office, before choosing a specialization (Knight, Sorcerer, Archer, ...). | The choice opens. | Try again. | Must be right |
-| `gate` | Glowing rune seals block paths in the forest. | The seal breaks and the path opens. | Try again. | Must be right |
-| `chest` | Rune chests (chests with a glowing rune). | Extra treasure inside. | The chest opens with the normal treasure. | One try |
-| `boss_shield` | When the forest boss raises its magic shield (twice per fight). | The shield shatters and the boss is stunned. | The shield stays a few more seconds, then the question comes back. | Must be right |
-| `focus` | The student uses a *Focus Scroll* item in a fight. | Full power, all abilities ready, +50% damage for 6 s. | A little power comes back. | One try |
-| `lesson` | Lessons in the Academy classrooms (a teacher asks several questions in a row). | Experience points and gold for each right answer. | Try again. | Must be right |
-| `quest_turnin` | Handing in a finished quest. | +25% quest reward. | Normal reward. | Bonus question |
-| `haggle` | The "Haggle" button in a shop. | 20% off everything for this visit. | Normal prices (one try per visit). | One try |
-| `revive` | When the student is knocked out (at most once every 5 minutes). | They get back up on the spot. | They wake up in the Academy infirmary. | One try, bonus |
-| `levelup` | Reserved for a possible question at each level-up; not used yet. | | | |
+   ```js
+   {
+     id, topic, difficulty,            // difficulty 1-3
+     type: 'number' | 'choice',
+     prompt: 'Find the value of x.',
+     figure: '<svg ...>' | null,       // optional diagram (unit4/svg.js draws them from coordinates)
+     answer: 12,                       // type 'number'
+     accept: { tolerance: 0.01, fraction: [21, 2] | null },
+     answerText: 'x = 12',             // shown with the solution
+     choices: ['...', '...'], answerIndex: 0,   // type 'choice'
+     solution: ['step 1', 'step 2', ...],       // the worked solution
+   }
+   ```
 
-The "must be right / one try" settings are in `src/config.js` (`questions.contexts`), where each context
-can also be switched off completely (`enabled: false`).
+   `rng` is a seeded random generator (`unit4/rng.js`): the same seed always gives the same problem, so problems
+   can be tested and shown again. Generators are plain JavaScript with no page code, so the Node tests run them.
+3. A registry like `unit4/generators.js` (topic id → generator) and a provider like `unit4/provider.js`
+   (`createUnit4Provider` already does topic picking, difficulty, the card, typed answers, choices, the worked
+   solution and teacher mode; a new unit can reuse it by pointing it at its own registry).
+4. Install the provider in `src/questions/custom.js` (`export default` the provider; `export default null` brings
+   back the placeholder card).
 
-## 3. Difficulty and tags
+The Unit 4 code is a complete example (`src/questions/unit4/`); the tests in `tests/node/r2b-generators.test.mjs`
+show how every generator is checked (500 seeds x 3 levels: the answer is right, choices are unique with one right
+answer, diagrams are well formed and labels never sit on a line).
 
-Each request also carries:
+## 7. For developers
 
-- **difficulty**: a number, usually **1** (warm-up), **2** (standard) or **3** (challenge); 4-5 are allowed
-  for later content. The game asks for easier questions early on and harder ones later: power-up questions
-  use 1 at levels 4, 2 at levels 6-8 and 3 at levels 10-12; specialization questions use 2; haggling and the
-  revive question use 1; rune gates, rune chests, lessons and the boss use whatever the level designer set
-  for that gate, chest, lesson or boss (usually 2-3).
-- **tags**: topic labels chosen by whoever placed the question in the game, for example `['geometry']` on
-  a forest gate or `['statistics', 'mean']` on a lesson. A lesson in classroom 2 might always ask about
-  angles; a gate deep in the forest might ask about area.
-
-Your question bank uses the same words, so the code below can pick a question that matches. A good rule of
-thumb: give every question one **unit** (the big topic, e.g. `geometry` or `statistics`) and two or three
-**tags** (e.g. `angles`, `triangles`, `mean`, `median`, `probability`). If no question matches the tags
-asked for, the code falls back to any question of the right difficulty, then to any question at all, so the
-game never runs out.
-
-## 4. The question bank format
-
-A question bank is a list of questions. Write it as a JavaScript file `src/questions/bank.js` that starts
-with `export default [` and ends with `];` (this works when the game is opened straight from the files,
-without a web server setting). Each question is one `{ ... }` block. Three kinds are supported:
-
-### Multiple choice
-
-```js
-{
-  id: 'geo-angles-01',             // any unique name; used so the same question is not repeated too soon
-  type: 'choice',
-  unit: 'geometry',
-  tags: ['angles', 'triangles'],
-  difficulty: 1,
-  prompt: 'Two angles of a triangle are 50° and 60°. What is the third angle?',
-  choices: ['50°', '60°', '70°', '80°'],
-  answer: 2,                        // the position of the right choice, counting from 0 (here: '70°')
-  explanation: 'The angles of a triangle add up to 180°, so 180 - 50 - 60 = 70.',
-},
-```
-
-### Number answer (with a tolerance)
-
-```js
-{
-  id: 'stats-mean-03',
-  type: 'number',
-  unit: 'statistics',
-  tags: ['mean'],
-  difficulty: 2,
-  prompt: 'The test scores are 72, 85, 90 and 81. What is the mean score?',
-  answer: 82,
-  tolerance: 0,                     // how far off an answer may be and still count (0.05 means +/- 0.05)
-  unitLabel: 'points',              // optional, shown next to the answer box
-  explanation: '(72 + 85 + 90 + 81) / 4 = 328 / 4 = 82.',
-},
-```
-
-### True or false
-
-```js
-{
-  id: 'geo-square-02',
-  type: 'truefalse',
-  unit: 'geometry',
-  tags: ['quadrilaterals'],
-  difficulty: 1,
-  prompt: 'Every square is also a rectangle.',
-  answer: true,
-  explanation: 'A square has four right angles, so it is a special rectangle.',
-},
-```
-
-### Optional fields for every kind
-
-| Field | Meaning |
-| --- | --- |
-| `image` | A picture shown above the question, e.g. `'questions/img/triangle-1.png'` (a path from the game folder). |
-| `imageAlt` | A short description of the picture (for screen readers). |
-| `figure` | A small drawing written as SVG text, e.g. `'<svg viewBox="0 0 100 60">...</svg>'`, if you prefer drawings without image files. |
-| `contexts` | Limit a question to some places, e.g. `['lesson', 'gate']`. Leave it out to allow it anywhere. |
-| `hint` | One line shown under the question. |
-| `explanation` | Shown after the student answers (right or wrong) for a moment before the game continues. |
-
-## 5. The ready-made provider (copy into `src/questions/custom.js`)
-
-Replace everything in `src/questions/custom.js` with the code below. It reads your `bank.js`, picks a
-question that fits the request, shows it in the game's question window, checks the answer and tells the game
-whether it was right. Keys: `1`-`4` choose an answer, `Enter` submits a number answer, `T` / `F` answer
-true-or-false questions. Everything can also be clicked.
-
-```js
-// src/questions/custom.js — the teacher's question provider.
-import bank from './bank.js';
-
-// How long the explanation stays on screen after an answer (milliseconds).
-const EXPLAIN_MS = 2500;
-// How many recent questions to avoid repeating.
-const MEMORY = 20;
-const recent = [];
-
-// ---- choosing a question --------------------------------------------------------------------------
-// req looks like: { context: 'gate', difficulty: 2, tags: ['geometry'], attempt: 1 }
-function pick(req) {
-  const tags = req.tags || [];
-  const allowed = (q) => !q.contexts || q.contexts.includes(req.context);
-  const matchesTags = (q) => tags.length === 0
-    || tags.some((t) => (q.tags || []).includes(t) || q.unit === t);
-  const fresh = (q) => !recent.includes(q.id);
-  // Try the best match first, then relax the rules one at a time.
-  const tries = [
-    (q) => allowed(q) && matchesTags(q) && q.difficulty === req.difficulty && fresh(q),
-    (q) => allowed(q) && matchesTags(q) && Math.abs((q.difficulty || 1) - (req.difficulty || 1)) <= 1 && fresh(q),
-    (q) => allowed(q) && matchesTags(q) && fresh(q),
-    (q) => allowed(q) && q.difficulty === req.difficulty && fresh(q),
-    (q) => allowed(q),
-    () => true,
-  ];
-  for (const ok of tries) {
-    const list = bank.filter(ok);
-    if (list.length) {
-      const q = list[Math.floor(Math.random() * list.length)];
-      recent.push(q.id);
-      if (recent.length > MEMORY) recent.shift();
-      return q;
-    }
-  }
-  return null;
-}
-
-// ---- checking an answer ----------------------------------------------------------------------------
-function isRight(q, given) {
-  if (q.type === 'number') {
-    const n = Number(String(given).replace(',', '.').trim());
-    return Number.isFinite(n) && Math.abs(n - Number(q.answer)) <= (q.tolerance || 0);
-  }
-  return given === q.answer;   // choice: the index; truefalse: true / false
-}
-
-// ---- small helpers to build the page (always textContent, never innerHTML, for typed text) ----------
-function make(tag, className, text) {
-  const el = document.createElement(tag);
-  if (className) el.className = className;
-  if (text !== undefined) el.textContent = text;
-  return el;
-}
-
-export default {
-  id: 'teacher-bank',
-
-  // The game calls ask() with the request and an empty element inside its question window.
-  // It must return a Promise that resolves to { correct: true/false, skipped: false }.
-  ask(req, el) {
-    const q = pick(req);
-    if (!q || !el) return Promise.resolve({ correct: true, skipped: true });   // nothing to ask: let them through
-
-    return new Promise((resolve) => {
-      const card = make('div', 'question-card');
-      card.appendChild(make('div', 'question-topic', `${q.unit || ''}  ·  difficulty ${q.difficulty || 1}`));
-      if (q.image) {
-        const img = make('img', 'question-image');
-        img.src = q.image;
-        img.alt = q.imageAlt || '';
-        card.appendChild(img);
-      }
-      if (q.figure) {
-        const fig = make('div', 'question-figure');
-        fig.innerHTML = q.figure;            // your own SVG drawing (only ever from bank.js)
-        card.appendChild(fig);
-      }
-      card.appendChild(make('p', 'question-prompt', q.prompt));
-      if (q.hint) card.appendChild(make('p', 'question-hint', q.hint));
-      const answers = make('div', 'question-answers');
-      const feedback = make('p', 'question-feedback');
-      card.append(answers, feedback);
-      el.appendChild(card);
-
-      let finished = false;
-      const finish = (given) => {
-        if (finished) return;
-        finished = true;
-        window.removeEventListener('keydown', onKey, true);
-        const correct = isRight(q, given);
-        feedback.textContent = (correct ? 'Correct! ' : 'Not quite. ') + (q.explanation || '');
-        feedback.className = 'question-feedback ' + (correct ? 'is-right' : 'is-wrong');
-        setTimeout(() => { card.remove(); resolve({ correct, skipped: false }); },
-          q.explanation ? EXPLAIN_MS : 800);
-      };
-
-      let numberBox = null;
-      if (q.type === 'choice') {
-        q.choices.forEach((text, i) => {
-          const b = make('button', 'question-choice', `${i + 1}   ${text}`);
-          b.type = 'button';
-          b.onclick = () => finish(i);
-          answers.appendChild(b);
-        });
-      } else if (q.type === 'truefalse') {
-        for (const [label, value] of [['T   True', true], ['F   False', false]]) {
-          const b = make('button', 'question-choice', label);
-          b.type = 'button';
-          b.onclick = () => finish(value);
-          answers.appendChild(b);
-        }
-      } else {                                  // 'number'
-        numberBox = make('input', 'question-number');
-        numberBox.inputMode = 'decimal';
-        numberBox.autocomplete = 'off';
-        const go = make('button', 'question-submit', 'Check');
-        go.type = 'button';
-        go.onclick = () => finish(numberBox.value);
-        answers.append(numberBox);
-        if (q.unitLabel) answers.append(make('span', 'question-unit', q.unitLabel));
-        answers.append(go);
-        setTimeout(() => numberBox.focus(), 0);
-      }
-
-      const onKey = (e) => {
-        if (!card.isConnected) { window.removeEventListener('keydown', onKey, true); return; }
-        if (q.type === 'choice' && /^Digit[1-9]$/.test(e.code)) {
-          const i = Number(e.code.slice(5)) - 1;
-          if (i < q.choices.length) { e.preventDefault(); finish(i); }
-        } else if (q.type === 'truefalse' && (e.code === 'KeyT' || e.code === 'KeyF')) {
-          e.preventDefault(); finish(e.code === 'KeyT');
-        } else if (q.type === 'number' && e.code === 'Enter') {
-          e.preventDefault(); finish(numberBox.value);
-        }
-      };
-      window.addEventListener('keydown', onKey, true);
-    });
-  },
-};
-```
-
-To check that it works, open the game normally, walk to anything that asks a question (or, in the debug
-version with `?debug=1`, type `__game.game.gates.ask({context: 'lesson', difficulty: 1, tags: ['mean']})`
-in the browser console) and your question should appear instead of the placeholder card.
-
-## 6. Tips
-
-- Start small: ten questions per unit at each difficulty is plenty for a first class session.
-- Keep prompts short. The window is about the size of a large index card on a Chromebook screen.
-- Use `tolerance` generously for answers that need rounding (for example `tolerance: 0.05` for
-  "round to one decimal place").
-- If you want a question only in lessons (for example a longer, multi-step one), add `contexts: ['lesson']`.
-- The game itself never shows the right answer unless you write an `explanation`.
+- `Questions.preview(topicId, difficulty, seed)` (debug / e2e): the next question asked is exactly that problem.
+  Example in the console with `?debug=1`:
+  `__game.game.questions.preview('angle_bisector', 3, 7); __game.game.gates.ask({context: 'gate'})`.
+- Tests: `node --test tests/node` (generators, answer parser, provider flow) and
+  `node tests/e2e/r2b-questions.cjs` (every topic and level on screen in student and teacher mode, typed right and
+  wrong answers, the retry, 1024x600; screenshots in `tests/e2e/out/r2b/`).

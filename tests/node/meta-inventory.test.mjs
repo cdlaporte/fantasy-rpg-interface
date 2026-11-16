@@ -354,7 +354,7 @@ test('lesson op: questions in a row, rewards per correct answer, rel +1, modal f
   await flush();
   assert.equal(result, true);
 
-  // stub: the lesson context is blocking, so a wrong answer is asked again after the retry wait
+  // stub (round 2): lessons are not blocking; a wrong answer just earns nothing for that question (no retry)
   rels = [];
   ({ game, inv } = make('stub'));
   game.sys.npc.addRel = (id, n) => rels.push([id, n]);
@@ -363,18 +363,17 @@ test('lesson op: questions in a row, rewards per correct answer, rel +1, modal f
     for (let i = 0; i < 120 && !(game.modal && game.modal.type === 'question'); i++) { game.step(DT); await flush(); }
     assert.equal(game.modal.type, 'question');
     assert.equal(game.modal.req.context, 'lesson');
+    assert.equal(game.modal.req.attempt, 1, 'never a retry');
     assert.deepEqual(game.modal.req.tags, ['geometry']);
     game.debug.answerQuestion(ans);
-    if (!ans) {
-      for (let i = 0; i < 400 && !(game.modal && game.modal.type === 'question'); i++) { game.step(DT); await flush(); }
-      assert.equal(game.modal.req.attempt, 2, 'blocking retry');
-      game.debug.answerQuestion(true);
-    }
     await flush();
   }
   for (let i = 0; i < 120 && !(game.modal && game.modal.finished); i++) { game.step(DT); await flush(); }
   assert.equal(game.modal.finished, true);
-  assert.equal(game.modal.correct, 3, 'blocking lesson questions are retried until right');
+  assert.equal(game.modal.done, 3);
+  assert.equal(game.modal.correct, 2, 'the wrong answer is not retried, it just pays nothing');
+  assert.equal(game.progression.xpTotal, 10, 'rewards for the 2 right answers only');
+  assert.equal(inv.gold, 4);
   game.closeModal();
   await p;
   assert.deepEqual(rels, [['prof_x', 1]]);

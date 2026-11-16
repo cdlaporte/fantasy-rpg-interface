@@ -252,7 +252,7 @@ export default {
           game.toast('Focus! Power restored, cooldowns reset.', 'good');
         } else {
           if (k && k.gain && res.max) k.gain(p, Math.round(res.max * 0.25));
-          game.toast('Your focus wavers... a little power trickles back.', 'info');
+          game.toast('The scroll fizzles... only a little power trickles back.', 'info');
         }
         return r;
       });

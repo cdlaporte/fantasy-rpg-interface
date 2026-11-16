@@ -21,7 +21,7 @@ const quietWarn = () => { const w = console.warn; console.warn = () => {}; retur
 
 test('questions module: modes, registry, provider failures', async () => {
   assert.equal(Questions.mode, 'auto', 'shared instance defaults to auto (main.js sets it from the URL)');
-  assert.equal(customProvider, null);
+  assert.equal(customProvider && customProvider.id, 'unit4', 'round 2: custom.js installs the Unit 4 provider');
   const q = createQuestions({ mode: 'off' });
   assert.deepEqual(await q.ask({}), { correct: true, skipped: true });
   q.setMode('auto');

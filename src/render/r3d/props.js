@@ -167,13 +167,36 @@ function lamp(k, L) {
   return [{ type: 'lamp', x: 0, y: 0, h: 1.43, color: '#' + C(light).getHexString() }];
 }
 
-function sign(k, L) {
+function sign(k, L, w) {
   const wood = c(L, 'wood', '#c98c50'), text = c(L, 'text', '#5a3a22');
+  if ((L.variant | 0) === 1 && w >= 2) return noticeBoard(k, L, w);
   k.color(mul(wood, 0.85)).add(T.box(), [0, 0.35, 0], [0.08, 0.7, 0.08]);
-  k.color(wood).add(T.rbox(0.25), [0, 0.68, 0.02], [0.66, 0.36, 0.07]);
+  k.color(wood).add(T.box(), [0, 0.68, 0.02], [0.66, 0.36, 0.07]);
   k.lineless = true;
   for (let i = 0; i < 3; i++) k.color(text).add(T.box(), [-0.05 + (i === 2 ? -0.08 : 0), 0.76 - i * 0.08, 0.06], [i === 2 ? 0.3 : 0.44, 0.03, 0.01]);
   k.lineless = false;
+}
+
+/** The quest board: a roofed notice board on two posts with pinned notes. */
+function noticeBoard(k, L, w) {
+  const wood = c(L, 'wood', '#a8703a'), paper = c(L, 'text', '#fff2d6');
+  const W = w * 0.82;
+  for (const s of [-1, 1]) k.color(mul(wood, 0.8)).add(T.box(), [s * W / 2, 0.75, 0], [0.12, 1.5, 0.12]);
+  k.color(wood).add(T.box(), [0, 0.95, 0], [W, 0.85, 0.08]);
+  k.color(mul(wood, 0.7)).add(T.box(), [0, 0.95, 0.045], [W - 0.1, 0.75, 0.02]);
+  k.color('#c8503c').add(T.box(), [0, 1.48, 0.02], [W + 0.3, 0.07, 0.42], [0.5, 0, 0]);
+  k.color('#c8503c').add(T.box(), [0, 1.48, -0.1], [W + 0.3, 0.07, 0.3], [-0.6, 0, 0]);
+  k.lineless = true;
+  const notes = [[-0.5, 1.12, 0.06, paper], [-0.15, 1.05, -0.08, '#ffe066'], [0.22, 1.15, 0.1, paper], [0.52, 1.0, -0.05, '#bfe6ff'],
+    [-0.42, 0.75, 0.1, '#ffd1e8'], [0.05, 0.72, 0.0, paper], [0.42, 0.74, 0.12, '#d8f4c8']];
+  for (const [x, y, r, col] of notes) {
+    k.color(col).add(T.box(), [x * W / 1.5, y, 0.06], [0.26, 0.3, 0.01], [0, 0, r]);
+    k.color('#c8503c').add(T.box(), [x * W / 1.5, y + 0.12, 0.068], [0.04, 0.04, 0.01]);
+    k.color(mul(col, 0.6)).add(T.box(), [x * W / 1.5, y - 0.02, 0.067], [0.16, 0.02, 0.005], [0, 0, r]);
+  }
+  k.color('#ffd24a').add(T.box(), [0, 1.33, 0.07], [0.12, 0.12, 0.01], [0, 0, 0.785]);
+  k.lineless = false;
+  return [];
 }
 
 function bench(k, L, w) {
@@ -658,7 +681,7 @@ function table(k, L, w, d, rnd, desk) {
   const wood = c(L, 'wood', '#c98c50');
   const W = w * 0.85, D = Math.max(0.6, d * 0.7);
   for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) k.color(mul(wood, 0.85)).add(T.box(), [sx * (W / 2 - 0.07), 0.25, sz * (D / 2 - 0.07)], [0.08, 0.5, 0.08]);
-  k.color(wood).add(T.rbox(0.25), [0, 0.53, 0], [W, 0.07, D]);
+  k.color(wood).add(T.box(), [0, 0.53, 0], [W, 0.07, D]);
   if (desk) {
     k.color(mul(wood, 0.9)).add(T.box(), [W * 0.25, 0.38, 0], [W * 0.45, 0.22, D * 0.9]);
     k.color(c(L, 'paper', '#ffffff')).add(T.box(), [-0.15, 0.575, 0.03], [0.32, 0.01, 0.24], [0, 0.2, 0]);
@@ -806,14 +829,16 @@ function goodsHeap(k, x, z, rnd, n) {
     const t = i % 3, ox = x + (i % 3 - 1) * 0.32 + (rnd() - 0.5) * 0.06, oz = z + Math.floor(i / 3) * 0.3;
     if (t === 0) {
       k.color('#d6a060').add(T.box(), [ox, 0.17, oz], [0.32, 0.32, 0.32], [0, rnd() * 0.4, 0]);
+      k.lineless = true;
       k.color('#9a6a3a').add(T.box(), [ox, 0.17, oz + 0.165], [0.33, 0.04, 0.02]);
+      k.lineless = false;
     } else if (t === 1) {
       k.color('#b0743d').add(T.cyl(0.9, 1, 8), [ox, 0.2, oz], [0.17, 0.4, 0.17]);
       k.lineless = true;
       k.color('#5a5a66').add(T.cyl(1, 1, 8), [ox, 0.3, oz], [0.18, 0.04, 0.18]);
       k.lineless = false;
     } else {
-      k.color('#e8d6a8').add(T.sphere(7, 5), [ox, 0.15, oz], [0.17, 0.17, 0.15]);
+      k.color('#e8d6a8').add(T.sphere(6, 4), [ox, 0.15, oz], [0.17, 0.17, 0.15]);
       k.color('#c8b07a').add(T.cyl(1, 0.6, 6), [ox, 0.3, oz], [0.06, 0.06, 0.06]);
     }
   }
@@ -930,10 +955,12 @@ function sMushroom(k, L, w, d, rnd, dx) {
   k.color(cap).add(T.dome(12, 5), [0, yc + 0.06, -0.08], [capR, 1.0, capR]);
   const sp = [[0, 1.12, 0.1, 0.2], [0.55, 0.85, 0.5, 0.15], [-0.6, 0.8, 0.45, 0.17], [0.7, 0.6, -0.4, 0.13], [-0.4, 0.95, -0.5, 0.14],
     [0.1, 0.62, 0.95, 0.13], [-0.95, 0.45, 0.1, 0.12], [0.95, 0.45, 0.25, 0.11]];
+  k.lineless = true;
   for (const [x, y, z, r] of sp) {
     const n = Math.hypot(x, (y - 0.06) / 1.15, z) || 1;
-    k.color(spots).add(T.sphere(7, 4), [x / n * capR * 0.98, yc + 0.06 + (y - 0.06) / n * 1.15 * 0.98, z / n * capR * 0.98], [r, r * 0.45, r]);
+    k.color(spots).add(T.sphere(6, 3), [x / n * capR * 0.98, yc + 0.06 + (y - 0.06) / n * 1.0 * 0.99, z / n * capR * 0.98 - 0.08], [r, r * 0.5, r]);
   }
+  k.lineless = false;
   // round door with a stone step, round windows
   const zf = R * 0.98;
   k.color(mul(stem, 0.85)).add(T.cyl(1, 1, 10), [dx * 0.4, 0.45, zf - 0.02], [0.3, 0.05, 0.36], [Math.PI / 2, 0, 0]);
@@ -1051,8 +1078,10 @@ function sBakery(k, L, w, d, rnd, dx) {
   doorAt(k, dx, zw, 0.46, 0.78, door, trim);
   // a bench of loaves and a flour barrel out front
   k.color('#c98c50').add(T.box(), [wx, 0.3, zw + 0.45], [0.7, 0.05, 0.26]);
+  k.lineless = true;
   for (const s of [-1, 1]) k.color(mul('#c98c50', 0.8)).add(T.box(), [wx + s * 0.3, 0.15, zw + 0.45], [0.05, 0.3, 0.22]);
-  for (let i = 0; i < 3; i++) k.color('#e8a050').add(T.sphere(7, 5), [wx - 0.2 + i * 0.2, 0.38, zw + 0.45], [0.09, 0.07, 0.08]);
+  for (let i = 0; i < 3; i++) k.color('#e8a050').add(T.sphere(6, 4), [wx - 0.2 + i * 0.2, 0.38, zw + 0.45], [0.09, 0.07, 0.08]);
+  k.lineless = false;
   if (L.sign && L.sign !== 'none') signIcon(k, L.sign, dx + 0.34, 1.12, zw + 0.42);
   return [smoke(ox + 0.1, zc - 0.15, y0 + 2.5, '#f4f0f8')];
 }
@@ -1074,7 +1103,9 @@ function sLibrary(k, L, w, d, rnd, dx) {
   for (let i = 0; i < 4; i++) {
     const x = -pW / 2 + 0.12 + i * (pW - 0.24) / 3;
     k.color('#ffffff').add(T.cyl(0.88, 1, 8), [x, y0 + H / 2, pz], [0.09, H, 0.09]);
+    k.lineless = true;
     k.color(stone).add(T.box(), [x, y0 + 0.05, pz], [0.22, 0.1, 0.22]).add(T.box(), [x, y0 + H - 0.05, pz], [0.24, 0.1, 0.24]);
+    k.lineless = false;
   }
   k.color(mul(wall, 1.02)).add(T.box(), [0, y0 + H + 0.02, (pz + zf) / 2], [pW + 0.2, 0.14, pz - zf + 0.3]);
   k.color(lighten(wall, 0.1)).add(T.shape('pediment', [[-0.5, 0], [0.5, 0], [0, 1]], 0.12), [0, y0 + H + 0.09, pz + 0.05], [pW + 0.25, 0.45, 1]);
@@ -1084,15 +1115,19 @@ function sLibrary(k, L, w, d, rnd, dx) {
   // drum and dome with a gold lantern
   const yd = y0 + H + 0.06;
   k.color(wall).add(T.cyl(1, 1, 10), [0, yd + 0.22, zc], [0.95, 0.44, 0.95]);
+  k.lineless = true;
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
     k.push().tf(Math.sin(a) * 0.93, 0, zc + Math.cos(a) * 0.93, 0, a, 0);
     k.color('#bfe6ff', 0.25).add(T.box(), [0, yd + 0.24, 0], [0.16, 0.24, 0.04]);
     k.pop();
   }
+  k.lineless = false;
   k.color(trim).add(T.cyl(1, 1, 10), [0, yd + 0.46, zc], [1.0, 0.06, 1.0]);
   k.color(roof).add(T.dome(12, 5), [0, yd + 0.48, zc], [0.95, 0.85, 0.95]);
-  for (let i = 0; i < 8; i++) k.color(mul(roof, 0.82)).add(T.torus(0.035, 3, 10, Math.PI / 2), [0, yd + 0.48, zc], [0.96, 0.86, 0.96], [0, (i / 8) * Math.PI * 2, 0]);
+  k.lineless = true;
+  for (let i = 0; i < 6; i++) k.color(mul(roof, 0.82)).add(T.torus(0.035, 3, 8, Math.PI / 2), [0, yd + 0.48, zc], [0.96, 0.86, 0.96], [0, (i / 6) * Math.PI * 2, 0]);
+  k.lineless = false;
   k.color(trim).add(T.cyl(1, 1, 8), [0, yd + 1.38, zc], [0.13, 0.14, 0.13]);
   k.color(trim).add(T.cone(8), [0, yd + 1.55, zc], [0.15, 0.2, 0.15]);
   k.color(trim).add(T.sphere(6, 5), [0, yd + 1.7, zc], 0.05);
@@ -1222,7 +1257,7 @@ function sCafe(k, L, w, d, rnd, dx) {
   for (const [x, z, c1, c2] of tabs) {
     k.color('#c98c50').add(T.cyl(1, 1, 10), [x, 0.42, z], [0.2, 0.04, 0.2]);
     k.color('#5a5a66').add(T.cyl(1, 1, 5), [x, 0.26, z], [0.03, 0.32, 0.03]);
-    for (const s of [-1, 1]) k.color('#b0743d').add(T.rbox(0.3), [x + s * 0.3, 0.26, z], [0.18, 0.05, 0.18]);
+    for (const s of [-1, 1]) k.color('#b0743d').add(T.box(), [x + s * 0.3, 0.26, z], [0.18, 0.05, 0.18]);
     k.color('#ffffff').add(T.cyl(0.7, 1, 6), [x, 0.48, z], [0.04, 0.06, 0.04]);
     umbrella(k, x, z, 1.15, 0.42, c1, c2);
   }
@@ -1308,7 +1343,7 @@ function sGuardhouse(k, L, w, d, rnd, dx) {
 
 function sClock(k, L, w, d, rnd, dx) {
   const wall = c(L, 'wall', '#f4ecd8'), roof = c(L, 'roof', '#3d5aa8'), trim = c(L, 'trim', '#ffd24a'), door = c(L, 'door', '#7a4e2c');
-  const S = Math.min(w, d) * 0.5, H = 2.15, y0 = 0.16;
+  const S = Math.min(w, d) * 0.5, H = 1.85, y0 = 0.16;
   k.color('#a3a7b8').add(T.rbox(0.25), [0, 0.08, 0], [S + 0.3, 0.16, S + 0.3]);
   k.color(mix(wall, '#c8c4b8', 0.3)).add(T.box(), [0, y0 + 0.3, 0], [S + 0.1, 0.6, S + 0.1]);
   k.color(wall).add(T.box(), [0, y0 + H / 2, 0], [S, H, S]);
@@ -1320,7 +1355,7 @@ function sClock(k, L, w, d, rnd, dx) {
     k.color(trim).add(T.cyl(1, 1, 10), [0, yc, 0], [0.36, 0.05, 0.36], [Math.PI / 2, 0, 0]);
     k.color('#fffbe8').add(T.cyl(1, 1, 10), [0, yc, 0.03], [0.31, 0.03, 0.31], [Math.PI / 2, 0, 0]);
     k.lineless = true;
-    for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; k.color('#3a3a4a').add(T.box(), [Math.sin(a) * 0.25, yc + Math.cos(a) * 0.25, 0.05], [0.025, i % 3 ? 0.03 : 0.06, 0.01], [0, 0, -a]); }
+    for (let i = 0; i < 4; i++) { const a = (i / 4) * Math.PI * 2; k.color('#3a3a4a').add(T.box(), [Math.sin(a) * 0.25, yc + Math.cos(a) * 0.25, 0.05], [0.03, 0.07, 0.01], [0, 0, -a]); }
     k.color('#2a2a3a').add(T.box(), [-0.06, yc + 0.05, 0.06], [0.03, 0.16, 0.01], [0, 0, 0.9]);
     k.color('#2a2a3a').add(T.box(), [0.08, yc + 0.07, 0.065], [0.025, 0.22, 0.01], [0, 0, -0.85]);
     k.color('#c8503c').add(T.sphere(5, 4), [0, yc, 0.07], 0.03);
@@ -1333,10 +1368,10 @@ function sClock(k, L, w, d, rnd, dx) {
   for (const sx of [-1, 1]) for (const sz of [-1, 1]) k.color(wall).add(T.box(), [sx * (S / 2 - 0.07), yb + 0.3, sz * (S / 2 - 0.07)], [0.14, 0.5, 0.14]);
   k.color('#ffd24a', 0.2).add(T.lathe('bell', [[0, 0.3], [0.08, 0.3], [0.12, 0.2], [0.14, 0.05], [0.2, 0], [0, 0]], 10), [0, yb + 0.12, 0], 1);
   k.color(wall).add(T.box(), [0, yb + 0.58, 0], [S + 0.06, 0.08, S + 0.06]);
-  k.color(roof).add(T.cone(4), [0, yb + 0.95, 0], [S * 0.78, 0.75, S * 0.78], [0, Math.PI / 4, 0]);
-  k.color(trim).add(T.sphere(6, 5), [0, yb + 1.35, 0], 0.06);
-  k.color(trim).add(T.cyl(1, 1, 4), [0, yb + 1.48, 0], [0.012, 0.22, 0.012]);
-  k.color(trim).add(T.octa(), [0, yb + 1.62, 0], [0.05, 0.07, 0.05]);
+  k.color(roof).add(T.cone(4), [0, yb + 0.9, 0], [S * 0.78, 0.65, S * 0.78], [0, Math.PI / 4, 0]);
+  k.color(trim).add(T.sphere(6, 5), [0, yb + 1.25, 0], 0.06);
+  k.color(trim).add(T.cyl(1, 1, 4), [0, yb + 1.37, 0], [0.012, 0.2, 0.012]);
+  k.color(trim).add(T.octa(), [0, yb + 1.5, 0], [0.05, 0.07, 0.05]);
   doorAt(k, dx * 0.4, S / 2 + 0.06, 0.4, 0.68, door, trim);
   windowAt(k, 0, 1.3, S / 2 + 0.04, 0.16, 0.3, trim, null);
   return [];
@@ -1407,7 +1442,7 @@ const SHADOW = { tree: 0.62, pine: 0.5, bush: 0.5, rock: 0.48, stump: 0.38, log:
 export const PROP_HEIGHT = { tree: 1.85, pine: 1.9, house: 2.3, shop: 2.3, tower: 3.0, academy: 3.6, gate_arch: 2.0, lamp: 1.7, banner: 1.8 };
 /** Approximate top height per building style (look.style). */
 export const STYLE_HEIGHT = { cottage: 2.6, townhouse: 3.0, tower_house: 3.4, mushroom: 2.6, windmill: 3.2, greenhouse: 1.8, bakery: 2.6,
-  library: 3.4, potion: 3.3, outfitter: 2.9, cafe: 2.3, general: 2.4, guardhouse: 3.1, clock: 3.9, arch: 0.8 };
+  library: 3.4, potion: 3.3, outfitter: 2.9, cafe: 2.3, general: 2.4, guardhouse: 3.1, clock: 3.5, arch: 0.8 };
 
 /**
  * Build one zone prop into the kit. p: {kind, def, look, x, y, w, h}. Returns emitters in world coords.

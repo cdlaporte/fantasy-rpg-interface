@@ -251,6 +251,7 @@ const sorcerer = {
   id: 'sorcerer',
   parent: 'mage',
   basicMode: 'raw',
+  aimRange(game) { return S(game).lance.range; },
   basicInfo(game, p, rank) {
     const r = (sdata(game, 'sorcerer') || DEF).ranks || DEF.ranks;
     const k = p.data.kit;

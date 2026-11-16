@@ -241,6 +241,7 @@ const conjurer = {
   id: 'conjurer',
   parent: 'mage',
   basicMode: 'auto',
+  aimRange(game, p, rank) { return rank >= 3 ? S(game).spiritBolt.range : classN(game).bolt.range; },
   interval(game, p, rank) { return rank >= 3 ? S(game).spiritBolt.interval : classN(game).bolt.interval; },
   basicInfo(game, p, rank) {
     const r = (sdata(game, 'conjurer') || DEF).ranks || DEF.ranks;

@@ -288,6 +288,7 @@ const kit = {
   parent: null,
   resource: DEF.kit.resource,
   basicMode: 'auto',
+  aimRange(game) { return N(game).bolt.range; },     // round 2: light aim assist (kits/index.js)
   interval(game) { return N(game).bolt.interval; },
   basicInfo(game, p, rank) { const r = cdata(game).ranks || DEF.ranks; return rank >= 2 ? r[2] : r[1]; },
 

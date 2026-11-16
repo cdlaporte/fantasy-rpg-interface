@@ -232,6 +232,7 @@ function updateClones(game, p, dt) {
 export default {
   id: 'ninja', parent: 'rogue',
   basicMode: 'auto',
+  aimRange(game) { return nk(game).shuriken.range; },
   interval(game) { return nk(game).shuriken.interval; },
   basicInfo(game, p, rank) { return game.kits.registry.rogue.basicInfo(game, p, rank); },
 

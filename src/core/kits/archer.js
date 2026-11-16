@@ -267,6 +267,7 @@ export default {
   id: 'archer', parent: 'rogue',
   basicMode: 'raw',
   interval: 0.35,
+  aimRange(game) { return ak(game).longbow.arrow.range; },
   basicInfo(game, p, rank) { return game.kits.registry.rogue.basicInfo(game, p, rank); },
 
   onEquip(game, p) {

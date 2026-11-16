@@ -105,4 +105,150 @@ export default {
       clones: { cd: 30, n: 2, nFull: 3, dur: 8, mult: 0.6, dist: 1.3, hpMul: 0.3 },
     },
   },
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Round 4: tier-3 masteries (docs/MASTERY.md), two per subclass, unlocked at level 15. Each entry: a look patch over
+  // the subclass look, a passive and an upgraded ultimate (H / Shift, unlock 15). Behaviour: src/core/kits/<id>.js.
+  // `kit.dmgScale` (x `kit.lateScale`, linear by level) multiplies everything the hero and their summons deal ON TOP of
+  // the subclass scaling (rogue.js dmgScale x lateScale), tuned to ~+15% over the round-3 band (docs/notes/r4-rogue.md).
+  // `mods` stay at power 1 / speed 1 so that power and speed come only from the kit (no double counting).
+  ranger: {
+    id: 'ranger', from: 'archer', tier: 3, name: 'Ranger', color: '#8fbf4a',
+    blurb: 'Never hunt alone. A loyal wolf fights at your side, and every roll leaves a snare trap behind.',
+    mods: { hp: 1.05, power: 1, speed: 1 },
+    look: {
+      outfit: { style: 'leather', primary: '#4f6b2e', secondary: '#7b4a2a', accent: '#8fbf4a' }, hood: true,
+      cape: { color: '#3b5323' },
+      held: { style: 'bow', color: '#6b3f1d', glow: '#c6f07a' },
+      aura: { style: 'sparkle', color: '#8fbf4a' },
+    },
+    passive: { name: 'Wild Companion', desc: 'A wolf joins you (it comes back if it falls) and pounces on what you hit from far away. Dodge Roll leaves a snare trap.' },
+    ultimate: { id: 'wild_hunt', name: 'Wild Hunt', icon: 'star', unlock: 15, cd: 30,
+      desc: 'Howl! Three hawks dive on your foes while a wolf pack charges through them.' },
+    kit: {
+      dmgScale: 0.85, lateScale: [[15, 1.0], [16, 1.0], [18, 0.94], [20, 0.97]],
+      colors: { main: '#8fbf4a', bark: '#7b4a2a', fur: '#6e6a64', cream: '#f1e9da', gold: '#f2c94c', spirit: '#c6f07a' },
+      wolf: { powerMul: 0.6, hpMul: 0.6, speedMul: 1.3, size: 0.8, bite: 1.0, biteCd: 0.7, respawn: 8,
+        pounce: { every: 3, minDist: 4.5, coef: 1.6 } },
+      trap: { r: 0.85, dur: 12, max: 3, coef: 2.0, root: 1.6, snapR: 1.5 },
+      hunt: { cd: 30, dur: 6, howlR: 4, wolves: 4, packPowerMul: 0.4, packHpMul: 0.6, spread: 0.9,
+        charge: { dist: 9, speed: 15, r: 0.95, coef: 2.4, knockback: 5 },
+        hawks: 3, hawkEvery: 0.75, hawkCoef: 0.8, hawkRange: 9, diveSpeed: 16 },
+    },
+  },
+
+  sharpshooter: {
+    id: 'sharpshooter', from: 'archer', tier: 3, name: 'Sharpshooter', color: '#4cc9f0',
+    blurb: 'One shot, one bullseye. Full draws always crit and fly twice as far. Your ultimate bounces off walls.',
+    mods: { hp: 1, power: 1, speed: 1 },
+    look: {
+      outfit: { style: 'leather', primary: '#1d2d44', secondary: '#4cc9f0', accent: '#ffd166' },
+      hat: { style: 'feather', color: '#ffd166' },
+      cape: { color: '#14213d' },
+      held: { style: 'bow', color: '#2b2d42', glow: '#4cc9f0' },
+      aura: { style: 'glow', color: '#4cc9f0' },
+    },
+    passive: { name: 'Deadeye', desc: 'A laser sight shows your aim while you draw. Full-draw shots always crit hard and pierce much farther.' },
+    ultimate: { id: 'rail_shot', name: 'Rail Shot', icon: 'bolt', unlock: 15, cd: 28,
+      desc: 'Charge up, then fire a piercing beam that ricochets off walls and enemies four times.' },
+    kit: {
+      dmgScale: 1, lateScale: [[15, 1.04], [16, 1.07], [18, 1.0], [20, 1.0]],
+      colors: { main: '#4cc9f0', core: '#e0fbff', gold: '#ffd166', laser: '#ff4d6d' },
+      deadeye: { critMult: 2.4, rangeMul: 1.8, speedMul: 1.35, size: 3.2, sightEvery: 6 },
+      rail: { cd: 28, charge: 0.45, chargeSpeedMul: 0.3, aimRange: 12, range: 14, w: 1.0, coef: 3.2, bounces: 3, seek: 8,
+        knockback: 4, shake: 0.7, endR: 2.4, endCoef: 1.5 },
+    },
+  },
+
+  trickster: {
+    id: 'trickster', from: 'thief', tier: 3, name: 'Trickster', color: '#c44dff',
+    blurb: 'Pranks for days. Leave a fake treasure chest that explodes in confetti, then swap places with your enemies.',
+    mods: { hp: 1, power: 1, speed: 1 },
+    look: {
+      outfit: { style: 'vest', primary: '#7b2cbf', secondary: '#ffd23f', accent: '#ff70a6' },
+      hat: { style: 'wizard', color: '#3c096c' },
+      cape: { color: '#9d4edd' },
+      held: { style: 'daggers', color: '#f1e9da', glow: '#ff70a6' },
+      aura: { style: 'sparkle', color: '#ff70a6' },
+    },
+    passive: { name: 'Prank Chest', desc: 'Smoke Vanish leaves a fake treasure chest. Enemies rush it, and it bursts in confetti that stuns them.' },
+    ultimate: { id: 'magic_trick', name: 'Magic Trick', icon: 'coin', unlock: 15, cd: 30,
+      desc: 'Finisher: swap places with up to six enemies, dazing each one, with coins flying everywhere.' },
+    kit: {
+      dmgScale: 1, lateScale: [[15, 1.04], [16, 0.95], [18, 1.02], [20, 0.97]],
+      colors: { main: '#c44dff', pink: '#ff70a6', gold: '#f2c94c', confetti: ['#ff70a6', '#ffd23f', '#4cc9f0', '#7bdc3a', '#c44dff'] },
+      chest: { ttl: 3, hpMul: 0.6, lure: 7, r: 2.6, coef: 2.6, stun: 1.2, knockback: 6, coins: 8, coinCoef: 0.35, coinRange: 3 },
+      trick: { cd: 30, range: 7.5, targets: 6, step: 0.16, coef: 1.6, coefPerPip: 0.35, stun: 0.9, mark: 5, coins: 4, coinCoef: 0.3,
+        coinRange: 2.6, finalCoins: 12, finalCoinCoef: 0.45, finalR: 2.6, finalCoef: 1.2 },
+    },
+  },
+
+  swashbuckler: {
+    id: 'swashbuckler', from: 'thief', tier: 3, name: 'Swashbuckler', color: '#d62839',
+    blurb: 'En garde! Roll to parry, answer every blow with a flashy riposte, then spin into a storm of blades.',
+    mods: { hp: 1.05, power: 1, speed: 1 },
+    look: {
+      outfit: { style: 'vest', primary: '#d62839', secondary: '#f1e9da', accent: '#ffd23f' },
+      hat: { style: 'feather', color: '#1d3557' },
+      cape: { color: '#9d0208' },
+      held: { style: 'sword', color: '#e0e6ed', glow: '#ffd23f' },
+      aura: { style: 'glow', color: '#ffd23f' },
+    },
+    passive: { name: 'Parry & Riposte', desc: 'Dodge Roll opens a parry window. An attack in that window is parried and you lunge back with a huge critical riposte.' },
+    ultimate: { id: 'flourish', name: 'Flourish', icon: 'sword', unlock: 15, cd: 28,
+      desc: 'Finisher: spin into a storm of rapier blades that spiral out around you, then end it with a Touche blast.' },
+    kit: {
+      dmgScale: 1, lateScale: [[15, 1.3], [16, 1.16], [18, 1.15], [20, 1.2]],
+      colors: { main: '#d62839', gold: '#ffd23f', steel: '#e0e6ed', cream: '#f1e9da' },
+      parry: { window: 0.65, reach: 4.5, icd: 0.2, maxPerWindow: 3 },
+      riposte: { coef: 2.6, critMult: 2.5, knockback: 5, stun: 0.6, pips: 2, hitStop: 0.08 },
+      flourish: { cd: 28, dur: 2.2, durPerPip: 0.16, speedMul: 1.25, dmgTaken: -0.5, bladeEvery: 0.09, bladeTurn: 0.62, bladeCoef: 0.28,
+        bladeSpeed: 10, bladeRange: 4.2, spinEvery: 0.25, spinR: 1.8, spinCoef: 0.45, finalR: 3.2, finalCoef: 2.4, finalBlades: 12 },
+    },
+  },
+
+  windwalker: {
+    id: 'windwalker', from: 'ninja', tier: 3, name: 'Windwalker', color: '#7fdbff',
+    blurb: 'Faster than the wind. Every dash slices the air into blades, and your clones become living tornadoes.',
+    mods: { hp: 1, power: 1, speed: 1 },
+    look: {
+      outfit: { style: 'gi', primary: '#e8fbff', secondary: '#4ea8de', accent: '#7fdbff' },
+      hat: { style: 'bandana', color: '#4ea8de' },
+      cape: { color: '#bde0fe' },
+      held: { style: 'shuriken', color: '#e8fbff', glow: '#7fdbff' },
+      aura: { style: 'storm', color: '#bde0fe' },
+    },
+    passive: { name: 'Tailwind', desc: 'You move 15% faster. Dodge Roll and Shadow Step cut a wind blade along your path and fling three wind crescents ahead.' },
+    ultimate: { id: 'cyclone_clones', name: 'Cyclone Clones', icon: 'storm', unlock: 15, cd: 30,
+      desc: 'Finisher: two spinning tornado clones (three at full pips) hunt enemies, pull them in and shred them.' },
+    kit: {
+      dmgScale: 1, lateScale: [[15, 1.04], [16, 1.06], [18, 1.03], [20, 1.07]],
+      colors: { main: '#7fdbff', white: '#e8fbff', sky: '#4ea8de', pale: '#bde0fe' },
+      tailwind: { speed: 1.15 },
+      blades: { icd: 0.4, w: 1.3, pathCoef: 0.9, n: 3, spread: 40, coef: 0.6, speed: 13, range: 5, size: 1.3 },
+      cyclone: { cd: 30, n: 2, nFull: 3, dur: 7, speed: 6.5, seek: 8, r: 1.5, pullR: 2.6, pull: 5, tick: 0.25, coef: 0.55,
+        endR: 2.2, endCoef: 1.5, scale: 1.15, hpMul: 0.3 },
+    },
+  },
+
+  smokestep: {
+    id: 'smokestep', from: 'ninja', tier: 3, name: 'Smokestep', color: '#6b5b95',
+    blurb: 'The unseen blade. Step through the shadows, vanish, and land one devastating critical strike.',
+    mods: { hp: 1, power: 1, speed: 1 },
+    look: {
+      outfit: { style: 'cloak', primary: '#2b2440', secondary: '#120e1f', accent: '#ff4d6d' }, hood: true,
+      cape: { color: '#1c1630' },
+      held: { style: 'shuriken', color: '#8d99ae', glow: '#ff4d6d' },
+      aura: { style: 'shadow', color: '#6b5b95' },
+    },
+    passive: { name: 'Shadowmeld', desc: 'Shadow Step turns you invisible for 2 seconds, and your next hit is an Assassinate: a huge critical.' },
+    ultimate: { id: 'smoke_assassins', name: 'Smoke Assassins', icon: 'smoke', unlock: 15, cd: 30,
+      desc: 'Finisher: three smoke assassins (four at full pips) teleport from enemy to enemy, striking from the shadows.' },
+    kit: {
+      dmgScale: 1, lateScale: [[15, 1.18], [16, 1.12], [18, 1.1], [20, 1.18]],
+      colors: { main: '#6b5b95', blood: '#ff4d6d', smoke: '#2b2440', pale: '#b8a9e0' },
+      shadowmeld: { stealth: 2, speed: 0.2, window: 2.5, critMult: 3.5 },
+      assassins: { cd: 30, n: 3, nFull: 4, dur: 6, every: 0.5, range: 8, coef: 1.3, critChance: 0.3, stealth: 1.5, hpMul: 0.3 },
+    },
+  },
 };

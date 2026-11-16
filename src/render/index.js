@@ -1,4 +1,8 @@
 // Renderer factory: dynamic import so 2D players never download three; 3D falls back to 2D.
+// Round 2: 3D is the game's look (config.defaultRenderer); 2D is only the automatic fallback when WebGL fails, and
+// a hidden developer override (`?renderer=2d`).
+import { config } from '../config.js';
+
 const LOADERS = {
   '2d': () => import('./r2d/index.js'),
   '3d': () => import('./r3d/index.js'),
@@ -11,7 +15,7 @@ const LOADERS = {
  * @returns {Promise<import('../contracts.js').Renderer>} the renderer actually created (check `.id`)
  */
 export async function createRenderer(id, hostEl, opts = {}) {
-  const want = LOADERS[id] ? id : '2d';
+  const want = LOADERS[id] ? id : (LOADERS[config.defaultRenderer] ? config.defaultRenderer : '3d');
   try {
     const mod = await LOADERS[want]();
     const r = mod.create();

@@ -668,7 +668,7 @@ export default {
       refreshLook();
       if (!opts.quiet) {
         celebrate(def.color || '#ffd24a');
-        game.toast(`You are now a ${def.name}!`, 'good');
+        game.toast(`You are now ${/^[AEIOU]/i.test(def.name) ? 'an' : 'a'} ${def.name}!`, 'good');
       }
       emit('class:set', { classId: id });
       emitUnlocks(before);
@@ -690,7 +690,7 @@ export default {
       refreshLook();
       if (!opts.quiet) {
         celebrate(def.color || '#ffd24a');
-        game.toast(`You are now a ${def.name}!`, 'good');
+        game.toast(`You are now ${/^[AEIOU]/i.test(def.name) ? 'an' : 'a'} ${def.name}!`, 'good');
       }
       emit('spec:set', { specId: id });
       emitUnlocks(before);

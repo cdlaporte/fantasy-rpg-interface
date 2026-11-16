@@ -1,13 +1,16 @@
-// Title screen (UI-only, runs before the game exists): name entry, look of the game (2D Pixel / 3D Toy Box),
-// New Game / Continue (saves from opts.storage under flinkerton.v1.<name>), controls card. Fully keyboard-driven.
-// Resolves {name, renderer: '2d'|'3d', continueSave: saveJson|null}.
+// Title screen (UI-only, runs before the game exists): name entry, New Game / Continue (saves from opts.storage
+// under flinkerton.v1.<name>), Options (Settings; Teacher options behind the PIN), controls card. Keyboard and mouse.
+// Round 2: no look choice (3D is the game; `?renderer=2d` stays a hidden developer override).
+// Resolves {name, renderer: '2d'|'3d', continueSave: saveJson|null, teacher: boolean}.
 import { el, add, setText, setClass, clear, keycap } from './dom.js';
 import { sanitizeName, finalName, listSaves, NAME_MAX, SAVE_PREFIX } from './format.js';
-import { controlsCard } from './modalKit.js';
+import { controlsCard, hints } from './modalKit.js';
 import { buildPortrait } from './portraits.js';
 import { blitGrid } from './pixelart.js';
-
-const PREF_KEY = 'flinkerton.ui.renderer';
+import { createSettings, savedQuality, MUTE_KEY } from './settings.js';
+import {
+  createPinPad, createTeacherOptions, isTeacherUnlocked, setTeacherUnlocked, isTeacherSave, teacherSaveName,
+} from './teacher.js';
 
 /** Procedural pixel skyline: rolling hills, trees and the Academy on its rise (340x90 art pixels, shown at 4x). */
 function drawSkyline(c) {
@@ -52,13 +55,15 @@ function drawSkyline(c) {
 export function createTitle(opts = {}) {
   const storage = opts.storage || null;
   const params = opts.params || {};
-  const maxLen = (opts.config && opts.config.nameMaxLength) || NAME_MAX;
-  const prefix = (opts.config && opts.config.saveKeyPrefix) || SAVE_PREFIX;
+  const config = opts.config || {};
+  const maxLen = config.nameMaxLength || NAME_MAX;
+  const prefix = config.saveKeyPrefix || SAVE_PREFIX;
+  const renderer = params.renderer || config.defaultRenderer || '3d';
 
   return new Promise((resolve) => {
-    const saves = listSaves(storage, prefix);
-    let renderer = params.renderer || (storage && storage.get && storage.get(PREF_KEY)) || '2d';
-    if (renderer !== '3d') renderer = '2d';
+    const allSaves = listSaves(storage, prefix);
+    // teacher games are only offered from Teacher options (behind the PIN)
+    const saves = allSaves.filter((s) => !isTeacherSave(s.save));
 
     const screen = el('div', 'title-screen');
     const sky = el('div', 'title-sky');
@@ -92,49 +97,34 @@ export function createTitle(opts = {}) {
     const nameHint = el('div', 'title-hint');
     add(nameRow, nameLab, nameWrap, nameHint);
 
-    // look of the game
-    const lookRow = el('div', 'title-row row-look');
-    const lookLab = el('div', 'title-label pxfont', 'LOOK OF THE GAME');
-    const looks = el('div', 'look-opts');
-    const mkLook = (id, name, sub) => {
-      const b = el('div', 'look-opt');
-      b.dataset.id = id;
-      const art = el('div', 'look-art look-art-' + id);
-      add(b, art, el('div', 'look-opt-name pxfont', name), el('div', 'look-opt-sub', sub));
-      b.addEventListener('click', () => { setRenderer(id); focusRow(1); });
-      return b;
-    };
-    const l2 = mkLook('2d', '2D Pixel', 'Crisp pixel art. Fastest.');
-    const l3 = mkLook('3d', '3D Toy Box', 'Chunky 3D toys.');
-    add(looks, l2, l3);
-    add(lookRow, lookLab, looks);
-
     // buttons
     const btnRow = el('div', 'title-row row-btns');
     const bNew = el('button', 'tbtn tbtn-new pxfont', 'NEW GAME');
     const bCont = el('button', 'tbtn tbtn-cont pxfont', 'CONTINUE');
-    bNew.type = 'button'; bCont.type = 'button';
+    const bOpt = el('button', 'tbtn tbtn-opt pxfont', 'OPTIONS');
+    bNew.type = 'button'; bCont.type = 'button'; bOpt.type = 'button';
     bCont.disabled = saves.length === 0;
-    add(btnRow, bNew, bCont);
+    const btns = [bNew, bCont, bOpt];
+    add(btnRow, bNew, bCont, bOpt);
     const contList = el('div', 'cont-list');
     contList.hidden = true;
 
-    add(card, nameRow, lookRow, btnRow, contList);
+    add(card, nameRow, btnRow, contList);
     const ctl = controlsCard('CONTROLS');
     add(main, card, ctl);
     const foot = el('div', 'title-foot');
     add(foot, keycap('↑'), keycap('↓'), el('span', null, 'choose'), keycap('←'), keycap('→'), el('span', null, 'change'), keycap('Enter'), el('span', null, 'start'));
-    add(screen, sky, logo, main, foot);
+    const subWrap = el('div', 'title-subwrap');
+    subWrap.hidden = true;
+    add(screen, sky, logo, main, subWrap, foot);
     document.body.appendChild(screen);
 
-    let row = 0;        // 0 name, 1 look, 2 buttons, 3 continue list
-    let btn = 0;        // 0 new, 1 continue
+    let row = 0;        // 0 name, 1 buttons, 3 continue list
+    let btn = 0;        // 0 new, 1 continue, 2 options
     let contIdx = 0;
     let confirmNew = false;
     let done = false;
-
-    function setRenderer(id) { renderer = id; setClass(l2, 'on', id === '2d'); setClass(l3, 'on', id === '3d'); }
-    setRenderer(renderer);
+    let sub = null;     // active sub-screen {el, key(e), destroy()}
 
     function existingSave(name) { return saves.find((s) => s.name.toLowerCase() === name.toLowerCase()) || null; }
 
@@ -158,10 +148,8 @@ export function createTitle(opts = {}) {
     function focusRow(r) {
       row = r;
       setClass(nameRow, 'focus', r === 0);
-      setClass(lookRow, 'focus', r === 1);
-      setClass(btnRow, 'focus', r === 2);
-      setClass(bNew, 'sel', r === 2 && btn === 0);
-      setClass(bCont, 'sel', r === 2 && btn === 1);
+      setClass(btnRow, 'focus', r === 1);
+      btns.forEach((b, i) => setClass(b, 'sel', r === 1 && btn === i));
       if (r === 0) input.focus(); else input.blur();
       if (r !== 3) { contList.hidden = true; }
     }
@@ -194,34 +182,131 @@ export function createTitle(opts = {}) {
     function finish(result) {
       if (done) return;
       done = true;
-      try { if (storage && storage.set) storage.set(PREF_KEY, result.renderer); } catch { /* ignore */ }
+      closeSub();
       window.removeEventListener('keydown', onKey, true);
       screen.classList.add('leaving');
       setTimeout(() => screen.remove(), 350);
-      resolve(result);
+      resolve(Object.assign({ renderer, teacher: false }, result));
     }
 
     function startNew() {
       const nm = finalName(input.value, maxLen);
       if (!nm) { focusRow(0); nameWrap.classList.remove('shake'); void nameWrap.offsetWidth; nameWrap.classList.add('shake'); setText(nameHint, 'Type your name first!'); return; }
       if (existingSave(nm) && !confirmNew) { confirmNew = true; setText(bNew, 'START OVER?'); setText(nameHint, `Press New Game again to start a fresh adventure as ${nm}.`); return; }
-      finish({ name: nm, renderer, continueSave: null });
+      finish({ name: nm, continueSave: null });
     }
 
     function startContinue() {
       const s = saves[contIdx];
       if (!s) return;
-      finish({ name: s.name, renderer, continueSave: s.save });
+      finish({ name: s.name, continueSave: s.save });
+    }
+
+    // ---- sub-screens: options menu, settings, PIN pad, teacher options
+    function openSub(make, big = true) {
+      closeSub();
+      sub = make();
+      setClass(screen, 'sub-big', big);
+      subWrap.appendChild(sub.el);
+      subWrap.hidden = false;
+      main.hidden = true;
+      input.blur();
+    }
+    function closeSub() {
+      if (!sub) return;
+      try { sub.destroy(); } catch { /* ignore */ }
+      sub = null;
+      subWrap.hidden = true;
+      main.hidden = false;
+    }
+    function backToMenu() { closeSub(); btn = 2; focusRow(1); }
+
+    function openOptions(start = 0) {
+      openSub(() => {
+        const box = el('div', 'opt-menu px-box');
+        const items = [
+          { label: 'Settings', sub: 'Keys, sound and graphics', fn: openSettings },
+          { label: 'Teacher options', sub: 'For Mr. Laporte (PIN)', fn: openTeacher },
+          { label: 'Back', sub: '', fn: backToMenu },
+        ];
+        add(box, el('div', 'opt-title pxfont', 'OPTIONS'));
+        let i = start;
+        const nodes = items.map((it, k) => {
+          const b = el('button', 'opt-item');
+          b.type = 'button';
+          add(b, el('span', 'opt-label pxfont', it.label), it.sub ? el('span', 'opt-sub', it.sub) : null);
+          b.addEventListener('mouseenter', () => { i = k; paint(); });
+          b.addEventListener('click', (e) => { e.preventDefault(); it.fn(); });
+          box.appendChild(b);
+          return b;
+        });
+        box.appendChild(hints([['↑', '↓', 'Choose'], ['Enter', 'OK'], ['Esc', 'Back']]));
+        function paint() { nodes.forEach((n, k) => setClass(n, 'sel', k === i)); }
+        paint();
+        return {
+          el: box,
+          key(e) {
+            const c = e.code;
+            if (c === 'ArrowUp' || c === 'KeyW') { i = (i + items.length - 1) % items.length; paint(); return true; }
+            if (c === 'ArrowDown' || c === 'KeyS') { i = (i + 1) % items.length; paint(); return true; }
+            if (c === 'Enter' || c === 'Space' || c === 'NumpadEnter') { if (!e.repeat) items[i].fn(); return true; }
+            if (c === 'Escape' || c === 'Backspace') { backToMenu(); return true; }
+            return true;
+          },
+          destroy() { box.remove(); },
+        };
+      }, false);
+    }
+
+    function openSettings() {
+      openSub(() => createSettings({
+        storage,
+        quality: () => savedQuality(storage) ?? config.defaultQuality ?? 1,
+        setQuality: () => {},   // stored by the settings screen; main.js applies it at start
+        muted: () => !!(storage && storage.get && storage.get(MUTE_KEY) === '1'),
+        setMuted: (b) => { try { if (storage && storage.set) storage.set(MUTE_KEY, b ? '1' : '0'); } catch { /* ignore */ } },
+        onClose: () => openOptions(0),
+      }));
+    }
+
+    function openTeacher() {
+      if (isTeacherUnlocked()) { openTeacherOptions(); return; }
+      openSub(() => createPinPad({
+        pin: config.teacherPin || '9631',
+        onSuccess: () => { setTeacherUnlocked(true); openTeacherOptions(); },
+        onCancel: () => openOptions(1),
+      }), false);
+    }
+
+    function openTeacherOptions() {
+      openSub(() => createTeacherOptions({
+        storage,
+        saves: allSaves,
+        onBack: () => openOptions(1),
+        onPlay: ({ continueSave }) => {
+          if (continueSave) {
+            const nm = isTeacherSave(continueSave) ? continueSave.name : teacherSaveName(continueSave.name);
+            finish({ name: nm, continueSave, teacher: true });
+          } else {
+            finish({ name: teacherSaveName(finalName(input.value, maxLen) || 'Teacher'), continueSave: null, teacher: true });
+          }
+        },
+      }));
     }
 
     function onKey(e) {
       const c = e.code;
+      if (sub) {
+        if (sub.key(e)) e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
       if (row === 3) {
         e.preventDefault();
         if (c === 'ArrowUp' || c === 'KeyW') { contIdx = (contIdx + saves.length - 1) % saves.length; renderCont(); }
         else if (c === 'ArrowDown' || c === 'KeyS') { contIdx = (contIdx + 1) % saves.length; renderCont(); }
         else if (c === 'Enter' || c === 'Space') startContinue();
-        else if (c === 'Escape' || c === 'Backspace') { focusRow(2); }
+        else if (c === 'Escape' || c === 'Backspace') { focusRow(1); }
         return;
       }
       if (row === 0) {
@@ -229,23 +314,24 @@ export function createTitle(opts = {}) {
         if (c === 'ArrowDown' || c === 'Tab') { e.preventDefault(); focusRow(1); return; }
         return; // typing goes to the input
       }
-      if (c === 'Tab') { e.preventDefault(); focusRow((row + (e.shiftKey ? 2 : 1)) % 3); return; }
-      if (c === 'ArrowUp' || c === 'KeyW') { e.preventDefault(); focusRow(Math.max(0, row - 1)); return; }
-      if (c === 'ArrowDown' || c === 'KeyS') { e.preventDefault(); focusRow(Math.min(2, row + 1)); return; }
+      if (c === 'Tab') { e.preventDefault(); focusRow(row === 0 ? 1 : 0); return; }
+      if (c === 'ArrowUp' || c === 'KeyW') { e.preventDefault(); focusRow(0); return; }
+      if (c === 'ArrowDown' || c === 'KeyS') { e.preventDefault(); focusRow(1); return; }
       if (row === 1 && (c === 'ArrowLeft' || c === 'ArrowRight' || c === 'KeyA' || c === 'KeyD')) {
-        e.preventDefault(); setRenderer(renderer === '2d' ? '3d' : '2d'); return;
+        e.preventDefault();
+        const d = c === 'ArrowLeft' || c === 'KeyA' ? -1 : 1;
+        do { btn = (btn + d + btns.length) % btns.length; } while (btns[btn].disabled);
+        focusRow(1);
+        return;
       }
-      if (row === 1 && (c === 'Enter' || c === 'Space')) { e.preventDefault(); focusRow(2); return; }
-      if (row === 2 && (c === 'ArrowLeft' || c === 'ArrowRight' || c === 'KeyA' || c === 'KeyD')) {
-        e.preventDefault(); btn = btn === 0 && !bCont.disabled ? 1 : 0; focusRow(2); return;
-      }
-      if (row === 2 && (c === 'Enter' || c === 'Space')) { e.preventDefault(); if (btn === 0) startNew(); else openContinue(); return; }
+      if (row === 1 && (c === 'Enter' || c === 'Space')) { e.preventDefault(); if (btn === 0) startNew(); else if (btn === 1) openContinue(); else openOptions(0); return; }
       if (c === 'Escape') { e.preventDefault(); focusRow(0); }
     }
     window.addEventListener('keydown', onKey, true);
     bNew.addEventListener('click', () => { btn = 0; startNew(); });
     bCont.addEventListener('click', () => { btn = 1; openContinue(); });
-    input.addEventListener('focus', () => { if (row !== 0) focusRow(0); });
+    bOpt.addEventListener('click', () => { btn = 2; focusRow(1); openOptions(0); });
+    input.addEventListener('focus', () => { if (row !== 0 && !sub) focusRow(0); });
     if (saves.length) { const last = saves[0]; input.value = ''; setText(nameHint, `Welcome back! Choose Continue to play as ${last.name}.`); }
     focusRow(0);
   });

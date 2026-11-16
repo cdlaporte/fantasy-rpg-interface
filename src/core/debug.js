@@ -516,10 +516,12 @@ export default {
     api.teacher = {
       enabled: on,
       addXp: gate((n) => { P().addXp(n); return true; }),
-      levelUp: gate(() => { const pr = P(); if (pr.level >= ((game.config && game.config.levelCap) || 12)) return false; pr.setLevel(pr.level + 1); return true; }),
-      levelDown: gate(() => { const pr = P(); if (pr.level <= 1) return false; pr.setLevel(pr.level - 1); return true; }),
-      setLevel: gate((n) => { P().setLevel(n); return true; }),
-      setClass: gate((id) => P().setClass(id)),
+      // level jumps are quiet (no toast / burst per click); 'levelup' / 'level:set' events still fire
+      levelUp: gate(() => { const pr = P(); if (pr.level >= ((game.config && game.config.levelCap) || 12)) return false; pr.setLevel(pr.level + 1, { quiet: true }); return true; }),
+      levelDown: gate(() => { const pr = P(); if (pr.level <= 1) return false; pr.setLevel(pr.level - 1, { quiet: true }); return true; }),
+      setLevel: gate((n) => { P().setLevel(n, { quiet: true }); return true; }),
+      // the plain class: picking Warrior while a Knight drops the subclass
+      setClass: gate((id) => { const pr = P(); if (pr.classId === id && pr.specId && pr.classDef(id)) { pr.specId = null; pr.pendingSpec = false; } return pr.setClass(id); }),
       setSpec: gate((id) => P().setSpec(id)),
       god: gate((b) => { api.god(b); return true; }),
       isGod: () => god,

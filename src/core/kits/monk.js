@@ -226,6 +226,7 @@ function updateKick(game, p) {
   game.kits.gain(p, s.combo.kiPerHit);
   p.data.dash.remain = 0;            // stop on the hit; the dash ends next step and onEnd chains on
 }
+const KICK_PICK = { range: 5, mode: 'nearest', cone: 100, angle: 0, los: true };
 function castKick(game, p, ctx) {
   const s = S(game), kk = s.kick;
   const wind = boon(game, 'wind_step');
@@ -234,7 +235,12 @@ function castKick(game, p, ctx) {
     game.combat.status(p, 'haste', s.wind_step.hasteT, s.wind_step.haste);
     game.fx({ type: 'sparkle', x: p.x, y: p.y, n: 10, color: s.jade, r: 0.6 });
   }
-  kickLeg(game, p, ctx.moveAngle, kk.dist, 0);
+  // round 2: the first leg homes on the nearest enemy within a 100-degree cone of the move direction (and a little
+  // beyond the kick's reach), else kicks straight ahead.
+  KICK_PICK.range = kk.dist + 1; KICK_PICK.angle = ctx.moveAngle;
+  const t = game.abilities.pickTarget(p, KICK_PICK);
+  if (t) kickLeg(game, p, Math.atan2(t.y - p.y, t.x - p.x), Math.max(kk.dist, Math.hypot(t.x - p.x, t.y - p.y) + 0.4), 0);
+  else kickLeg(game, p, ctx.moveAngle, kk.dist, 0);
   p.data.kit.mo_still = 0;
   return undefined;
 }

@@ -3,7 +3,7 @@
 // (auto-repeat or raw charge/hold modes, cast/hold/release, unlock levels, cooldowns, costs), wires combat events
 // to kit hooks, runs kit.update, and fills the kit HUD fields.
 import { ABILITY_SLOTS, DT } from '../../contracts.js';
-import { angleFromDir } from '../math.js';
+import { angleFromDir, dirFromAngle, wrapAngle } from '../math.js';
 import novice from './novice.js';
 import warrior from './warrior.js';
 import mage from './mage.js';
@@ -136,6 +136,35 @@ export default {
     }
     let lockedTextT = -9;
 
+    // ---- round 2: 8-way aim + light aim assist ----
+    const DIAG_GRACE = 0.1;                       // s: a diagonal survives a staggered release of its two keys
+    const ASSIST_CONE = 36;                       // deg (+-18) around the aim
+    const assistOpts = { range: 7, mode: 'nearest', cone: ASSIST_CONE, angle: 0, los: true, out: { x: 0, y: 0 } };
+    const isDiag = (a) => { const m = Math.abs(a % (Math.PI / 2)); return m > 0.3 && m < Math.PI / 2 - 0.3; };
+    /** Aim angle while an attack key is held: InputState.attackAngle (8 ways) when the input provides it, else the DIR. */
+    function aimAngle(st, inp, dir, pressed) {
+      const raw = inp.attackAngle;
+      if (typeof raw !== 'number' || raw !== raw) return angleFromDir(dir);
+      st.has8 = true;
+      let a = raw;
+      if (isDiag(a)) { st.diagA = a; st.diagT = game.t; }
+      else if (!pressed && game.t - st.diagT <= DIAG_GRACE && Math.abs(wrapAngle(a - st.diagA)) < Math.PI / 4 + 0.01) a = st.diagA;
+      st.aim = a;
+      return a;
+    }
+    /** Ranged basics (kit `aimRange` > 0): snap ctx.angle onto the nearest enemy within +-18 deg and range. */
+    function aimRangeOf(L, p, r) {
+      const k = L.basicKit, v = k && k.aimRange;
+      return typeof v === 'function' ? v(game, p, r) || 0 : v || 0;
+    }
+    function assist(p, range) {
+      assistOpts.range = range; assistOpts.angle = ctx.angle; assistOpts.exclude = null;
+      const t = game.abilities.pickTarget && game.abilities.pickTarget(p, assistOpts);
+      if (!t) return;
+      const o = assistOpts.out;
+      ctx.angle = Math.atan2(o.y - p.y, o.x - p.x);
+    }
+
     const api = {
       registry: KITS,
       /** Preallocated kitHud object kits may fill and assign in their hud hook: hud.kitHud = game.kits.kitHud. */
@@ -162,7 +191,7 @@ export default {
         ent.data.kitL = L; ent.data.kitRef = L;
         ent.data.classId = classId || null; ent.data.specId = specId || null;
         ent.data.kit = { speedMul: 1, lookPatch: null };
-        ent.data.kitT = { basicT: 0, heldT: 0, basicHeld: false, holding: { space: null, q: null, f: null, shift: null } };
+        ent.data.kitT = { basicT: 0, heldT: 0, basicHeld: false, holding: { space: null, q: null, f: null, shift: null }, has8: false, aim: 0, diagA: 0, diagT: -9 };
         const rd = L.resource;
         const prev = ent.data.resource;
         if (rd) {
@@ -219,7 +248,7 @@ export default {
        */
       dispatch(p, inp, opts) {
         const L = api.active(p);
-        const st = p.data.kitT || (p.data.kitT = { basicT: 0, heldT: 0, basicHeld: false, holding: { space: null, q: null, f: null, shift: null } });
+        const st = p.data.kitT || (p.data.kitT = { basicT: 0, heldT: 0, basicHeld: false, holding: { space: null, q: null, f: null, shift: null }, has8: false, aim: 0, diagA: 0, diagT: -9 });
         const dt = DT;
         if (opts.locked) { releaseAll(p); st.basicT = Math.max(0, st.basicT - dt); return; }
         fillCtx(p, inp, L, dt);
@@ -233,17 +262,29 @@ export default {
           const relDir = inp.attackReleased;
           const released = relDir >= 0 && dir < 0;
           if (dir >= 0) {
-            ctx.dir = dir; ctx.angle = angleFromDir(dir);
-            p.dir = dir; p.angle = ctx.angle; p.data.faceT = Math.max(p.data.faceT || 0, 0.12);
-          } else if (released) { ctx.dir = relDir; ctx.angle = angleFromDir(relDir); }
+            const a = aimAngle(st, inp, dir, pressed);
+            ctx.dir = dir; ctx.angle = a;
+            p.dir = dir; p.angle = a; p.data.faceT = Math.max(p.data.faceT || 0, 0.12);
+          } else if (released) {
+            ctx.dir = relDir;
+            // round 2: 8-way aim. A charge kit fires where the keys pointed while held; the two keys of a diagonal are
+            // rarely released on the same step, so a diagonal held within the grace window wins over the last key.
+            if (st.has8) {
+              ctx.angle = game.t - st.diagT <= DIAG_GRACE ? st.diagA : st.aim;
+              ctx.dir = dirFromAngle(ctx.angle);
+            } else ctx.angle = angleFromDir(relDir);
+          }
           ctx.pressed = pressed; ctx.held = dir >= 0; ctx.released = released; ctx.heldT = st.heldT;
+          const ar = aimRangeOf(L, p, ctx.rank);
           if (L.basicMode === 'auto') {
             if (dir >= 0 && st.basicT <= 0) {
+              if (ar > 0) assist(p, ar);
               const r = L.basic.call(L.basicKit, game, p, ctx);
               if (r !== false) st.basicT = (typeof r === 'number' ? r : intervalOf(L, p, ctx.rank));
             }
           } else if (dir >= 0 || released) {
             st.basicHeld = dir >= 0;
+            if (ar > 0) assist(p, ar);
             L.basic.call(L.basicKit, game, p, ctx);
           }
           if (st.basicT < 0) st.basicT = 0;

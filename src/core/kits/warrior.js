@@ -14,6 +14,7 @@ export const TAG_BASIC = Object.freeze(['wbasic']);
 export const TAG_SKILL = Object.freeze(['wskill']);
 const UNSTOPPABLE_MODS = Object.freeze({ kbImmune: 1, slowImmune: 1 });
 const FLARE_AURA = Object.freeze({ style: 'flame', color: '#ff3b2a' });
+const BASH_PICK = { range: 3, mode: 'nearest', cone: 50, angle: 0, los: true };   // round 2: Shield Bash homing
 
 // ---------------------------------------------------------------------------------------------------------------
 // shared helpers (exported for the spec kits)
@@ -288,8 +289,12 @@ const KIT = {
         const col = W.colors(game);
         k.bashX0 = p.x; k.bashY0 = p.y; k.bashRaged = false; k.bashChained = false;
         game.fx({ type: 'burst', x: p.x, y: p.y, n: 10, r: 0.6, color: col.steel });
+        // round 2: a light homing on the nearest enemy within 50 degrees of the move direction and the bash's reach.
+        BASH_PICK.range = N.dist + 0.6; BASH_PICK.angle = ctx.moveAngle;
+        const t = game.abilities.pickTarget(p, BASH_PICK);
+        const a = t ? Math.atan2(t.y - p.y, t.x - p.x) : ctx.moveAngle;
         game.abilities.use('dash', p, {
-          angle: ctx.moveAngle, dist: N.dist, speed: N.speed, dmg: N.dmg, stopOnHit: true, status: { stun: N.stun },
+          angle: a, dist: N.dist, speed: N.speed, dmg: N.dmg, stopOnHit: true, status: { stun: N.stun },
           knockback: N.knockback, hitRadius: N.hitRadius, color: col.rage, hitStop: 0.06, onHit: bashHit, onEnd: bashEnd,
         });
         return undefined;

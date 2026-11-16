@@ -8,7 +8,7 @@ import data from '../../src/data/index.js';
 import { DT, makeInputState } from '../../src/contracts.js';
 import { mk } from './kit-warrior.test.mjs';
 
-export const TARGET = Object.fromEntries(Object.entries({ 3: 10, 5: 17, 8: 30, 10: 40, 12: 52 }).map(([k, v]) => [k, v * config.numberScale]));   // CLASSES band x number scale
+export const TARGET = Object.fromEntries(Object.entries({ 3: 11, 5: 19.5, 8: 35, 10: 47, 12: 62 }).map(([k, v]) => [k, v * config.numberScale]));   // round 2 band (docs/notes/r2c.md: the CLASSES band x the +25% power-per-level growth) x number scale
 // A sensible boon pick per spec (boons at 4, 6, 8, 10, 12; at least one spec boon from 8).
 export const LOADOUT = {
   warrior: ['cleaving_wind', 'rage_spikes', 'aftershock', 'ricochet_bash', 'blazing_bash'],
@@ -30,10 +30,17 @@ const dirTo = (dx, dy) => (Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : 3) : (dy 
 export function fight(spec, level, seed = 3) {
   const g = mk({ spec, level, ring: 0, at: { x: 11, y: 19 }, seed, boons: boonsAt(spec, level) });
   const { game, p } = g;
+  // Enemy hp from the balance sheet (6 L^1.4, elite x2, x8 so it lasts), independent of the zone data (round 2 cut
+  // the forest and intro hp x0.6; the band measures the kit, not the content).
+  const sheet = 6 * Math.pow(level, 1.4) * config.numberScale;
   const tough = game.ents.spawn('giant_rat', 15, 19, { level });
-  tough.hp = tough.hpMax = tough.hpMax * 8;
+  tough.hp = tough.hpMax = Math.round(sheet * 2 * 8);
   const foes = [tough];
-  for (let i = 0; i < 4; i++) foes.push(game.ents.spawn('rat', 11 + Math.cos(i * 1.6) * 3, 19 + Math.sin(i * 1.6) * 3, { level }));
+  for (let i = 0; i < 4; i++) {
+    const r = game.ents.spawn('rat', 11 + Math.cos(i * 1.6) * 3, 19 + Math.sin(i * 1.6) * 3, { level });
+    r.hp = r.hpMax = Math.round(sheet);
+    foes.push(r);
+  }
   const hp = new Map(foes.map((f) => [f.id, f.hp]));
   let eff = 0;
   game.bus.on('hit', (e) => { if (!hp.has(e.target.id)) return; const h = hp.get(e.target.id); const d = Math.min(h, e.amount); eff += d; hp.set(e.target.id, h - d); });

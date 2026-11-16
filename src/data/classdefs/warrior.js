@@ -5,7 +5,7 @@ export default {
   warrior: {
     id: 'warrior', name: 'Warrior', color: '#e2503c', pickable: true,
     blurb: 'The wall and the hammer. Heavy swings, short reach, and everything you hit goes flying. Fighting fills your Rage.',
-    base: { hp: 44, hpPerLevel: 9, power: 5, powerPerLevel: 1.3, speed: 3.4, defense: 0 },
+    base: { hp: 44, hpPerLevel: 9, power: 5, powerPerLevel: 1.625, speed: 3.4, defense: 0 },
     basic: { name: 'Sword Arc', icon: 'sword', desc: 'A wide, heavy sword swing that shoves enemies back.' },
     ranks: {
       1: { name: 'Sword Arc', icon: 'sword', desc: 'A wide, heavy sword swing that shoves enemies back.' },
@@ -29,15 +29,26 @@ export default {
       // rank II: every `every`-th swing is the heavy swing
       heavy_hand: { every: 3, arc: 180, range: 1.3, dmg: 0.58, knockback: 12, hitStop: 0.08, shake: 0.18 },
       shield_bash: { dist: 2.5, speed: 14, dmg: 0.7, stun: 0.8, knockback: 11, rage: 15, hitRadius: 0.55 },
-      war_cry: { r: 3, dmg: 0.4, knockback: 8, slow: 0.4, slowDur: 3, power: 0.3, dur: 5 },
+      war_cry: { r: 3.45, dmg: 0.3, knockback: 8, slow: 0.4, slowDur: 3, power: 0.3, dur: 5 },
     },
     companion: {
-      npc: 'bram', name: 'Bram', mult: 0.7, brain: 'ally_melee',
-      stats: { hp: 44, hpPerLevel: 9, power: 5, powerPerLevel: 1.3, speed: 3.4 },
-      basic: { use: 'melee_arc', name: 'Sword Arc', arc: 100, range: 1.2, dmg: 0.46, knockback: 5, cd: 0.6, windup: 0.1,
+      // round 2: 100% of the class numbers (was 0.7); ability2 from player level 5; `upgrade` when the player specializes.
+      npc: 'bram', name: 'Bram', mult: 1, brain: 'ally_melee',
+      stats: { hp: 44, hpPerLevel: 9, power: 5, powerPerLevel: 1.625, speed: 3.4 },
+      basic: { use: 'melee_arc', name: 'Sword Arc', arc: 100, range: 1.2, dmg: 0.55, knockback: 5, cd: 0.6, windup: 0.1,
         style: 'sword', color: '#e8eef5' },
       ability: { use: 'dash', name: 'Shield Bash', dist: 2.5, speed: 14, dmg: 0.7, status: { stun: 0.8 }, knockback: 8,
         stopOnHit: true, cd: 5, range: 3, minRange: 1.3, windup: 0.15, color: '#e2503c' },
+      ability2: { unlock: 5, use: 'aoe_ring', name: 'War Cry', r: 3.45, dmg: 0.3, knockback: 8, status: { slow: [3, 0.4] }, cd: 12,
+        range: 2.2, windup: 0.2, fx: 'shockwave', color: '#e2503c', shake: 0.15 },
+      upgrade: {
+        dmgMul: 1.3, toast: 'Bram grows stronger!',
+        // the swing also throws a short steel crescent
+        basic: { use: 'swing_throw', name: 'Crescent Arc', then: { model: 'crescent', color: '#e8eef5', glow: '#ffd24a', size: 1.1,
+          speed: 11, range: 3, dmg: 0.5, radius: 0.3, pierce: true, knockback: 2, type: 'melee' } },
+        look: { outfit: { style: 'plate', primary: '#c0392b', secondary: '#d8dae4', accent: '#ffd24a' }, cape: { color: '#b8322a' },
+          held: { style: 'sword', color: '#fff3c4', glow: '#ffd24a' } },
+      },
       barks: {
         levelup: ['WOO! Level up, buddy!', 'Look at you go!', 'Bigger muscles! Probably!'],
         shield: ['Smash that shield!', 'Hit it harder!'],

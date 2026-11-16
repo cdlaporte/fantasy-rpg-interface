@@ -74,7 +74,7 @@ export function run600(g, fn) { for (let i = 0; i < 600; i++) fn(i); return g; }
 test('warrior data: class, picker card, abilities, companion, look, boons', () => {
   const c = data.classes.warrior;
   assert.equal(c.color, '#e2503c');
-  assert.deepEqual([c.base.hp, c.base.hpPerLevel, c.base.power, c.base.powerPerLevel, c.base.speed], [44, 9, 5, 1.3, 3.4]);
+  assert.deepEqual([c.base.hp, c.base.hpPerLevel, c.base.power, c.base.powerPerLevel, c.base.speed], [44, 9, 5, 1.625, 3.4]);   // round 2: powerPerLevel 1.3 x 1.25
   assert.ok(c.basic.name && c.basic.icon && c.basic.desc);
   assert.deepEqual(c.abilities.map((a) => a.slot + ':' + a.id + ':' + a.unlock), ['space:shield_bash:3', 'q:war_cry:5']);
   assert.equal(c.companion.npc, 'bram');
@@ -222,8 +222,9 @@ test('boon Aftershock: War Cry fires a second, larger shockwave 0.6 s later', ()
     return { waves: g.fxOf('shockwave').map((e) => e.r), dealt: g.dealt };
   };
   const a = run([]), b = run(['aftershock']);
-  assert.deepEqual(a.waves, [3]);
-  assert.deepEqual(b.waves, [3, 4.5]);
+  const WC = data.classes.warrior.nums.war_cry.r, AS = data.boons.aftershock.nums.r;   // round 2: 3 x 1.15, 4.5 x 1.15
+  assert.deepEqual(a.waves, [WC]);
+  assert.deepEqual(b.waves, [WC, AS]);
   assert.equal(a.dealt, 0, 'ring at r 4 is outside the first shockwave');
   assert.ok(b.dealt > 0, 'the second shockwave reaches it');
 });

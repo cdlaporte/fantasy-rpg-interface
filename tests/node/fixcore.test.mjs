@@ -316,8 +316,10 @@ test('number scale: companions, class stats at level 12 and summons scale; fight
   assert.equal(p.hpMax, Math.round(44 + 9 * 12) * NS);
   game.companions.set(['rogue']);
   const pip = game.companions.active[0];
-  assert.equal(pip.hpMax, Math.round((34 + 6.5 * 12) * 0.7 * NS));
-  assert.equal(pip.stats.power, (4.5 + 1.25 * 12) * 0.7 * NS);
+  // round 2 (package C): companion numbers come from data.classes.rogue.companion (mult 1, power per level +25%)
+  const pc = game.data.classes.rogue.companion, ps = pc.stats;
+  assert.equal(pip.hpMax, Math.round((ps.hp + ps.hpPerLevel * 12) * pc.mult * NS));
+  assert.equal(pip.stats.power, (ps.power + ps.powerPerLevel * 12) * pc.mult * NS);
   const s = game.combat.summon(p, 'rat', { hpMul: 0.5 });
   assert.equal(s.hpMax, Math.round(p.hpMax * 0.5), 'owner hpMax already carries the scale');
   // seconds to kill a rat with a coefficient-1 swing: the same at any scale (hp and power scale together)

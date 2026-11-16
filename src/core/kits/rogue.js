@@ -182,6 +182,7 @@ function dodgeRoll(game, p, ctx) {
   }
 }
 
+const FAN_PICK = { range: 6, mode: 'nearest', cone: 120, angle: 0, los: true };
 function fanOfKnives(game, p, ctx) {
   const K = classKit(game), F = K.fan, C = K.colors;
   const pips = spendPips(game, p);
@@ -191,8 +192,15 @@ function fanOfKnives(game, p, ctx) {
   const spread = Math.min(360, F.spreadMin + F.spreadPerPip * pips);
   const rico = hasBoon(game, 'ricochet_knives') ? boonData(game, 'ricochet_knives') : null;
   const quick = hasBoon(game, 'quick_hands') ? boonData(game, 'quick_hands') : null;
+  // round 2: a narrow fan centers itself on the nearest enemy within 60 degrees of the facing.
+  let angle = ctx.angle;
+  if (!ring) {
+    FAN_PICK.range = F.range; FAN_PICK.angle = angle;
+    const t = game.abilities.pickTarget(p, FAN_PICK);
+    if (t) { angle = Math.atan2(t.y - p.y, t.x - p.x); p.angle = angle; p.data.faceT = Math.max(p.data.faceT || 0, 0.2); }
+  }
   game.abilities.use('multishot', p, {
-    angle: ctx.angle, n, spread, ring, model: 'knife', color: C.main, glow: C.steel, size: 1.1, speed: F.speed, range: F.range,
+    angle, n, spread, ring, model: 'knife', color: C.main, glow: C.steel, size: 1.1, speed: F.speed, range: F.range,
     dmg: F.coef, knockback: F.knockback, tags: TAG_FAN, anim: 'attack',
     bounce: rico ? rico.bounce || 1 : 0, bounceRange: rico ? rico.bounceRange || 4 : 4,
     onHit: quick ? (g, t) => {
@@ -203,7 +211,7 @@ function fanOfKnives(game, p, ctx) {
     } : null,
   });
   // Bigger finisher, bigger effect.
-  game.fx({ type: 'slash', x: p.x, y: p.y, angle: ctx.angle, arc: spread, r: 1.2, color: C.main, style: ring ? 'spin' : 'dagger' });
+  game.fx({ type: 'slash', x: p.x, y: p.y, angle, arc: spread, r: 1.2, color: C.main, style: ring ? 'spin' : 'dagger' });
   game.fx({ type: 'burst', x: p.x, y: p.y, n: 6 + pips * 3, r: 0.6 + pips * 0.2, color: C.main });
   if (pips >= 3) game.fx({ type: 'ring', x: p.x, y: p.y, r: 1 + pips * 0.3, color: C.teal, dur: 0.4 });
   if (ring) {

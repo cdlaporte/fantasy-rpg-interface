@@ -275,7 +275,7 @@ test('Archer rank IV: quick arrows fire in pairs; a full Power Shot bursts into 
   assert.equal(game.hudState().basic.name, 'Twin Arrows');
 });
 
-test('Archer Arrow Rain: finisher zone 5 tiles ahead, r = 2 + 0.25 x combo, arrows visibly fall (z), slows and ticks', () => {
+test('Archer Arrow Rain: finisher zone on the pack 5 tiles ahead, r = base + perPip x combo (data), arrows visibly fall (z), slows and ticks', () => {
   const env = mk({ spec: 'archer', level: 8 });
   const { game, p, step, input } = env;
   const rats = ring(game, 4, 1, 900, CX + 5, CY);
@@ -286,7 +286,8 @@ test('Archer Arrow Rain: finisher zone 5 tiles ahead, r = 2 + 0.25 x combo, arro
   const zone = game.ents.all.find((e) => e.type === 'effect' && e.data.zone && e.data.zone.o.tags && e.data.zone.o.tags[0] === 'archer_rain');
   assert.ok(zone, 'rain zone');
   assert.ok(Math.abs(zone.x - (CX + 5)) < 0.3, 'centered 5 tiles ahead');
-  assert.equal(zone.data.zone.r, 3, 'r = 2 + 0.25 x 4');
+  const AR = data.specs.archer.kit.arrowRain;
+  assert.ok(Math.abs(zone.data.zone.r - (AR.r + AR.rPerPip * 4)) < 1e-9, 'r = base + perPip x 4');
   const falling = game.ents.all.filter((e) => e.kind === 'falling_arrow');
   assert.ok(falling.length >= 4, 'falling arrows');
   const z0 = falling[0].z;
@@ -586,7 +587,7 @@ test('data: picker payloads, icons from the closed list, boons per pool, compani
   for (const b of boons) { assert.ok(ICONS.has(b.icon), b.id); assert.ok(b.desc && b.desc.length < 100, b.id); }
   const cc = data.classes.rogue.companion;
   assert.equal(cc.npc, 'pip');
-  assert.equal(cc.mult, 0.7);
+  assert.equal(cc.mult, 1);   // round 2: companions at 100% of the class numbers
   // Pip fights with it.
   env.game.companions.set(['rogue']);
   const pip = env.game.companions.active[0];

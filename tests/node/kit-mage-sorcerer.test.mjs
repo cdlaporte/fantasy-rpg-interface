@@ -3,6 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mk, ring, press, attack, refill, sweep, FX_TYPES } from './kit-mage-lib.test.mjs';
+import data from '../../src/data/index.js';
 
 const projs = (c) => c.game.ents.all.filter((e) => e.type === 'projectile' && e.owner === c.p.id && !e.removed);
 /** Hold the attack key `steps` steps (east) and release; returns what fired. */
@@ -111,7 +112,7 @@ test('rank IV: Arc Lance forks a bolt from every pierced enemy to a neighbor; Fi
   assert.ok(res[12].fireTtl > res[8].fireTtl, 'longer fire');
 });
 
-test('Meteor: telegraph_circle 4 tiles ahead while a meteor falls (z), then impact r 2.5, burning ground, shake', () => {
+test('Meteor: telegraph_circle on the target 4 tiles ahead while a meteor falls (z), then impact r (data, 2.5 x 1.25), burning ground, shake', () => {
   const ctx = mk('sorcerer', 8, [], { marker: 'start' });
   const { game, p, step, input } = ctx;
   input.set({ attackDir: 1 }); step(1); input.set({ attackDir: -1 }); step(2);
@@ -121,7 +122,7 @@ test('Meteor: telegraph_circle 4 tiles ahead while a meteor falls (z), then impa
   const tele = game.ents.all.find((e) => e.look && e.look.model === 'telegraph_circle');
   const met = game.ents.all.find((e) => e.kind === 'meteor');
   assert.ok(tele && Math.abs(tele.x - (p.x + 4)) < 0.6, 'telegraph ahead');
-  assert.equal(tele.look.r, 2.5);
+  assert.equal(tele.look.r, data.specs.sorcerer.kit.meteor.r);
   assert.ok(met && met.z > 6);
   ctx.step(25);
   assert.ok(met.z < 6 && met.z > 0, 'falling: ' + met.z);

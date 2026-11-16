@@ -133,15 +133,25 @@ function pointAhead(game, p, angle, dist) {
   const d = game.world.raycast(p.x, p.y, angle, dist, true);
   return { x: p.x + Math.cos(angle) * d, y: p.y + Math.sin(angle) * d };
 }
+// round 2: Meteor auto-targets the strongest enemy in range (bosses, then elites, then the toughest), else lands ahead.
+const METEOR_PICK = { range: 9, mode: 'strongest', out: { x: 0, y: 0 } };
 function castMeteor(game, p, ctx) {
   const s = S(game), m = s.meteor;
-  const a = ctx.angle;
-  const pt = pointAhead(game, p, a, m.dist);
+  let a = ctx.angle, dist = m.dist, pt;
+  METEOR_PICK.range = m.range || 9;
+  const t = game.abilities.pickTarget(p, METEOR_PICK);
+  if (t) {
+    const o = METEOR_PICK.out;
+    a = Math.atan2(o.y - p.y, o.x - p.x);
+    dist = Math.hypot(o.x - p.x, o.y - p.y);
+    pt = { x: o.x, y: o.y };
+    p.angle = a; p.data.faceT = Math.max(p.data.faceT || 0, 0.3);
+  } else pt = pointAhead(game, p, a, dist);
   dropMeteor(game, p, pt.x, pt.y, m);
   if (boon(game, 'meteor_echo')) {
     const me = s.meteor_echo;
     for (let i = 1; i <= me.n; i++) {
-      const q = pointAhead(game, p, a, m.dist + me.gap * i);
+      const q = pointAhead(game, p, a, dist + me.gap * i);
       dropMeteor(game, p, q.x, q.y, { r: me.r, dmg: me.dmg, delay: m.delay + me.delay * i, knockback: 4, shake: 0.25 }, { tags: ['meteor_echo'] });
     }
   }
@@ -251,6 +261,7 @@ const sorcerer = {
   id: 'sorcerer',
   parent: 'mage',
   basicMode: 'raw',
+  aimRange(game) { return S(game).lance.range; },
   basicInfo(game, p, rank) {
     const r = (sdata(game, 'sorcerer') || DEF).ranks || DEF.ranks;
     const k = p.data.kit;

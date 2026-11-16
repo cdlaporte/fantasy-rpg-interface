@@ -139,6 +139,9 @@ function longbow(game, p, ctx) {
   ar.readyT = game.t + B.cooldown / (1 + game.combat.mod(p, 'attackSpeed'));
 }
 
+const RAIN_PICK = { range: 8, mode: 'densest', r: 2, out: { x: 0, y: 0 } };
+const STAR_PICK = { range: 10, mode: 'strongest', los: true, out: { x: 0, y: 0 } };
+
 // ---------- Arrow Rain ----------
 function spawnFalling(game, p, x, y, color) {
   const ar = p.data.kit.ar;
@@ -150,9 +153,15 @@ function spawnFalling(game, p, x, y, color) {
 function arrowRain(game, p, ctx) {
   const A = ak(game), R = A.arrowRain, C = A.colors;
   const pips = spendPips(game, p);
-  const d = game.world.raycast(p.x, p.y, ctx.angle, R.dist, true);
-  const x = p.x + Math.cos(ctx.angle) * d, y = p.y + Math.sin(ctx.angle) * d;
   const r = R.r + R.rPerPip * pips;
+  // round 2: the rain lands on the densest cluster of enemies within range, else a few steps ahead.
+  RAIN_PICK.range = R.range || 8; RAIN_PICK.r = r;
+  let x, y;
+  if (game.abilities.pickTarget(p, RAIN_PICK)) { x = RAIN_PICK.out.x; y = RAIN_PICK.out.y; }
+  else {
+    const d = game.world.raycast(p.x, p.y, ctx.angle, R.dist, true);
+    x = p.x + Math.cos(ctx.angle) * d; y = p.y + Math.sin(ctx.angle) * d;
+  }
   const fire = hasBoon(game, 'rain_of_fire') ? boonData(game, 'rain_of_fire') : null;
   const color = fire ? C.fire : C.main;
   const status = fire ? [{ slow: [0.8, R.slow] }, { id: 'burn', t: fire.burnDur || 3, p: (fire.burnDps || 0.35) * game.combat.powerOf(p) }] : { slow: [0.8, R.slow] };
@@ -188,8 +197,11 @@ function starfallCast(game, p, ctx) {
 }
 function starfallFire(game, p) {
   const A = ak(game), S = A.starfall, ar = p.data.kit.ar, C = A.colors;
-  const angle = ar.starAngle != null ? ar.starAngle : p.angle;
+  let angle = ar.starAngle != null ? ar.starAngle : p.angle;
   ar.starAngle = null;
+  // round 2: the star arrow flies at the strongest enemy within range (bosses, elites first), if there is one.
+  STAR_PICK.range = S.aimRange || 10;
+  if (game.abilities.pickTarget(p, STAR_PICK)) { angle = Math.atan2(STAR_PICK.out.y - p.y, STAR_PICK.out.x - p.x); p.angle = angle; }
   game.ents.setFxTag(p, 'charge', false);
   p.glow = null;
   ar.drag.length = 0;
@@ -267,6 +279,7 @@ export default {
   id: 'archer', parent: 'rogue',
   basicMode: 'raw',
   interval: 0.35,
+  aimRange(game) { return ak(game).longbow.arrow.range; },
   basicInfo(game, p, rank) { return game.kits.registry.rogue.basicInfo(game, p, rank); },
 
   onEquip(game, p) {

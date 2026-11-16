@@ -8,7 +8,7 @@ export default {
   // L1. Tutorial chaser: three stick hits. Slow bite so a fresh novice survives a pack of three.
   rat: {
     id: 'rat', name: 'Pantry Rat', level: 1, tags: ['beast', 'rat'],
-    stats: { hp: 6, power: 3, defense: 0, speed: 2.4, radius: 0.3, xp: 8 },
+    stats: { hp: 4, power: 3, defense: 0, speed: 2.64, radius: 0.3, xp: 8 },   // round 2: hp x0.6 (was 6), speed +10%
     flying: false,
     ai: { brain: 'chaser', aggro: 5, leash: 10 },
     attacks: [
@@ -26,7 +26,7 @@ export default {
     id: 'giant_rat', name: 'Sir Squeaks-a-Lot', level: 2, tags: ['beast', 'rat', 'elite'],
     // integration feel pass: was hp 40 / power 5 with bite 1.0 + lunge 1.2 (downed an L2 novice every time);
     // now within the balance sheet's 25% band with softer attack coefficients.
-    stats: { hp: 32, power: 4, defense: 0, speed: 2.6, radius: 0.45, xp: 33 },
+    stats: { hp: 19, power: 4, defense: 0, speed: 2.86, radius: 0.45, xp: 33 },   // round 2: hp x0.6 (was 32), speed +10%
     flying: false,
     ai: { brain: 'charger', aggro: 6, leash: 12 },
     attacks: [

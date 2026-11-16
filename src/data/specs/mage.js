@@ -45,7 +45,7 @@ export default {
           attack: { use: 'melee_arc', name: 'Slam', arc: 120, range: 0.95, dmg: 0.9, knockback: 3, cd: 1.1, windup: 0.12, style: 'fist', color: TEAL } },
       },
       order: ['fox', 'owl', 'stoneling'],
-      grand: { cd: 35, cost: 60, dur: 8, size: 1.8, stompEvery: 1.4, stompR: 2.6, stompDmg: 2.5, hpMul: 2, petScale: 1.4,
+      grand: { cd: 35, cost: 60, dur: 8, size: 1.8, stompEvery: 1.4, stompR: 3.25, range: 8, stompDmg: 2.5, hpMul: 2, petScale: 1.4,
         petHaste: 0.4, petPower: 0.3, speedMul: 1.0,
         look: { rig: 'golem', size: 1.8, colors: { body: '#2aa893', belly: '#bff7ee', accent: '#ffffff', eye: '#ffffff' },
           features: ['crystal', 'antlers', 'mossy'], hero: null } },
@@ -84,16 +84,16 @@ export default {
       fireballIV: { r: 1.7, fireR: 1.8, fireDur: 5 },
       lance: { cost: 25, dmg: 2.8, range: 8, w: 0.6, knockback: 3, shake: 0.22 },
       fork: { dmg: 1.0, range: 3.5 },
-      meteor: { cd: 10, cost: 40, dist: 4, delay: 0.9, r: 2.5, dmg: 4.5, knockback: 7, shake: 0.45,
-        fireR: 2.0, fireDur: 4, fireDmg: 0.35 },
-      cataclysm: { cd: 40, cost: 80, n: 5, every: 0.55, delay: 0.85, r: 2.4, dmg: 3.5, range: 9, densR: 2.5, shake: 0.6 },
+      meteor: { cd: 10, cost: 40, dist: 4, range: 9, delay: 0.9, r: 3.1, dmg: 4.5, knockback: 7, shake: 0.45,
+        fireR: 2.5, fireDur: 4, fireDmg: 0.35 },
+      cataclysm: { cd: 40, cost: 80, n: 5, every: 0.55, delay: 0.85, r: 3.0, dmg: 3.5, range: 9, densR: 3.0, shake: 0.6 },
       // spec boons
       wildfire: { r: 1.8, dmg: 1.0, burnT: 3, burn: 0.3, fireDur: 2 },
       storm_lance: { dur: 2, tick: 0.25, dmg: 0.3, w: 0.5 },
       meteor_echo: { n: 3, gap: 1.6, delay: 0.3, r: 1.5, dmg: 2.0 },
       quick_study: { rate: 1.3 },
     },
-    balance: { dmgMul: [[8, 0.32], [10, 0.34], [12, 0.28]] },
+    balance: { dmgMul: [[8, 0.32], [10, 0.37], [12, 0.285]] },
   },
 
   // ------------------------------------------------------------------------------------------------ MONK
@@ -128,7 +128,7 @@ export default {
       deflect: { arc: 150, range: 1.7, window: 0.35, ki: 4 },
       meditate: { after: 1.5, hp: 0.03, ki: 6 },
       kick: { cd: 5, cost: 20, dist: 4, speed: 16, dmg: 1.4, chains: 3, chainRange: 4, grow: 0.2, knockback: 6 },
-      palms: { cd: 30, cost: 60, dur: 2.5, strikes: 12, range: 4, dmg: 0.7, ringR: 3, ringDmg: 3, heal: 0.15 },
+      palms: { cd: 30, cost: 60, dur: 2.5, strikes: 12, range: 5, dmg: 0.7, ringR: 3.75, ringDmg: 3, heal: 0.15 },
       // spec boons
       iron_skin: { dur: 2, absorb: 0.18 },
       wind_step: { chains: 2, haste: 0.35, hasteT: 3 },
@@ -138,6 +138,6 @@ export default {
       splitKi: { n: 2, arc: 50, dmg: 0.45, speed: 10, range: 4 },
       surgeKi: { cost: 30, dmg: 2.6, speed: 12, range: 8, radius: 0.4, size: 2.2 },
     },
-    balance: { dmgMul: [[8, 0.33], [10, 0.37], [12, 0.345]] },
+    balance: { dmgMul: [[8, 0.33], [10, 0.37], [12, 0.33]] },
   },
 };

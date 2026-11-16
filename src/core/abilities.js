@@ -414,7 +414,66 @@ export default {
       },
       /** added: is the entity mid-dash / mid-leap? */
       busy(ent) { return !!(ent && (ent.data.dash || ent.data.leap)); },
+      pickTarget,
     };
+
+    // ---- smart targeting (round 2: auto-aimed ground abilities, aim assist) ----
+    const pickScratch = [];
+    const PICK_DEF = {};
+    const strength = (e) => (e.tags.includes('boss') ? 2e9 : 0) + (e.tags.includes('elite') ? 1e9 : 0) + (e.hpMax || 0);
+    /**
+     * Best hostile target for `caster` (no allocation). o: {range=8, mode 'nearest'|'strongest'|'densest', cone (full
+     * width in degrees around `angle`; omitted = all around), angle (default caster.angle), r (densest: cluster radius,
+     * default 2.5), los (true: the line from the caster must be clear of walls), x, y (search center, default the
+     * caster), exclude (entity to skip), out ({x, y}: filled with the target position, or the cluster centroid for
+     * 'densest')}. Strongest = bosses, then elites, then the highest max hp (ties: nearest). Returns the entity or null.
+     */
+    function pickTarget(c, o) {
+      o = o || PICK_DEF;
+      if (!c) return null;
+      const cx = o.x != null ? o.x : c.x, cy = o.y != null ? o.y : c.y;
+      const range = o.range != null ? o.range : 8;
+      const mode = o.mode || 'nearest';
+      const ang = o.angle != null ? o.angle : c.angle;
+      const half = o.cone > 0 && o.cone < 360 ? (o.cone * DEG) / 2 : -1;
+      const list = ents.inRadius(cx, cy, range + 1.5, null, pickScratch);
+      let n = 0;
+      for (let i = 0; i < list.length; i++) {
+        const e = list[i];
+        if (e === c || e === o.exclude || !C().canHit(c, e)) continue;
+        const dx = e.x - cx, dy = e.y - cy, d = Math.sqrt(dx * dx + dy * dy);
+        if (d - (e.radius || 0) > range) continue;
+        if (half >= 0 && d > 0.05) {
+          let da = Math.atan2(dy, dx) - ang;
+          while (da > Math.PI) da -= Math.PI * 2;
+          while (da < -Math.PI) da += Math.PI * 2;
+          if (Math.abs(da) > half) continue;
+        }
+        if (o.los && game.world.raycast && game.world.raycast(cx, cy, Math.atan2(dy, dx), d, true) < d - (e.radius || 0) - 0.05) continue;
+        list[n++] = e;
+      }
+      list.length = n;
+      let best = null, bs = -Infinity, bd = Infinity;
+      const rr = (o.r || 2.5) * (o.r || 2.5);
+      for (let i = 0; i < n; i++) {
+        const e = list[i];
+        const dx = e.x - cx, dy = e.y - cy, d = dx * dx + dy * dy;
+        let s = 0;
+        if (mode === 'strongest') s = strength(e);
+        else if (mode === 'densest') {
+          for (let j = 0; j < n; j++) { const b = list[j]; const ex = b.x - e.x, ey = b.y - e.y; if (ex * ex + ey * ey <= rr) s += 1e6 + strength(b) * 1e-9; }
+        }
+        if (s > bs || (s === bs && d < bd)) { bs = s; bd = d; best = e; }
+      }
+      if (best && o.out) {
+        if (mode === 'densest') {
+          let sx = 0, sy = 0, k = 0;
+          for (let j = 0; j < n; j++) { const b = list[j]; const ex = b.x - best.x, ey = b.y - best.y; if (ex * ex + ey * ey <= rr) { sx += b.x; sy += b.y; k++; } }
+          o.out.x = sx / k; o.out.y = sy / k;
+        } else { o.out.x = best.x; o.out.y = best.y; }
+      }
+      return best;
+    }
 
     api._update = (dt) => {
       const all = ents.all;

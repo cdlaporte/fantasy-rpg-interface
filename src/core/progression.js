@@ -353,6 +353,9 @@ export function compareCond(value, c) {
   return !!value;
 }
 
+let EMPOWER_T = 0;
+const EMPOWER_FX = { type: 'sparkle', x: 0, y: 0, z: 0.6, n: 5, r: 0.75, color: '#ffffff' };
+
 const NEGATIVE_STATUS = ['stun', 'slow', 'burn', 'frost', 'root', 'mark', 'venom'];
 const REVIVE_COOLDOWN = 300;    // seconds between optional revive questions
 const WAKE_INVULN = 2.5;
@@ -1064,8 +1067,18 @@ export default {
     return api;
   },
 
-  update(game) {
+  update(game, dt) {
     const api = game.sys.progression;
+    // round 3: the empowered aura (level 14+) also throws off a few sparks every second (one pooled fx event)
+    const p = game.player;
+    if (p && api.level >= EMPOWER_LEVEL && api.classId && p.look && p.look.aura && p.look.aura.tier === 2 && !p.data.down && p.alpha !== 0) {
+      EMPOWER_T -= dt || 1 / 60;
+      if (EMPOWER_T <= 0) {
+        EMPOWER_T = 1.1;
+        EMPOWER_FX.x = p.x; EMPOWER_FX.y = p.y; EMPOWER_FX.color = p.look.aura.color;
+        game.fx(EMPOWER_FX);
+      }
+    }
     const inp = game.input;
     if (inp && inp.pressed && inp.pressed.boon && !game.modal && !game.inputLock) {
       if (api.pendingBoons > 0) api.openBoonPicker();

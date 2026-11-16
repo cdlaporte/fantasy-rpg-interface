@@ -176,6 +176,8 @@ export default {
         return api.active;
       },
       classIds: [],
+      /** Recreate one companion (same class and slot) next to the player. */
+      respawn(classId, i) { const e = create(classId, i); api.rescale(); placeNear(e, i); return e; },
       /** Teleport every companion next to the player. */
       regroup() { api.active.forEach((e, i) => { if (!e.removed) placeNear(e, i); }); },
       /** Recompute stats, attacks and outfit for the current player level and spec (keeps the hp fraction). */
@@ -244,7 +246,11 @@ export default {
     const pr = game.sys.progression;
     if (pr && (pr.level !== api._lvl || (pr.specId || null) !== api._spec)) api.rescale();
     for (let i = 0; i < api.active.length; i++) {
-      const e = api.active[i];
+      let e = api.active[i];
+      // a companion removed by something else (e.g. a scene despawning the classmate NPC of the same name) comes back
+      if (e.removed && e.data && e.data.classId && !game.cutscene.active) {
+        e = api.active[i] = api.respawn(e.data.classId, i);
+      }
       if (e.removed) continue;
       e.owner = p.id;
       const dx = e.x - p.x, dy = e.y - p.y;
@@ -257,7 +263,11 @@ export default {
   },
   onZoneLoad(game) {
     const api = game.companions;
-    for (let i = api.active.length - 1; i >= 0; i--) if (api.active[i].removed) api.active.splice(i, 1);
+    // removed companions are recreated (they belong to the party until set() changes it)
+    for (let i = 0; i < api.active.length; i++) {
+      const e = api.active[i];
+      if (e.removed && e.data && e.data.classId) api.active[i] = api.respawn(e.data.classId, i);
+    }
     api.regroup();
   },
   save(game) { return { list: game.companions.classIds.slice() }; },

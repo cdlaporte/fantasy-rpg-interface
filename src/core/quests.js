@@ -252,6 +252,11 @@ export default {
     game.bus.on('dialogue:open', (ev) => {
       each('talk', (id, g, q) => { if (talkMatch(g, ev)) pendingTalk[id] = q.step; });
     });
+    // buying from a shop counts as talking to its keeper (e.g. "Stock up at The Bubbling Cauldron (Granny Mira)")
+    game.bus.on('shop:buy', (ev) => {
+      if (!ev) return;
+      each('talk', (id, g, q) => { if ((ev.keeper && g.npc === ev.keeper) || (g.shop && g.shop === ev.shop)) advance(id, q.step); });
+    });
     game.bus.on('dialogue:close', (ev) => {
       each('talk', (id, g, q) => {
         if (pendingTalk[id] === q.step && talkMatch(g, ev)) { delete pendingTalk[id]; advance(id, q.step); }

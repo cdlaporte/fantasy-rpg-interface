@@ -533,6 +533,7 @@ export default {
       give(itemId, entry.n, { silent: true });
       sfx('coin');
       game.toast(`Bought ${entry.name} for ${entry.price} gold.`, 'loot');
+      emit('shop:buy', { shop: v.id, keeper: (v.def && v.def.keeper) || null, item: itemId, n: entry.n });
       refreshShop();
       return true;
     }

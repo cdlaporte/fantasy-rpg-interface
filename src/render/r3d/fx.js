@@ -20,6 +20,7 @@ const _c = new THREE.Color();
 const _c2 = new THREE.Color();
 const WHITE = new THREE.Color(1, 1, 1);
 const BLACK = new THREE.Color(0, 0, 0);
+const STORMY = new THREE.Color('#6a58b0');
 
 const ARCS = [70, 100, 140, 190, 360];
 const FANS = [45, 90, 135, 180, 270, 360];
@@ -41,6 +42,7 @@ function batchDefs() {
     plus: [G.plus, false, 96, 6],
     cube: [() => G.solid('cube'), false, 160, 5],
     shard: [() => G.solid('octa'), false, 160, 5],
+    orb: [() => G.solid('sphere'), false, 48, 5],     // round 3: orrery planets
     flame: [G.flame, false, 600, 5],
     beam: [() => G.ribbon(false), true, 64, 5],
     trail: [() => G.ribbon(true), true, 160, 5],
@@ -542,8 +544,11 @@ export function createFx(scene, mats, camera, unknown) {
   function glowAt(x, y, h, s, c, a) { bill('glow', x, y, h, 0, s, c, a); }
 
   /** Aura (look.aura) around an entity of height H. */
-  function aura(style, color, x, y, H, t, seed) {
+  function aura(style, color, x, y, H, t, seed, size = 1) {
     const c = color;
+    // auras widen with big characters (a size-1.6 final boss must not wear a size-1 aura)
+    const S = Math.max(1, size);
+    if (S > 1.05) return auraBig(style, c, x, y, H, t, seed, S);
     switch (style) {
       case 'glow':
         ground('glow', x, y, 0.04, 0, 0.75, 0.75, c, 0.55 + 0.15 * Math.sin(t * 3));
@@ -616,6 +621,57 @@ export function createFx(scene, mats, camera, unknown) {
       }
       default: break;
     }
+  }
+
+  /** Auras of large characters (bosses): the same styles drawn wider, with more particles; `storm` becomes a
+   * crackling, swirling stormcloud crown (lilac puffs, orbiting sparks, forked bolts, a rune ring on the ground). */
+  function auraBig(style, c, x, y, H, t, seed, S) {
+    const R = 0.42 * S;
+    if (style !== 'storm') {
+      ground('glow', x, y, 0.04, 0, 0.75 * S, 0.75 * S, c, 0.5);
+      bill('glow', x, y - 0.05, H * 0.5, 0, H * 0.7, c, 0.18);
+      const n = lim(Math.round(5 * S));
+      for (let i = 0; i < n; i++) {
+        const u = (t * 0.55 + i / n + seed) % 1, a = i * 2.39 + t * 0.4;
+        const id = style === 'flame' ? 'flame' : style === 'sparkle' ? 'star' : style === 'shadow' ? 'puff' : 'dot';
+        const col = style === 'shadow' ? C1.copy(c).lerp(WHITE, 0.25) : c;
+        if (id === 'puff') ball(id, x + Math.cos(a) * R, y + Math.sin(a) * R * 0.75, u * H * 0.9, 0.12 * S * (1 - u * 0.5), col, 0.5 * (1 - u));
+        else bill(id, x + Math.cos(a) * R, y + Math.sin(a) * R * 0.75, 0.1 + u * H, t + i, (id === 'flame' ? 0.4 : 0.12) * S * (1 - u * 0.6), col, 1 - u);
+      }
+      return;
+    }
+    // storm
+    ground('glow', x, y, 0.04, 0, 1.0 * S, 1.0 * S, c, 0.5 + 0.1 * Math.sin(t * 4));
+    ground('rune', x, y, 0.05, t * 0.6, 0.85 * S, 0.85 * S, c, 0.55);
+    ground('ringN', x, y, 0.06, 0, R * 1.7, R * 1.7, WHITE, 0.35 + 0.15 * Math.sin(t * 6));
+    // a crown of storm clouds circling above the shoulders
+    // (they travel along the back half only, so they never cover the face from the high camera)
+    const nc = lim(7);
+    for (let i = 0; i < nc; i++) {
+      const u = (i / nc + t * 0.1) % 1;
+      const a = Math.PI + u * Math.PI;
+      const col = C1.copy(c).lerp(STORMY, 0.35).lerp(WHITE, 0.15 + 0.15 * Math.sin(i * 1.7));
+      ball('puff', x + Math.cos(a) * R * 1.3, y + Math.sin(a) * R * 1.1, H * (0.95 + 0.05 * Math.sin(t * 2 + i)), 0.17 * S, col, 0.75 * Math.sin(u * Math.PI));
+    }
+    // forked bolts dancing down from the clouds
+    const f = Math.floor(t * 8 + seed * 10);
+    for (let i = 0; i < 4; i++) {
+      if (hash(f, i, seed) < 0.35) continue;
+      const a = hash(f, i, 2) * Math.PI * 2;
+      _q2.setFromAxisAngle(Y, a);
+      push('bolt', x + Math.cos(a) * R, 0.2 + hash(f, i, 3) * H * 0.5, y + Math.sin(a) * R * 0.8, _q2, 0.55 * S, 0.5 * S, 0.55 * S, c, 1);
+    }
+    // sparks orbiting at two heights, and motes rising
+    for (let i = 0; i < lim(8); i++) {
+      const a = (i / 8) * Math.PI * 2 - t * 2.2;
+      const hh = (i % 2 ? 0.35 : 0.65) * H + Math.sin(t * 3 + i) * 0.1;
+      bill(i % 3 ? 'dot' : 'star', x + Math.cos(a) * R * 1.05, y + Math.sin(a) * R * 0.8, hh, t * 3, (i % 3 ? 0.08 : 0.16) * S, i % 2 ? WHITE : c, 0.95);
+    }
+    for (let i = 0; i < lim(5); i++) {
+      const u = (t * 0.5 + i / 5 + seed) % 1;
+      bill('dot', x + Math.cos(i * 2.2) * R * 0.6, y + Math.sin(i * 2.2) * R * 0.5, u * H * 1.25, 0, 0.07 * S, c, 1 - u);
+    }
+    if (((t * 0.9 + seed) % 1) < 0.08) bill('glow', x, y, H * 0.6, 0, H * 1.1, WHITE, 0.25);
   }
 
   /** fxTag visuals. tip = [x, h, y] of the weapon tip in world space (or null). face = facing angle. */

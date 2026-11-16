@@ -412,6 +412,18 @@ export function createLive(fx) {
       case 'bubbles':
         for (let k = every(4, wx * 0.013); k > 0; k--) fx.emit(PK.BUBBLE, wx + (R() - 0.5) * 9, wy, 0, -12, 0.6, light(e.color, 0.3), 1, 1, O(0, 0, 0, 0, false));
         return;
+      case 'orbit': {
+        // orrery planets riding their elliptical rings (round 3)
+        for (let j = 0; j < 3; j++) {
+          const outer = j > 0, a = t * (outer ? 0.25 : 0.42) + j * 2.6;
+          const px = Math.round(X + Math.cos(a) * (outer ? e.r2 : e.r1)), py = Math.round(Y + Math.sin(a) * (outer ? e.q2 : e.q1));
+          const c = j === 1 ? e.color2 : j === 2 ? '#9fe0a0' : e.color, r = j === 2 ? 1 : 2;
+          g.fillStyle = '#1e1a22'; g.fillRect(px - r - 1, py - r - 1, r * 2 + 2, r * 2 + 2);
+          g.fillStyle = c; g.fillRect(px - r, py - r, r * 2, r * 2);
+          g.fillStyle = '#ffffff'; g.fillRect(px - r, py - r, 1, 1);
+        }
+        return;
+      }
       default: return;
     }
   }

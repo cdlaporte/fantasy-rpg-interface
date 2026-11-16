@@ -11,16 +11,18 @@ export const TP = 16;           // art px per tile
 export const CPX = CH * TP;     // art px per chunk side
 const VOID = { id: 'void', pattern: 'void', block: false, water: false, pit: false, h: 0, hpx: 0, a: '#2a3a4a', b: '#2a3a4a', side: '#2a3a4a', prio: -1 };
 
-const PRIO = { water: 0, shallows: 1, starfloor: 1, wet_sand: 2, sand: 3, cloud: 3, dirt: 4, path: 5, cobble: 6, stone: 7, planks: 7, carpet: 7, grass: 9, flowers: 9, tallgrass: 9 };
+const PRIO = { water: 0, shallows: 1, starfloor: 1, wet_sand: 2, sand: 3, cloud: 3, dirt: 4, path: 5, cobble: 6, stone: 7, planks: 7, carpet: 7, grass: 9, flowers: 9, tallgrass: 9,
+  sky: -1, ice: 2, snow: 8 };
 const GROUP = { grass: 'g', flowers: 'g', tallgrass: 'g' };
 const SOFT_RECEIVER = { dirt: 1, path: 1, sand: 1, wet_sand: 1, cobble: 1 };
-const SOFT_SOURCE = { grass: 1, flowers: 1, tallgrass: 1, dirt: 1, path: 1, sand: 1 };
+const SOFT_SOURCE = { grass: 1, flowers: 1, tallgrass: 1, dirt: 1, path: 1, sand: 1, snow: 1 };
 const KNOWN_PATTERNS = ['grass', 'flowers', 'tallgrass', 'dirt', 'path', 'cobble', 'sand', 'wet_sand', 'shallows', 'water',
-  'planks', 'stone', 'carpet', 'brick', 'hedge', 'trees', 'cliff', 'crystal', 'cloud', 'starfloor'];
+  'planks', 'stone', 'carpet', 'brick', 'hedge', 'trees', 'cliff', 'crystal', 'cloud', 'starfloor', 'snow', 'ice', 'sky'];
 
 /** Prepare per-zone tile info: resolved colors, shape, height. */
 export function prepareTiles(zv, unknown) {
   const pats = (zv.palette && zv.palette.patterns) || {};
+  const rock = col(pats.cliff && pats.cliff.side, '#9a88c8');
   return zv.tileDefs.map((d) => {
     const pp = pats[d.pattern] || {};
     const c = d.colors || {};
@@ -29,7 +31,7 @@ export function prepareTiles(zv, unknown) {
     if (!KNOWN_PATTERNS.includes(pattern)) { if (unknown) unknown.push('tile.pattern:' + pattern); pattern = 'grass'; }
     const block = d.shape === 'block';
     return { id: d.id, pattern, block, water: d.shape === 'water', pit: d.shape === 'pit', h: block ? Math.max(0.5, d.h || 1) : 0,
-      hpx: block ? Math.round(Math.max(0.5, d.h || 1) * TP) : 0, a, b, side, prio: PRIO[pattern] ?? 5 };
+      hpx: block ? Math.round(Math.max(0.5, d.h || 1) * TP) : 0, a, b, side, prio: PRIO[pattern] ?? 5, rock };
   });
 }
 
@@ -243,6 +245,49 @@ function ground(p, ox, oy, tx, ty, t, v, frame) {
       if ((tx * 7 + ty * 3) % 11 === 0) { const sx = ox + 7, sy = oy + 7; p.set(sx, sy, '#ffffff'); p.set(sx - 1, sy, b); p.set(sx + 1, sy, b); p.set(sx, sy - 1, b); p.set(sx, sy + 1, b); }
       break;
     }
+    case 'snow': {
+      // soft drifts (smooth noise), blue shade in the hollows, sparkles
+      for (let y = 0; y < TP; y++) for (let x = 0; x < TP; x++) {
+        const gx = gx0 + x, gy = gy0 + y;
+        const f = vnoise(gx, gy, 23, 11) * 0.7 + vnoise(gx, gy, 7, 13) * 0.3;
+        let c = f > 0.64 ? light(a, 0.3) : f < 0.3 ? mix(a, b, 0.7) : a;
+        if (f >= 0.3 && f < 0.36) c = mix(a, b, 0.35);
+        const n = hash(gx, gy, 15);
+        if (n > 0.994) c = '#ffffff';
+        else if (n < 0.006) c = dark(b, 0.12);
+        p.set(ox + x, oy + y, c);
+      }
+      if ((v & 15) === 7) { p.set(ox + 6, oy + 6, '#ffffff'); p.set(ox + 5, oy + 6, light(a, 0.5)); p.set(ox + 7, oy + 6, light(a, 0.5)); p.set(ox + 6, oy + 5, light(a, 0.5)); p.set(ox + 6, oy + 7, light(a, 0.5)); }
+      break;
+    }
+    case 'ice': {
+      // glassy: pale diagonal glints, faint cracks, a deeper tint in streaks
+      for (let y = 0; y < TP; y++) for (let x = 0; x < TP; x++) {
+        const gx = gx0 + x, gy = gy0 + y;
+        const d = ((gx + gy) % 24 + 24) % 24;
+        let c = a;
+        if (Math.sin(gx * 0.09 - gy * 0.05) + Math.sin(gy * 0.11) > 1.3) c = mix(a, t.side, 0.35);
+        if (d === 0 || d === 1) c = light(b, 0.4);
+        else if (d === 2) c = b;
+        p.set(ox + x, oy + y, c);
+      }
+      if ((v & 7) === 3) { p.line(ox + 3, oy + 4, ox + 8, oy + 9, dark(t.side, 0.1)); p.line(ox + 8, oy + 9, ox + 12, oy + 8, dark(t.side, 0.1)); }
+      break;
+    }
+    case 'sky': {
+      // open sky far below the islands: soft clouds drifting on the sky color
+      for (let y = 0; y < TP; y++) for (let x = 0; x < TP; x++) {
+        const gx = gx0 + x, gy = gy0 + y;
+        const f = vnoise(gx, gy * 1.6, 28, 17) * 0.75 + vnoise(gx, gy, 9, 19) * 0.25;
+        let c = a;
+        if (f > 0.7) c = b;
+        else if (f > 0.65) c = mix(a, b, 0.6);
+        else if (f > 0.61) c = mix(a, b, 0.25);
+        if (f > 0.7 && vnoise(gx, gy - 3, 28, 17) < 0.64) c = mix(b, t.side, 0.3);
+        p.set(ox + x, oy + y, c);
+      }
+      break;
+    }
     default: p.rect(ox, oy, TP, TP, a);
   }
 }
@@ -337,6 +382,7 @@ function water(p, ox, oy, gx0, gy0, t, frame) {
 
 function transitions(p, ox, oy, tx, ty, t, tileAt, frame) {
   const N = tileAt(tx, ty - 1), S = tileAt(tx, ty + 1), E = tileAt(tx + 1, ty), Wt = tileAt(tx - 1, ty);
+  if (t.pattern === 'sky') { skyEdges(p, ox, oy, tx, ty, t, N, Wt, E); return; }
   // drop shadow from a block to the north
   if (N.block) {
     for (let x = 0; x < TP; x++) { p.darkenPx(ox + x, oy, 0.38); p.darkenPx(ox + x, oy + 1, 0.28); p.darkenPx(ox + x, oy + 2, 0.16); if (hash(tx * TP + x, ty, 71) < 0.5) p.darkenPx(ox + x, oy + 3, 0.08); }
@@ -423,6 +469,21 @@ function transitions(p, ox, oy, tx, ty, t, tileAt, frame) {
   }
 }
 
+/** A floating island's rocky underside hanging into a sky void tile (north neighbor is land), thin rims west/east. */
+function skyEdges(p, ox, oy, tx, ty, t, N, Wt, E) {
+  const land = (n) => n.pattern !== 'sky' && n.id !== 'void';
+  const rock = t.rock, lo = dark(rock, 0.3), hi = light(rock, 0.2);
+  if (land(N)) {
+    for (let x = 0; x < TP; x++) {
+      const gx = tx * TP + x;
+      const d = 4 + Math.floor(hash(gx >> 1, ty, 97) * 3) + ((((gx >> 2) + ty) % 3) === 0 ? 3 : 0);
+      for (let y = 0; y < d; y++) p.set(ox + x, oy + y, y === 0 ? dark(N.a, 0.25) : y < 2 ? hi : y === d - 1 ? lo : rock);
+    }
+  }
+  if (land(Wt)) for (let y = 0; y < TP; y++) { p.set(ox, oy + y, lo); if (hash(tx, ty * TP + y, 98) < 0.5) p.set(ox + 1, oy + y, dark(t.a, 0.12)); }
+  if (land(E)) for (let y = 0; y < TP; y++) { p.set(ox + TP - 1, oy + y, lo); if (hash(tx, ty * TP + y, 99) < 0.5) p.set(ox + TP - 2, oy + y, dark(t.a, 0.12)); }
+}
+
 function setSide(p, ox, oy, side, i, d, c) {
   if (side === 0) p.set(ox + i, oy + d, c);
   else if (side === 1) p.set(ox + i, oy + TP - 1 - d, c);
@@ -506,6 +567,14 @@ function blockTile(p, ox, oy, tx, ty, t, v, tileAt) {
           if (hash(gx, fy + gy0, 29) < 0.03) c = '#ffffff';
           break;
         }
+        case 'snow': {
+          // packed snow wall: soft horizontal bands, icy blue toward the ground, a white lip
+          const n = hash(gx >> 2, (gy0 + fy) >> 2, 9);
+          c = fy < 2 ? light(t.a, 0.2) : n < 0.25 ? dark(t.side, 0.05) : t.side;
+          if (fy > hp * 0.7) c = mix(c, '#8fb8e8', 0.25);
+          if (fy >= hp - 1) c = dark(t.side, 0.3);
+          break;
+        }
         default: { // stone wall
           const row = fy >> 3, off = (row & 1) ? 6 : 0;
           const bx = (gx + off) % 12;
@@ -539,6 +608,11 @@ function blockTile(p, ox, oy, tx, ty, t, v, tileAt) {
       case 'crystal': {
         const d = ((gx + gy) & 7);
         c = d < 3 ? light(t.a, 0.3) : d < 6 ? t.a : t.b;
+        break;
+      }
+      case 'snow': {
+        const f = vnoise(gx, gy, 9, 23);
+        c = f > 0.6 ? light(t.a, 0.3) : f < 0.35 ? t.b : t.a;
         break;
       }
       default: {
@@ -617,7 +691,7 @@ export { u32 };
  * Seamless 8x8-tile pattern drawn beyond the map bounds: a dense canopy in the zone's tree/hedge colors outdoors,
  * dark brickwork for the academy interior. Returns a canvas (use with createPattern, aligned to world pixels).
  */
-export function buildBorderPattern(zv, info, bgColor) {
+export function buildBorderPattern(zv, info, bgColor, frame = 0) {
   const N = 8, S = N * TP;
   const p = new Pix(S, S);
   const pal = zv.palette || {};
@@ -632,9 +706,96 @@ export function buildBorderPattern(zv, info, bgColor) {
     }
     return p.toCanvas();
   }
+  if (pal.edge && BORDERS[pal.edge]) { BORDERS[pal.edge](p, S, info, pal, frame); return p.toCanvas(); }
   const src = info.find((t) => t.pattern === 'trees') || info.find((t) => t.pattern === 'hedge') || { a: '#2f7a3a', b: '#256a30', side: '#1f3a28' };
   const t = { a: dark(src.a, 0.12), b: dark(src.b, 0.2), side: src.side };
   p.rect(0, 0, S, S, dark(src.b, 0.5));
   for (let ty = 0; ty < N; ty++) for (let tx = 0; tx < N; tx++) canopy(p, tx * TP, ty * TP, tx, ty, t, false, false, false, false, 3, 5, 3);
   return p.toCanvas();
 }
+
+// ------------------------------------------------------------------ round 3 biome borders (palette.edge)
+const pat = (pal, id, a, b, side) => {
+  const q = (pal.patterns && pal.patterns[id]) || {};
+  return { a: col(q.a, a), b: col(q.b, b), side: col(q.side, side) };
+};
+/** Draw fn(dx, dy) at the 4 wrap offsets so shapes crossing the pattern edge tile seamlessly. */
+const wrap4 = (S, fn) => { for (const dx of [0, -S]) for (const dy of [0, -S]) fn(dx, dy); };
+const BORDERS = {
+  /** Rolling golden dunes: wavy crests with a sunlit face and a shaded lee, a few cacti. */
+  dunes(p, S, info, pal) {
+    const sand = pat(pal, 'sand', '#f6d68e', '#e8c172', '#d6a45e');
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      const w = Math.sin((x / S) * Math.PI * 4 + Math.sin((y / S) * Math.PI * 2) * 1.5);
+      const f = ((y + w * 6) % 32 + 32) % 32;
+      let c = sand.a;
+      if (f < 2) c = light(sand.a, 0.35);
+      else if (f < 9) c = mix(sand.a, '#fff2c8', 0.25);
+      else if (f > 26) c = sand.b;
+      else if (f > 22) c = mix(sand.a, sand.b, 0.5);
+      if (hash(x, y, 101) < 0.012) c = dark(sand.b, 0.1);
+      p.set(x, y, c);
+    }
+    for (let i = 0; i < 3; i++) {
+      const cx = Math.floor(hash(i, 3, 103) * S), cy = Math.floor(hash(i, 5, 105) * S);
+      wrap4(S, (dx, dy) => {
+        const x = cx + dx, y = cy + dy;
+        p.rect(x, y - 9, 4, 11, '#58b45e'); p.rect(x + 3, y - 9, 1, 11, '#3f9a48'); p.rect(x - 3, y - 4, 3, 2, '#58b45e'); p.rect(x - 3, y - 7, 2, 4, '#58b45e');
+        p.rect(x + 4, y - 3, 3, 2, '#58b45e'); p.rect(x + 5, y - 6, 2, 4, '#58b45e'); p.rect(x + 1, y - 10, 2, 1, '#ff7aa8');
+        p.ellipse(x + 2, y + 2, 5, 1.5, sand.b);
+      });
+    }
+  },
+  /** Open sea (two frames): the water tile pattern with foamy crests. */
+  ocean(p, S, info, pal, frame) {
+    const w = pat(pal, 'water', '#24b4c8', '#58d6e0', '#1a90a8');
+    const t = { pattern: 'water', a: w.a, b: w.b, side: w.side };
+    for (let ty = 0; ty < S / TP; ty++) for (let tx = 0; tx < S / TP; tx++) water(p, tx * TP, ty * TP, tx * TP, ty * TP, t, frame);
+    for (let i = 0; i < 5; i++) {
+      const cx = Math.floor(hash(i, 7, 107) * S), cy = Math.floor(hash(i, 9, 109) * S);
+      wrap4(S, (dx, dy) => { p.hline(cx + dx + frame, cx + dx + 4 + frame, cy + dy, '#ffffff'); p.hline(cx + dx + 1 + frame, cx + dx + 3 + frame, cy + dy - 1, light(w.b, 0.4)); });
+    }
+  },
+  /** Snowy slopes: soft drifts and little snow-capped pines. */
+  mountains(p, S, info, pal) {
+    const snow = pat(pal, 'snow', '#dfeaf7', '#cad9ec', '#a8bedc');
+    const tree = pat(pal, 'trees', '#2f9670', '#24805e', '#7a5233');
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      const f = Math.sin((x / S) * Math.PI * 2 * 3 + (y / S) * Math.PI * 2) * 0.5 + Math.sin((y / S) * Math.PI * 2 * 4 - (x / S) * Math.PI * 2) * 0.5;
+      let c = f > 0.55 ? light(snow.a, 0.3) : f < -0.45 ? snow.b : snow.a;
+      if (hash(x, y, 111) > 0.995) c = '#ffffff';
+      p.set(x, y, c);
+    }
+    for (let i = 0; i < 7; i++) {
+      const cx = Math.floor(hash(i, 11, 113) * S), cy = Math.floor(hash(i, 13, 115) * S);
+      wrap4(S, (dx, dy) => {
+        const x = cx + dx, y = cy + dy;
+        p.ellipse(x, y + 1, 6, 2, snow.b);
+        p.rect(x - 1, y - 2, 2, 3, tree.side);
+        for (let j = 0; j < 3; j++) {
+          const yy = y - 2 - j * 5, wv = 6 - j * 1.6;
+          p.poly([x - wv, yy, x + wv, yy, x, yy - 7], j % 2 ? tree.b : tree.a);
+          p.poly([x - wv * 0.5, yy - 3.5, x + wv * 0.5, yy - 3.5, x, yy - 7], '#ffffff');
+        }
+      });
+    }
+  },
+  /** Open sky with clouds below (no ground). */
+  sky(p, S, info, pal) {
+    const sky = pat(pal, 'sky', '#cfd6ff', '#ffffff', '#b8a8e0');
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      const f = Math.sin((x / S) * Math.PI * 2 * 2 + Math.sin((y / S) * Math.PI * 2) * 2) * 0.5 + Math.sin((y / S) * Math.PI * 2 * 3) * 0.5;
+      p.set(x, y, f > 0.7 ? mix(sky.a, '#ffffff', 0.25) : sky.a);
+    }
+    for (let i = 0; i < 6; i++) {
+      const cx = Math.floor(hash(i, 17, 117) * S), cy = Math.floor(hash(i, 19, 119) * S), r = 6 + hash(i, 21, 121) * 6;
+      wrap4(S, (dx, dy) => {
+        const x = cx + dx, y = cy + dy;
+        p.ellipse(x, y + 2, r * 1.6, r * 0.55, mix(sky.b, sky.side, 0.35));
+        p.shaded(x - r * 0.6, y, r * 0.8, r * 0.6, sky.b, mix(sky.b, sky.side, 0.4), '#ffffff');
+        p.shaded(x + r * 0.5, y - 1, r * 0.9, r * 0.7, sky.b, mix(sky.b, sky.side, 0.4), '#ffffff');
+        p.shaded(x, y - r * 0.4, r * 0.7, r * 0.6, sky.b, mix(sky.b, sky.side, 0.3), '#ffffff');
+      });
+    }
+  },
+};

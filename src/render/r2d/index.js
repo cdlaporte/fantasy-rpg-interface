@@ -84,7 +84,7 @@ export function create() {
   }
 
   // ------------------------------------------------------------------ zone
-  let borderCanvas = null, borderPat = null;
+  let borderCanvas = null, borderPat = null, borderCanvas2 = null, borderPat2 = null;
   function loadZone(zoneView) {
     unloadZone();
     if (!zoneView) return;
@@ -95,6 +95,9 @@ export function create() {
     bg = col(zv.palette && zv.palette.bg, '#2a3a4a');
     borderCanvas = buildBorderPattern(zv, info, bg);
     borderPat = null;
+    // the open sea beyond a cove map is animated like water chunks (two frames)
+    borderCanvas2 = zv.palette && zv.palette.edge === 'ocean' ? buildBorderPattern(zv, info, bg, 1) : null;
+    borderPat2 = null;
     chW = Math.ceil(zv.w / CH); chH = Math.ceil(zv.h / CH);
     chunks = new Array(chW * chH).fill(null);
     chunkExtras = new Array(chW * chH);
@@ -140,7 +143,7 @@ export function create() {
   }
 
   function unloadZone() {
-    borderCanvas = null; borderPat = null;
+    borderCanvas = null; borderPat = null; borderCanvas2 = null; borderPat2 = null;
     zv = null; info = null; chunks = []; chunkExtras = []; props = []; marks = null; zoneEmitters.length = 0;
     fx.clear();
   }
@@ -189,7 +192,9 @@ export function create() {
     g.fillStyle = bg; g.fillRect(0, 0, aw, ah);
     if (borderCanvas) {   // beyond the map: canopy / brick pattern aligned to world pixels
       if (!borderPat) borderPat = g.createPattern(borderCanvas, 'repeat');
-      g.save(); g.translate(-ox, -oy); g.fillStyle = borderPat; g.fillRect(ox, oy, aw, ah); g.restore();
+      if (borderCanvas2 && !borderPat2) borderPat2 = g.createPattern(borderCanvas2, 'repeat');
+      const bp = borderPat2 && (Math.floor(t * 2.2) & 1) ? borderPat2 : borderPat;
+      g.save(); g.translate(-ox, -oy); g.fillStyle = bp; g.fillRect(ox, oy, aw, ah); g.restore();
     }
 
     // age existing fx first, so events spawned this frame start at age 0

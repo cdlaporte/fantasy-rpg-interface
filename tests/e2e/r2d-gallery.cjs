@@ -18,7 +18,7 @@ const DRAW_BUDGET = 300;
     try { await fn(); console.log('ok   ', name); } catch (e) { failed++; console.log('FAIL ', name, '\n     ', e.message); }
   };
   try {
-    const pages = ONLY ? ONLY.split(',').map(Number) : [0, 1, 2, 3, 4];
+    const pages = ONLY ? ONLY.split(',').map(Number) : [0, 1, 2, 3, 4, 5, 6, 7, 8];   // 5-8: round 3 biome pages
     for (const n of pages) {
       await check(`gallery page ${n}`, async () => {
         const page = await H.newPage(browser);
@@ -106,6 +106,23 @@ const DRAW_BUDGET = 300;
       assert.deepStrictEqual(res.unknown, [], 'unknown');
       assert.ok(res.maxDraws <= DRAW_BUDGET, 'draw budget');
       assert.ok(res.med < 4, 'median frame time < 4 ms: ' + res.med);
+      await page.close();
+    });
+    // round 3: the four biome zones in the real game (no unknown art values, draw budget)
+    await check('biome zones in the real game (2d)', async () => {
+      const page = await H.newPage(browser);
+      const { errors } = await H.openGame(page, { base: server.url, renderer: '2d' });
+      for (const zone of ['dunes', 'cove', 'peaks', 'aether']) {
+        await page.evaluate((z) => window.__game.scenario('biome', { zone: z, level: 15 }), zone);
+        await page.evaluate(() => window.__game.step(40, { moveX: 0.4, moveY: -0.3 }));
+        await page.waitForTimeout(250);
+        await H.shot(page, path.join(OUT, `r2d-biome-${zone}.png`));
+        const s = await page.evaluate(() => window.__game.renderStats());
+        console.log(`      biome ${zone}: draws ${s.draws}, ms ${s.ms.toFixed(2)}, unknown ${JSON.stringify(s.unknown)}`);
+        assert.deepStrictEqual(s.unknown, [], 'unknown in ' + zone);
+        assert.ok(s.draws <= DRAW_BUDGET, 'draw budget in ' + zone);
+      }
+      assert.deepStrictEqual(errors, [], 'no console errors');
       await page.close();
     });
   } finally {

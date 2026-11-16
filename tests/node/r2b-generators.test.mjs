@@ -208,6 +208,20 @@ const CHECK = {
       // labels: T1 and T2 alternate; each triangle drawn to its own scale
       sameScale([labels[0], labels[2]], x, q.id);
       sameScale([labels[1], labels[3]], x, q.id);
+      // read the drawing like a student: name each labeled side by its nearest vertex letters, then every pair of
+      // corresponding sides (from the statement) that is labeled must have the same ratio
+      const vtx = q.figureMeta.labels.filter((l) => l.kind === 'vertex');
+      const nearest = (p) => vtx.reduce((b, v) => (Math.hypot(v.x - p[0], v.y - p[1]) < Math.hypot(b.x - p[0], b.y - p[1]) ? v : b)).text;
+      const named = {};
+      for (const l of labels) named[[nearest(l.own[0]), nearest(l.own[1])].sort().join('')] = evalLabel(l.text, x);
+      const [L1, L2] = [m[1].slice(1), m[2].slice(1)];
+      const ratios = [];
+      for (const [i, j] of [[0, 1], [1, 2], [0, 2]]) {
+        const a = named[[L1[i], L1[j]].sort().join('')], b = named[[L2[i], L2[j]].sort().join('')];
+        if (a !== undefined && b !== undefined) ratios.push(a / b);
+      }
+      assert.ok(ratios.length >= 2, `two corresponding pairs labeled ${JSON.stringify(named)}`);
+      for (const r of ratios) assert.ok(near(r, ratios[0], 1e-9), `corresponding sides proportional ${JSON.stringify(named)} ${q.prompt}`);
       const want = [s1[d.known], s2[d.known]].map(String);
       for (const w of want) assert.ok(labels.some((l) => l.text === w), 'known pair labeled');
     }
